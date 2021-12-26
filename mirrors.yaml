@@ -15,19 +15,19 @@ apps:
     artifacts:
     - id: all
       name: 三合一
-      scheme: gts-all
+      scheme: 'gts-all:'
       file: MOI_OSM_Taiwan_TOPO_Rudy.zip
     - id: map
       name: 離線地圖
-      scheme: gts-map
+      scheme: 'gts-map:'
       file: MOI_OSM_Taiwan_TOPO_Rudy.map.zip
     - id: style
       name: 風格主題
-      scheme: gts-mapthemes
+      scheme: 'gts-mapthemes:'
       file: MOI_OSM_Taiwan_TOPO_Rudy_hs_style.zip
     - id: hgt
       name: 高程檔
-      scheme: gts-hgt
+      scheme: 'gts-hgt:'
       file: hgtmix.zip
 - id: oruxmaps
   name: OruxMaps
@@ -35,11 +35,11 @@ apps:
   artifacts:
   - id: map
     name: 離線地圖
-    scheme: orux-map
+    scheme: "orux-map:"
     file: MOI_OSM_Taiwan_TOPO_Rudy.map.zip
   - id: style
     name: 風格主題
-    scheme: orux-mf-theme
+    scheme: "orux-mf-theme:"
     file: MOI_OSM_Taiwan_TOPO_Rudy_style.zip
   - id: hgt
     name: 高程檔

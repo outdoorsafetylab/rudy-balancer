@@ -111,7 +111,9 @@
       },
       methods: {
         artifactURL(app, variant, artifact) {
-          return origin + '/v1/mirror/' + app.ID + '/' + artifact.ID;
+          var host = document.location.host;
+          var scheme = artifact.Scheme || document.location.protocol;
+          return scheme + '//' + host + '/v1/mirror/' + app.ID + '/' + artifact.ID;
         },
         qrcodeURL(app, variant, artifact) {
           return '/v1/qrcode/' + app.ID + '?text=' + encodeURIComponent(this.artifactURL(app, variant, artifact));
