@@ -1,0 +1,44 @@
+sites:
+- name: Rex
+  endpoint: rudy.basecamp.tw/
+- name: KCWu
+  endpoint: moi.kcwu.csie.org/
+- name: Happyman
+  endpoint: map.happyman.idv.tw/rudy/
+apps:
+- id: gts
+  name: 綠野遊蹤
+  variants:
+  - id: standard
+    name: 傳統版
+    artifacts:
+    - id: all
+      name: 三合一
+      scheme: gts-all
+      file: MOI_OSM_Taiwan_TOPO_Rudy.zip
+    - id: map
+      name: 離線地圖
+      scheme: gts-map
+      file: MOI_OSM_Taiwan_TOPO_Rudy.map.zip
+    - id: style
+      name: 風格主題
+      scheme: gts-mapthemes
+      file: MOI_OSM_Taiwan_TOPO_Rudy_hs_style.zip
+    - id: hgt
+      name: 高程檔
+      scheme: gts-hgt
+      file: hgtmix.zip
+- id: oruxmaps
+  name: OruxMaps
+  artifacts:
+  - id: map
+    name: 離線地圖
+    scheme: orux-map
+    file: MOI_OSM_Taiwan_TOPO_Rudy.map.zip
+  - id: style
+    name: 風格主題
+    scheme: orux-mf-theme
+    file: MOI_OSM_Taiwan_TOPO_Rudy_style.zip
+  - id: hgt
+    name: 高程檔
+    file: hgtmix.zip

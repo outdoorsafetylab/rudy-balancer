@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"service/db"
 	"service/server"
 
 	"service/config"
@@ -25,6 +26,11 @@ func main() {
 		os.Exit(-1)
 	}
 	s := log.GetSugar()
+	err = db.Init(s)
+	if err != nil {
+		os.Exit(-1)
+	}
+	defer db.Deinit(s)
 	server := server.New(s)
 	err = server.Run(nil)
 	if err == nil {
