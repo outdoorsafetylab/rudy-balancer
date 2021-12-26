@@ -1,0 +1,4 @@
+log:
+  dev: true
+port: 8080
+endpoint: /v1

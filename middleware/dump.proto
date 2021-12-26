@@ -1,0 +1,21 @@
+syntax = "proto3";
+package middleware;
+option go_package = "./middleware";
+
+message HeaderDump {
+    string name = 1;
+    repeated string values = 2;
+}
+
+message RequestDump {
+    string method = 1;
+    string uri = 2;
+    string proto = 3;
+    string host = 4;
+    repeated HeaderDump headers = 5;
+}
+
+message ResponseDump {
+    int32 code = 1;
+    repeated HeaderDump headers = 3;
+}

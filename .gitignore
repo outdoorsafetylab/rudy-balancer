@@ -1,0 +1,5 @@
+/.tool
+/go.sum
+/serviced
+*.pb.go
+secret.yaml
