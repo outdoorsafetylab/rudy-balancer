@@ -6,8 +6,8 @@ import (
 )
 
 type Artifact struct {
-	App           *App
-	Variant       *Variant
+	App           *App     `json:"-"`
+	Variant       *Variant `json:"-"`
 	ID            string
 	Name          string
 	Scheme        string

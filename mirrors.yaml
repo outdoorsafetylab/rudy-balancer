@@ -8,6 +8,7 @@ sites:
 apps:
 - id: gts
   name: 綠野遊蹤
+  icon: https://rudy.basecamp.tw/images/GTS.png
   variants:
   - id: standard
     name: 傳統版
@@ -30,6 +31,7 @@ apps:
       file: hgtmix.zip
 - id: oruxmaps
   name: OruxMaps
+  icon: https://rudy.basecamp.tw/images/OruxMaps.jpeg
   artifacts:
   - id: map
     name: 離線地圖

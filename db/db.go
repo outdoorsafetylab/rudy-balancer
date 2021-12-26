@@ -2,8 +2,12 @@ package db
 
 import (
 	"fmt"
+	"image"
 	"net/http"
 	"service/model"
+
+	_ "image/jpeg"
+	_ "image/png"
 
 	"github.com/crosstalkio/log"
 )
@@ -57,6 +61,22 @@ func (db *DB) validate(s log.Sugar) error {
 func (db *DB) check(s log.Sugar) error {
 	for _, app := range db.Apps {
 		s.Infof("Checking app: %s (%s)", app.ID, app.Name)
+		if app.Icon != "" {
+			res, err := http.Get(app.Icon)
+			if err != nil {
+				s.Errorf("Failed to get app icon: %s => %s: %s", app.ID, app.Icon, err.Error())
+				return err
+			}
+			defer res.Body.Close()
+			img, _, err := image.Decode(res.Body)
+			if err != nil {
+				if err != nil {
+					s.Errorf("Failed to decode app icon: %s => %s: %s", app.ID, app.Icon, err.Error())
+					return err
+				}
+			}
+			app.IconImage = img
+		}
 		for _, a := range app.GetArtifacts() {
 			s.Infof("Checking artifact: %s (%s)", a.ID, a.Name)
 			urls, err := a.GetURLs(db.Sites)

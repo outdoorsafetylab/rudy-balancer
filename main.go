@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"service/db"
 	"service/server"
@@ -32,7 +33,7 @@ func main() {
 	}
 	defer db.Deinit(s)
 	server := server.New(s)
-	err = server.Run(nil)
+	err = server.Run(http.Dir("./webroot"))
 	if err == nil {
 		os.Exit(0)
 	} else {

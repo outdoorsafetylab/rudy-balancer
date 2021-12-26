@@ -1,10 +1,16 @@
 package model
 
+import (
+	"image"
+)
+
 type App struct {
 	ID        string
 	Name      string
-	Artifacts []*Artifact
-	Variants  []*Variant
+	Icon      string
+	IconImage image.Image `json:"-"`
+	Artifacts []*Artifact `json:",omitempty"`
+	Variants  []*Variant  `json:",omitempty"`
 }
 
 func (a *App) GetArtifacts() []*Artifact {

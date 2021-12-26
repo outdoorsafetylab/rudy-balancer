@@ -35,7 +35,9 @@ func Init(s log.Sugar) error {
 		s.Errorf("Invalid definition of DB '%s': %s", filename, err.Error())
 		return err
 	}
-	_ = db.check(s)
+	go func() {
+		_ = db.check(s)
+	}()
 	check := cfg.GetString("db.check")
 	if check != "" {
 		du, err := time.ParseDuration(check)

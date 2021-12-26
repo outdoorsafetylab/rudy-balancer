@@ -26,7 +26,14 @@ func NewRouter(s log.Logger, root http.FileSystem) *mux.Router {
 	config := &controller.ConfigController{}
 	endpoint.Methods("GET").Path("/version").Handler(rest.HandlerFunc(config.Get))
 
+	apps := &controller.AppsController{}
+	endpoint.Methods("GET").Path("/apps").Handler(rest.HandlerFunc(apps.Get))
+
 	for _, app := range db.GetApps() {
+		qrcode := &controller.QRCodeController{
+			App: app,
+		}
+		endpoint.Methods("GET").Path(fmt.Sprintf("/qrcode/%s", app.ID)).Handler(rest.HandlerFunc(qrcode.Get))
 		for _, a := range app.GetArtifacts() {
 			path := fmt.Sprintf("/mirror/%s/%s", a.App.ID, a.ID)
 			if a.Variant != nil {
