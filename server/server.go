@@ -26,8 +26,9 @@ func New(s log.Sugar) *server {
 	return server
 }
 
-func (s *server) Run(root http.FileSystem) error {
+func (s *server) Run() error {
 	cfg := config.Get()
+	root := http.Dir(cfg.GetString("webroot"))
 	r := NewRouter(s, root)
 	go func() {
 		s.httpErr <- httpd.BindHTTP(s, cfg.GetInt("port"), r, nil)

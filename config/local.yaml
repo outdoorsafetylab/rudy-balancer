@@ -2,6 +2,7 @@ log:
   dev: true
 port: 8080
 endpoint: /v1
+webroot: ./webroot
 db:
   file: mirrors.yaml
   #check: 30s

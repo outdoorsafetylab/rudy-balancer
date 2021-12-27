@@ -36,6 +36,13 @@ $(EXEC): $(PBGO) $(GOSRCS)
 	go mod tidy
 	go build -ldflags="$(LDFLAGS)" -o $@
 
+cloud-run:
+	cloud-build-local \
+		--config=.cloudbuild/cloud-run.yaml \
+		--substitutions=_SERVICE_NAME=ruby-balancer,_REGION=asia-east1 \
+		--dryrun=false \
+		.
+
 clean/proto:
 	rm -f $(PBGO)
 

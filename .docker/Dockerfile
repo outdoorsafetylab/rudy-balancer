@@ -28,6 +28,8 @@ COPY --from=builder /src/serviced /usr/sbin/
 RUN mkdir -p /etc/serviced/
 COPY .docker/config.yaml /etc/serviced/
 COPY .docker/entrypoint.sh /
+COPY mirrors.yaml /
+COPY webroot /webroot
 
 ENV GEOIP2_LICENSE_KEY=
 

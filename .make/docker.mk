@@ -2,7 +2,6 @@ CODENAME := $(notdir $(shell pwd))
 IMAGE_NAME := outdoorsafetylab/$(CODENAME)
 REPO_NAME ?= outdoorsafetylab/$(CODENAME)
 VERSION ?= $(subst v,,$(shell git describe --tags --exact-match 2>/dev/null || echo ""))
-GEOIP2_LICENSE_KEY ?=
 
 # Build docker image.
 #
@@ -27,7 +26,6 @@ docker/run:
 	docker run -it --rm \
 		--name=$(CODENAME) \
 		-p 8080:8080 \
-		-e GEOIP2_LICENSE_KEY=$(GEOIP2_LICENSE_KEY) \
 		$(IMAGE_NAME)
 
 # Tag docker images.
