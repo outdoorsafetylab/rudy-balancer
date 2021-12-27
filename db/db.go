@@ -39,6 +39,14 @@ func (db *DB) validate(s log.Sugar) error {
 		if app.Name == "" {
 			return fmt.Errorf("Missing app name")
 		}
+		if len(app.Variants) <= 0 {
+			return fmt.Errorf("No variants defined")
+		}
+		for _, v := range app.Variants {
+			if v.ID == "" {
+				return fmt.Errorf("Missing variant ID")
+			}
+		}
 		artifacts := app.GetArtifacts()
 		if len(artifacts) <= 0 {
 			return fmt.Errorf("No artifacts defined: %s", app.ID)

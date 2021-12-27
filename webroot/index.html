@@ -24,7 +24,8 @@
       <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
           <a class="navbar-brand" href="#">魯地圖分流器</a>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
+            aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -39,10 +40,12 @@
                   <li>
                     <hr class="dropdown-divider" />
                   </li>
-                  <li v-for="app in apps"><a class="dropdown-item" href="#" @click.prevent="selectedApp = app">{{app.Name}}</a></li>
+                  <li v-for="app in apps"><a class="dropdown-item" href="#"
+                      @click.prevent="selectedApp = app">{{app.Name}}</a></li>
                 </ul>
               </li>
-              <li v-if="selectedApp && selectedApp.Variants" class="nav-item dropdown">
+              <li v-if="selectedApp && selectedApp.Variants && selectedApp.Variants.length > 1"
+                class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
                   aria-expanded="false">
                   {{selectedVariant ? selectedVariant.Name : '不分版本'}}
@@ -52,7 +55,8 @@
                   <li>
                     <hr class="dropdown-divider" />
                   </li>
-                  <li v-for="variant in selectedApp.Variants"><a class="dropdown-item" href="#" @click.prevent="selectedVariant = variant">{{variant.Name}}</a></li>
+                  <li v-for="variant in selectedApp.Variants"><a class="dropdown-item" href="#"
+                      @click.prevent="selectedVariant = variant">{{variant.Name}}</a></li>
                 </ul>
               </li>
             </ul>
@@ -63,19 +67,22 @@
     <main class="container">
       <div v-for="app in selectedApps" :key="app.ID" class="my-3 p-3 bg-body rounded shadow-sm">
         <h4 class="mb-0">{{app.Name}}</h4>
-        <div class="py-1">
+        <div v-for="variant in selectedVariants(app)" :key="app.ID + '/' + variant.ID">
+          <h5 class="p-2 mb-0">{{variant.Name}}</h5>
           <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-            <div v-for="artifact in app.Artifacts" :key="app.ID + '/' + artifact.ID" class="col">
+            <div v-for="artifact in variant.Artifacts" :key="app.ID + '/' + variant.ID + '/' + artifact.ID" class="col">
               <div class="card shadow-sm">
-                <img class="bd-placeholder-img card-img-top" v-bind:src="qrcodeURL(app, null, artifact)" >
+                <img class="bd-placeholder-img card-img-top" v-bind:src="qrcodeURL(app, variant, artifact)">
                 <div class="card-body">
                   <h5 class="card-title">{{artifact.Name}}</h5>
                   <div class="input-group mb-3">
-                    <textarea rows="4" class="form-control" onfocus="this.select();" readonly>{{artifactURL(app, null, artifact)}}</textarea>
+                    <textarea rows="4" class="form-control" onfocus="this.select();"
+                      readonly>{{artifactURL(app, variant, artifact)}}</textarea>
                   </div>
                   <div class="d-flex justify-content-between align-items-center">
                     <div class="btn-group">
-                      <a class="btn btn-sm btn-outline-secondary" v-bind:href="artifactURL(app, null, artifact)">開啟連結</a>
+                      <a class="btn btn-sm btn-outline-secondary"
+                        v-bind:href="artifactURL(app, variant, artifact)">開啟連結</a>
                     </div>
                   </div>
                 </div>
@@ -83,30 +90,9 @@
             </div>
           </div>
         </div>
-        <div v-for="variant in selectedVariants(app)" :key="app.ID + '/' + variant.ID">
-          <h5 class="p-2 mb-0">{{variant.Name}}</h5>
-          <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-            <div v-for="artifact in variant.Artifacts" :key="app.ID + '/' + variant.ID + '/' + artifact.ID" class="col">
-              <div class="card shadow-sm">
-                <img class="bd-placeholder-img card-img-top" v-bind:src="qrcodeURL(app, variant, artifact)" >
-                <div class="card-body">
-                  <h5 class="card-title">{{artifact.Name}}</h5>
-                  <div class="input-group mb-3">
-                    <textarea rows="4" class="form-control" onfocus="this.select();" readonly>{{artifactURL(app, variant, artifact)}}</textarea>
-                  </div>
-                  <div class="d-flex justify-content-between align-items-center">
-                    <div class="btn-group">
-                      <a class="btn btn-sm btn-outline-secondary" v-bind:href="artifactURL(app, variant, artifact)">開啟連結</a>
-                    </div>
-                  </div>
-                </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>  
       </div>
-    </main>
+    </div>
+  </main>
   </div>
   <script src="https://unpkg.com/vue"></script>
   <script>
@@ -129,7 +115,7 @@
         xhr.send();
       },
       computed: {
-        selectedApps: function() {
+        selectedApps: function () {
           if (!this.selectedApp) {
             return this.apps;
           }
@@ -137,12 +123,12 @@
         },
       },
       watch: {
-        selectedApp: function() {
+        selectedApp: function () {
           this.selectedVariant = null;
         },
       },
       methods: {
-        selectedVariants: function(app) {
+        selectedVariants: function (app) {
           if (!this.selectedApp) {
             return app.Variants;
           }
@@ -166,4 +152,5 @@
       }
     })
   </script>
+
 </html>
