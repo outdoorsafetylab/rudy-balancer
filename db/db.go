@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"net/http"
+	"net/url"
 	"service/model"
 
 	_ "image/jpeg"
@@ -87,30 +88,50 @@ func (db *DB) check(s log.Sugar) error {
 		}
 		for _, a := range app.GetArtifacts() {
 			s.Infof("Checking artifact: %s (%s)", a.ID, a.Name)
-			urls, err := a.GetURLs(db.Sites)
-			if err != nil {
-				s.Errorf("Failed to get URLs for health check: %s", a.GetID())
-				return err
-			}
+			healthyUrls := make([]*url.URL, 0)
 			size := int64(0)
 			count := 0
-			for _, u := range urls {
-				s.Infof("Checking URL: %s", u)
-				res, err := http.Head(u.String())
+			healths := make([]*model.Health, len(db.Sites))
+			for i, site := range db.Sites {
+				urls, err := site.GetURLs(a)
 				if err != nil {
-					s.Errorf("Bad artifact: %s => %s: %s", a.GetID(), u.String(), err.Error())
-					continue
+					s.Errorf("Failed to get URLs for health check: site=%s, artifact=%s", site.Name, a.GetID())
+					return err
 				}
-				defer res.Body.Close()
-				if res.StatusCode != 200 {
-					s.Errorf("Bad artifact: %s => %s: %s", a.GetID(), u.String(), res.Status)
-					continue
+				healthyCount := 0
+				for _, u := range urls {
+					s.Infof("Checking URL: %s", u)
+					res, err := http.Head(u.String())
+					if err != nil {
+						s.Errorf("Bad artifact: %s => %s: %s", a.GetID(), u.String(), err.Error())
+						continue
+					}
+					defer res.Body.Close()
+					if res.StatusCode != 200 {
+						s.Errorf("Bad artifact: %s => %s: %s", a.GetID(), u.String(), res.Status)
+						continue
+					}
+					size += res.ContentLength
+					count++
+					healthyCount++
+					healthyUrls = append(healthyUrls, u)
+					res.Body.Close()
 				}
-				size += res.ContentLength
-				count++
-				res.Body.Close()
+				health := &model.Health{
+					Site: site,
+				}
+				if healthyCount <= 0 {
+					health.Status = model.DEAD
+				} else if healthyCount == len(urls) {
+					health.Status = model.GOOD
+				} else {
+					health.Status = model.BAD
+				}
+				healths[i] = health
 			}
-			a.ContentLength = size
+			a.ContentLength = size / int64(count)
+			a.Healths = healths
+			a.HealthyURLs = healthyUrls
 		}
 	}
 	return nil

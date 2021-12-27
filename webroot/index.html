@@ -19,6 +19,7 @@
     <strong>We're sorry but this site won't work properly without JavaScript enabled. Please enable it to
       continue.</strong>
   </noscript>
+
   <div id="app">
     <header>
       <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -75,6 +76,9 @@
                 <img class="bd-placeholder-img card-img-top" v-bind:src="qrcodeURL(app, variant, artifact)">
                 <div class="card-body">
                   <h5 class="card-title">{{artifact.Name}}</h5>
+                  <div>
+                    <span v-for="health in artifact.Healths" style="padding-right: 2pt;"><span v-bind:class="badgeClasses(health.Status)">{{health.Site.Name}}</span></span>
+                  </div>
                   <div class="input-group mb-3">
                     <textarea rows="4" class="form-control" onfocus="this.select();"
                       readonly>{{artifactURL(app, variant, artifact)}}</textarea>
@@ -84,6 +88,7 @@
                       <a class="btn btn-sm btn-outline-secondary"
                         v-bind:href="artifactURL(app, variant, artifact)">開啟連結</a>
                     </div>
+                    <small class="text-muted">{{humanFileSize(artifact.ContentLength)}}</small>
                   </div>
                 </div>
               </div>
@@ -91,8 +96,7 @@
           </div>
         </div>
       </div>
-    </div>
-  </main>
+    </main>
   </div>
   <script src="https://unpkg.com/vue"></script>
   <script>
@@ -149,6 +153,32 @@
         qrcodeURL(app, variant, artifact) {
           return '/v1/qrcode/' + app.ID + '?text=' + encodeURIComponent(this.artifactURL(app, variant, artifact));
         },
+        humanFileSize(bytes, si = false, dp = 1) {
+          const thresh = si ? 1000 : 1024;
+          if (Math.abs(bytes) < thresh) {
+            return bytes + ' B';
+          }
+          const units = si
+            ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+            : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+          let u = -1;
+          const r = 10 ** dp;
+          do {
+            bytes /= thresh;
+            ++u;
+          } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
+          return bytes.toFixed(dp) + ' ' + units[u];
+        },
+        badgeClasses(status) {
+          switch (status) {
+            case 0:
+              return 'badge bg-success mb-1';
+            case 1:
+              return 'badge bg-warning text-dark mb-1';
+            case 2:
+              return 'badge bg-danger mb-1';
+          }
+        }
       }
     })
   </script>
