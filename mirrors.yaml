@@ -29,6 +29,25 @@ apps:
       name: 高程檔
       scheme: 'gts-hgt:'
       file: hgtmix.zip
+  - id: lite
+    name: 輕量版
+    artifacts:
+    - id: all
+      name: 三合一
+      scheme: 'gts-all:'
+      file: MOI_OSM_Taiwan_TOPO_Lite.zip
+    - id: map
+      name: 離線地圖
+      scheme: 'gts-map:'
+      file: MOI_OSM_Taiwan_TOPO_Lite.map.zip
+    - id: style
+      name: 風格主題
+      scheme: 'gts-mapthemes:'
+      file: MOI_OSM_Taiwan_TOPO_Lite_style.zip
+    - id: hgt
+      name: 高程檔
+      scheme: 'gts-hgt:'
+      file: hgt90.zip
 - id: oruxmaps
   name: OruxMaps
   icon: https://rudy.basecamp.tw/images/OruxMaps.jpeg
