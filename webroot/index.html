@@ -156,8 +156,12 @@
               }
             }
           }
-          this.$watch('selectedApp', function() {
+          this.$watch('selectedApp', function(app) {
             this.selectedVariant = null;
+            history.replaceState({}, null, '/' + app.ID);
+          });
+          this.$watch('selectedVariant', function(variant) {
+            history.replaceState({}, null, '/' + this.selectedApp.ID + '/' + variant.ID);
           });
         },
         selectedVariants: function (app) {
