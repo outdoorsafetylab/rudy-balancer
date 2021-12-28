@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	name := flag.String("c", "config", "")
+	name := flag.String("c", "config", "config")
 	flag.Usage = func() {
 		fmt.Printf("Usage: %s -c <config name>\n", os.Args[0])
 		os.Exit(1)
