@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"net/http"
 	"service/config"
 	"service/controller"
 	"service/db"
@@ -13,7 +12,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func NewRouter(s log.Logger, root http.FileSystem) *mux.Router {
+func NewRouter(s log.Sugar) *mux.Router {
 	cfg := config.Get()
 	rest := rest.NewServer(s)
 	rest.Use(middleware.Dump)
@@ -45,8 +44,12 @@ func NewRouter(s log.Logger, root http.FileSystem) *mux.Router {
 		}
 	}
 
-	if root != nil {
-		r.NotFoundHandler = http.FileServer(root)
+	webroot := cfg.GetString("webroot")
+	if webroot != "" {
+		r.NotFoundHandler = &webrootHandler{
+			Sugar:   s,
+			webroot: webroot,
+		}
 	}
 	return r
 }

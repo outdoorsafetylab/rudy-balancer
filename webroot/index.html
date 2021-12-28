@@ -108,8 +108,6 @@
     new Vue({
       el: '#app',
       data: {
-        hello: 'Hello World!',
-        origin: document.location.origin,
         apps: [],
         selectedApp: null,
         selectedVariant: null,
@@ -120,6 +118,7 @@
         xhr.open("GET", "/v1/apps");
         xhr.onload = function () {
           self.apps = JSON.parse(xhr.responseText);
+          self.init();
         };
         xhr.send();
       },
@@ -131,12 +130,36 @@
           return [this.selectedApp];
         },
       },
-      watch: {
-        selectedApp: function () {
-          this.selectedVariant = null;
-        },
-      },
       methods: {
+        init: function() {
+          var apps = this.apps;
+          var paths = window.location.pathname.split('/');
+          paths.shift();
+          var appID = paths.shift();
+          if (appID) {
+            for (var i = 0; i < apps.length; i++) {
+              var app = apps[i];
+              if (app.ID == appID) {
+                this.selectedApp = app;
+                break;
+              }
+            }
+          }
+          var variantID = paths.shift();
+          if (this.selectedApp && variantID) {
+            var app = this.selectedApp;
+            for (var i = 0; i < app.Variants.length; i++) {
+              var variant = app.Variants[i];
+              if (variant.ID == variantID) {
+                this.selectedVariant = variant;
+                break;
+              }
+            }
+          }
+          this.$watch('selectedApp', function() {
+            this.selectedVariant = null;
+          });
+        },
         selectedVariants: function (app) {
           if (!this.selectedApp) {
             return app.Variants;
