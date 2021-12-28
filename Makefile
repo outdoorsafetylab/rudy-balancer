@@ -43,6 +43,13 @@ cloud-run:
 		--dryrun=false \
 		.
 
+app-engine:
+	cloud-build-local \
+		--config=.cloudbuild/app-engine.yaml \
+		--substitutions=_PROJECT_NAME=rudy-mirror \
+		--dryrun=false \
+		.
+
 clean/proto:
 	rm -f $(PBGO)
 
