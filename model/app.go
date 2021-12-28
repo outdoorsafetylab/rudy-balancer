@@ -1,15 +1,10 @@
 package model
 
-import (
-	"image"
-)
-
 type App struct {
-	ID        string
-	Name      string
-	Icon      string
-	IconImage image.Image `json:"-"`
-	Variants  []*Variant  `json:",omitempty"`
+	ID       string
+	Name     string
+	Icon     string
+	Variants []*Variant `json:",omitempty"`
 }
 
 func (a *App) GetArtifacts() []*Artifact {
@@ -18,6 +13,12 @@ func (a *App) GetArtifacts() []*Artifact {
 		for _, t := range v.Artifacts {
 			t.App = a
 			t.Variant = v
+			if t.Icon == "" {
+				t.Icon = v.Icon
+			}
+			if t.Icon == "" {
+				t.Icon = a.Icon
+			}
 			artifacts = append(artifacts, t)
 		}
 	}

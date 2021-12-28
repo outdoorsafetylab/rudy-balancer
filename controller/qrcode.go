@@ -15,7 +15,7 @@ import (
 )
 
 type QRCodeController struct {
-	App *model.App
+	Artifact *model.Artifact
 }
 
 func (c *QRCodeController) Get(s *rest.Session) {
@@ -37,10 +37,10 @@ func (c *QRCodeController) Get(s *rest.Session) {
 		return
 	}
 	img := code.Image(int(size))
-	if c.App.IconImage != nil {
+	if c.Artifact.IconImage != nil {
 		percent := 20
 		logoSize := uint(float64(size) * float64(percent) / 100)
-		logoImage := resize.Resize(logoSize, logoSize, c.App.IconImage, resize.Lanczos3)
+		logoImage := resize.Resize(logoSize, logoSize, c.Artifact.IconImage, resize.Lanczos3)
 		img = c.overlayLogo(img, logoImage)
 	}
 	err = png.Encode(&buf, img)

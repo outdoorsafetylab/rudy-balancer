@@ -70,24 +70,24 @@ func (db *DB) validate(s log.Sugar) error {
 func (db *DB) check(s log.Sugar) error {
 	for _, app := range db.Apps {
 		s.Infof("Checking app: %s (%s)", app.ID, app.Name)
-		if app.Icon != "" {
-			res, err := http.Get(app.Icon)
-			if err != nil {
-				s.Errorf("Failed to get app icon: %s => %s: %s", app.ID, app.Icon, err.Error())
-				return err
-			}
-			defer res.Body.Close()
-			img, _, err := image.Decode(res.Body)
-			if err != nil {
-				if err != nil {
-					s.Errorf("Failed to decode app icon: %s => %s: %s", app.ID, app.Icon, err.Error())
-					return err
-				}
-			}
-			app.IconImage = img
-		}
 		for _, a := range app.GetArtifacts() {
 			s.Infof("Checking artifact: %s (%s)", a.ID, a.Name)
+			if a.Icon != "" {
+				res, err := http.Get(a.Icon)
+				if err != nil {
+					s.Errorf("Failed to get icon: %s => %s: %s", a.GetPath(), a.Icon, err.Error())
+					return err
+				}
+				defer res.Body.Close()
+				img, _, err := image.Decode(res.Body)
+				if err != nil {
+					if err != nil {
+						s.Errorf("Failed to decode icon: %s => %s: %s", a.GetPath(), a.Icon, err.Error())
+						return err
+					}
+				}
+				a.IconImage = img
+			}
 			healthyUrls := make([]*url.URL, 0)
 			size := int64(0)
 			count := 0
@@ -95,7 +95,7 @@ func (db *DB) check(s log.Sugar) error {
 			for i, site := range db.Sites {
 				urls, err := site.GetURLs(a)
 				if err != nil {
-					s.Errorf("Failed to get URLs for health check: site=%s, artifact=%s", site.Name, a.GetID())
+					s.Errorf("Failed to get URLs for health check: site=%s, artifact=%s", site.Name, a.GetPath())
 					return err
 				}
 				healthyCount := 0
@@ -103,12 +103,12 @@ func (db *DB) check(s log.Sugar) error {
 					s.Infof("Checking URL: %s", u)
 					res, err := http.Head(u.String())
 					if err != nil {
-						s.Errorf("Bad artifact: %s => %s: %s", a.GetID(), u.String(), err.Error())
+						s.Errorf("Bad artifact: %s => %s: %s", a.GetPath(), u.String(), err.Error())
 						continue
 					}
 					defer res.Body.Close()
 					if res.StatusCode != 200 {
-						s.Errorf("Bad artifact: %s => %s: %s", a.GetID(), u.String(), res.Status)
+						s.Errorf("Bad artifact: %s => %s: %s", a.GetPath(), u.String(), res.Status)
 						continue
 					}
 					size += res.ContentLength

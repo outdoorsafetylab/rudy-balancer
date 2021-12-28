@@ -67,7 +67,12 @@
     </header>
     <main class="container">
       <div v-for="app in selectedApps" :key="app.ID" class="my-3 p-3 bg-body rounded shadow-sm">
-        <h4 class="mb-0">{{app.Name}}</h4>
+        <div class="d-flex align-items-center p-2 text-white bg-dark rounded shadow-sm">
+          <img class="me-3" v-bind:src="app.Icon" alt="" width="32" height="32">
+          <div class="lh-1">
+            <h1 class="h6 mb-0 text-white lh-1">{{app.Name}}</h1>
+          </div>
+        </div>
         <div v-for="variant in selectedVariants(app)" :key="app.ID + '/' + variant.ID">
           <h5 class="p-2 mb-0">{{variant.Name}}</h5>
           <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
@@ -144,14 +149,10 @@
         artifactURL(app, variant, artifact) {
           var host = document.location.host;
           var scheme = artifact.Scheme || document.location.protocol;
-          if (variant) {
-            return scheme + '//' + host + '/v1/mirror/' + app.ID + '/' + variant.ID + '/' + artifact.ID;
-          } else {
-            return scheme + '//' + host + '/v1/mirror/' + app.ID + '/' + artifact.ID;
-          }
+          return scheme + '//' + host + '/v1/mirror/' + app.ID + '/' + variant.ID + '/' + artifact.ID;
         },
         qrcodeURL(app, variant, artifact) {
-          return '/v1/qrcode/' + app.ID + '?text=' + encodeURIComponent(this.artifactURL(app, variant, artifact));
+          return '/v1/qrcode/' + app.ID + '/' + variant.ID + '/' + artifact.ID + '?text=' + encodeURIComponent(this.artifactURL(app, variant, artifact));
         },
         humanFileSize(bytes, si = false, dp = 1) {
           const thresh = si ? 1000 : 1024;
