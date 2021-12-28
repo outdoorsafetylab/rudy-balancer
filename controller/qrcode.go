@@ -6,6 +6,7 @@ import (
 	"image/draw"
 	"image/png"
 	"io"
+	"service/cache"
 	"service/model"
 	"strconv"
 
@@ -37,10 +38,15 @@ func (c *QRCodeController) Get(s *rest.Session) {
 		return
 	}
 	img := code.Image(int(size))
-	if c.Artifact.IconImage != nil {
+	if c.Artifact.Icon != "" {
+		iconImage, err := cache.GetImage(c.Artifact.Icon)
+		if err != nil {
+			s.Status(500, err)
+			return
+		}
 		percent := 20
 		logoSize := uint(float64(size) * float64(percent) / 100)
-		logoImage := resize.Resize(logoSize, logoSize, c.Artifact.IconImage, resize.Lanczos3)
+		logoImage := resize.Resize(logoSize, logoSize, iconImage, resize.Lanczos3)
 		img = c.overlayLogo(img, logoImage)
 	}
 	err = png.Encode(&buf, img)

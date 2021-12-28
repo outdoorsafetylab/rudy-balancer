@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"image"
 	"net/http"
 	"net/url"
 	"service/model"
@@ -72,22 +71,6 @@ func (db *DB) check(s log.Sugar) error {
 		s.Infof("Checking app: %s (%s)", app.ID, app.Name)
 		for _, a := range app.GetArtifacts() {
 			s.Infof("Checking artifact: %s (%s)", a.ID, a.Name)
-			if a.Icon != "" {
-				res, err := http.Get(a.Icon)
-				if err != nil {
-					s.Errorf("Failed to get icon: %s => %s: %s", a.GetPath(), a.Icon, err.Error())
-					return err
-				}
-				defer res.Body.Close()
-				img, _, err := image.Decode(res.Body)
-				if err != nil {
-					if err != nil {
-						s.Errorf("Failed to decode icon: %s => %s: %s", a.GetPath(), a.Icon, err.Error())
-						return err
-					}
-				}
-				a.IconImage = img
-			}
 			healthyUrls := make([]*url.URL, 0)
 			size := int64(0)
 			count := 0

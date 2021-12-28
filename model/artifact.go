@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"image"
 	"net/url"
 )
 
@@ -12,7 +11,6 @@ type Artifact struct {
 	ID            string
 	Name          string
 	Icon          string
-	IconImage     image.Image `json:"-"`
 	Scheme        string
 	File          string
 	Size          string
