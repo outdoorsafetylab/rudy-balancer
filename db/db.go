@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"service/model"
 
 	_ "image/jpeg"
@@ -61,6 +62,7 @@ func (db *DB) validate(s log.Sugar) error {
 			if a.File == "" {
 				return fmt.Errorf("Missing artifact file")
 			}
+			a.Ext = filepath.Ext(a.File)
 		}
 	}
 	return nil

@@ -13,6 +13,7 @@ type Artifact struct {
 	Icon          string
 	Scheme        string
 	File          string
+	Ext           string
 	Size          string
 	ContentLength int64
 	Healths       []*Health
@@ -20,5 +21,5 @@ type Artifact struct {
 }
 
 func (a *Artifact) GetPath() string {
-	return fmt.Sprintf("%s/%s/%s", a.App.ID, a.Variant.ID, a.ID)
+	return fmt.Sprintf("%s/%s/%s%s", a.App.ID, a.Variant.ID, a.ID, a.Ext)
 }

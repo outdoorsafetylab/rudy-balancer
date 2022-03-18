@@ -103,7 +103,7 @@
       </div>
     </main>
   </div>
-  <script src="https://unpkg.com/vue"></script>
+  <script src="https://unpkg.com/vue@2"></script>
   <script>
     new Vue({
       el: '#app',
@@ -176,10 +176,10 @@
         artifactURL(app, variant, artifact) {
           var host = document.location.host;
           var scheme = artifact.Scheme || document.location.protocol;
-          return scheme + '//' + host + '/v1/mirror/' + app.ID + '/' + variant.ID + '/' + artifact.ID;
+          return scheme + '//' + host + '/v1/mirror/' + app.ID + '/' + variant.ID + '/' + artifact.ID + artifact.Ext;
         },
         qrcodeURL(app, variant, artifact) {
-          return '/v1/qrcode/' + app.ID + '/' + variant.ID + '/' + artifact.ID + '?text=' + encodeURIComponent(this.artifactURL(app, variant, artifact));
+          return '/v1/qrcode/' + app.ID + '/' + variant.ID + '/' + artifact.ID + artifact.Ext + '?text=' + encodeURIComponent(this.artifactURL(app, variant, artifact));
         },
         humanFileSize(bytes, si = false, dp = 1) {
           const thresh = si ? 1000 : 1024;
