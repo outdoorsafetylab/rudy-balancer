@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"service/model"
+	"time"
 
 	_ "image/jpeg"
 	_ "image/png"
@@ -72,52 +73,63 @@ func (db *DB) check(s log.Sugar) error {
 	for _, app := range db.Apps {
 		s.Infof("Checking app: %s (%s)", app.ID, app.Name)
 		for _, a := range app.GetArtifacts() {
-			s.Infof("Checking artifact: %s (%s)", a.ID, a.Name)
-			healthyUrls := make([]*url.URL, 0)
-			size := int64(0)
-			count := 0
-			healths := make([]*model.Health, len(db.Sites))
-			for i, site := range db.Sites {
-				urls, err := site.GetURLs(a)
-				if err != nil {
-					s.Errorf("Failed to get URLs for health check: site=%s, artifact=%s", site.Name, a.GetPath())
-					return err
-				}
-				healthyCount := 0
-				for _, u := range urls {
-					s.Infof("Checking URL: %s", u)
-					res, err := http.Head(u.String())
-					if err != nil {
-						s.Errorf("Bad artifact: %s => %s: %s", a.GetPath(), u.String(), err.Error())
-						continue
-					}
-					defer res.Body.Close()
-					if res.StatusCode != 200 {
-						s.Errorf("Bad artifact: %s => %s: %s", a.GetPath(), u.String(), res.Status)
-						continue
-					}
-					size += res.ContentLength
-					count++
-					healthyCount++
-					healthyUrls = append(healthyUrls, u)
-					res.Body.Close()
-				}
-				health := &model.Health{
-					Site: site,
-				}
-				if healthyCount <= 0 {
-					health.Status = model.DEAD
-				} else if healthyCount == len(urls) {
-					health.Status = model.GOOD
-				} else {
-					health.Status = model.BAD
-				}
-				healths[i] = health
+			err := checkArtifact(s, a)
+			if err != nil {
+				return err
 			}
-			a.ContentLength = size / int64(count)
-			a.Healths = healths
-			a.HealthyURLs = healthyUrls
 		}
 	}
+	return nil
+}
+
+func checkArtifact(s log.Sugar, a *model.Artifact) error {
+	client := http.Client{
+		Timeout: 3 * time.Second,
+	}
+	s.Infof("Checking artifact: %s (%s)", a.ID, a.Name)
+	healthyUrls := make([]*url.URL, 0)
+	size := int64(0)
+	count := 0
+	healths := make([]*model.Health, len(db.Sites))
+	for i, site := range db.Sites {
+		urls, err := site.GetURLs(a)
+		if err != nil {
+			s.Errorf("Failed to get URLs for health check: site=%s, artifact=%s", site.Name, a.GetPath())
+			return err
+		}
+		healthyCount := 0
+		for _, u := range urls {
+			s.Infof("Checking URL: %s", u)
+			res, err := client.Head(u.String())
+			if err != nil {
+				s.Errorf("Bad artifact: %s => %s: %s", a.GetPath(), u.String(), err.Error())
+				continue
+			}
+			defer res.Body.Close()
+			if res.StatusCode != 200 {
+				s.Errorf("Bad artifact: %s => %s: %s", a.GetPath(), u.String(), res.Status)
+				continue
+			}
+			size += res.ContentLength
+			count++
+			healthyCount++
+			healthyUrls = append(healthyUrls, u)
+			res.Body.Close()
+		}
+		health := &model.Health{
+			Site: site,
+		}
+		if healthyCount <= 0 {
+			health.Status = model.DEAD
+		} else if healthyCount == len(urls) {
+			health.Status = model.GOOD
+		} else {
+			health.Status = model.BAD
+		}
+		healths[i] = health
+	}
+	a.ContentLength = size / int64(count)
+	a.Healths = healths
+	a.HealthyURLs = healthyUrls
 	return nil
 }
