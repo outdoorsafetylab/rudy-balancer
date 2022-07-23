@@ -9,6 +9,7 @@ import (
 	"service/mirror"
 	"service/model"
 	"service/statuspage"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -17,6 +18,11 @@ import (
 
 type HealthDao struct {
 	Context context.Context
+}
+
+type site struct {
+	Sources   map[string]*model.Source
+	LastCheck time.Time
 }
 
 func (dao *HealthDao) Apps() ([]*model.App, error) {
@@ -50,12 +56,12 @@ func (dao *HealthDao) Apps() ([]*model.App, error) {
 				continue
 			}
 		}
-		data := make(map[string]*model.Source)
-		err = doc.DataTo(&data)
+		site := &site{}
+		err = doc.DataTo(&site)
 		if err != nil {
 			return nil, err
 		}
-		for url, source := range data {
+		for url, source := range site.Sources {
 			sources[url] = source
 		}
 	}
@@ -102,10 +108,15 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 	}
 	client := &statuspage.Client{Client: http.DefaultClient, APIKey: cfg.GetString("statuspage.key")}
 	pageID := cfg.GetString("statuspage.page")
+	groupID := cfg.GetString("statuspage.group")
 	components, err := client.ListComponents(pageID)
 	if err != nil {
 		log.Errorf("Failed to list components: %s", err.Error())
 		return err
+	}
+	componentsByName := make(map[string]*statuspage.Component)
+	for _, comp := range components {
+		componentsByName[comp.Name] = comp
 	}
 	for name := range sites {
 		log.Debugf("Updating site: %s", name)
@@ -116,7 +127,10 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 				return err
 			}
 		}
-		data := make(map[string]*model.Source)
+		site := &site{
+			LastCheck: time.Now(),
+			Sources:   make(map[string]*model.Source),
+		}
 		goods := 0
 		total := 0
 		for _, a := range artifacts {
@@ -124,7 +138,7 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 				if name != s.Site.Name {
 					continue
 				}
-				data[s.URL.String()] = s
+				site.Sources[s.URL.String()] = s
 				total++
 				switch s.Status {
 				case model.GOOD:
@@ -132,28 +146,31 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 				}
 			}
 		}
-		_, err = doc.Ref.Set(dao.Context, &data)
+		_, err = doc.Ref.Set(dao.Context, site)
 		if err != nil {
 			return err
 		}
-		for _, comp := range components {
-			if comp.Name != name {
-				continue
-			}
-			var status string
-			percentage := 100.0 * goods / total
-			if percentage >= 100 {
-				status = "operational"
-			} else if percentage <= 0 {
-				status = "major_outage"
-			} else {
-				status = "partial_outage"
-			}
-			log.Debugf("Updating status: %s => %s", name, status)
-			err = client.UpdateComponentStatus(comp, status)
+		comp := componentsByName[name]
+		if comp == nil {
+			log.Warnf("Creating component: %s", name)
+			comp, err = client.CreateComponent(pageID, groupID, name)
 			if err != nil {
 				return err
 			}
+		}
+		var status string
+		percentage := 100.0 * goods / total
+		if percentage >= 100 {
+			status = "operational"
+		} else if percentage <= 0 {
+			status = "major_outage"
+		} else {
+			status = "partial_outage"
+		}
+		log.Debugf("Updating status: %s => %s", name, status)
+		err = client.UpdateComponentStatus(comp, status)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -161,13 +178,15 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 
 func (dao *HealthDao) GetURLs(artifact *model.Artifact) ([]*url.URL, error) {
 	cfg := config.Get()
-	sites := make(map[string]map[string]*model.Source)
+	sites := make(map[string]*site)
 	weights := make(map[string]int)
 	for _, src := range artifact.Sources {
 		if sites[src.Site.Name] != nil {
 			continue
 		}
-		sites[src.Site.Name] = make(map[string]*model.Source)
+		sites[src.Site.Name] = &site{
+			Sources: make(map[string]*model.Source),
+		}
 		weights[src.Site.Name] = src.Site.Weight
 	}
 	for name, site := range sites {
@@ -178,7 +197,7 @@ func (dao *HealthDao) GetURLs(artifact *model.Artifact) ([]*url.URL, error) {
 			continue
 		}
 		if doc.Exists() {
-			err = doc.DataTo(&site)
+			err = doc.DataTo(site)
 			if err != nil {
 				return nil, err
 			}
@@ -191,13 +210,13 @@ func (dao *HealthDao) GetURLs(artifact *model.Artifact) ([]*url.URL, error) {
 			log.Warnf("Site not found for %s: %s", source.URL.String(), source.Site.Name)
 			continue
 		}
-		saved := site[source.URL.String()]
-		if saved == nil {
+		src := site.Sources[source.URL.String()]
+		if src == nil {
 			log.Warnf("Health check record not found for %s", source.URL.String())
 			continue
 		}
 		weight := weights[source.Site.Name]
-		switch saved.Status {
+		switch src.Status {
 		case model.GOOD:
 			for i := 0; i < weight; i++ {
 				urls = append(urls, source.URL)

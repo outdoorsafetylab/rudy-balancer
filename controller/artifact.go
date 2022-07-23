@@ -22,7 +22,7 @@ func (c *ArtifactController) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if urls == nil || len(urls) <= 0 {
-		log.Warningf("No available sources: %s (%s)", c.Artifact.File, c.Artifact.File)
+		log.Warningf("No available sources: %s", c.Artifact.File)
 		http.Error(w, err.Error(), 501)
 		return
 	}

@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -39,7 +40,7 @@ func (c *Client) request(method, uri string, reqData, resData interface{}) error
 		return err
 	}
 	defer res.Body.Close()
-	if res.StatusCode != 200 {
+	if res.StatusCode < 300 {
 		str, err := ioutil.ReadAll(res.Body)
 		if err == nil {
 			log.Debugf("%s", str)
@@ -62,6 +63,28 @@ func (c *Client) ListComponents(pageID string) ([]*Component, error) {
 		return nil, err
 	}
 	return list, nil
+}
+
+func (c *Client) CreateComponent(pageID, groupId, name string) (*Component, error) {
+	comp := &Component{}
+	data := &struct {
+		GroupID   string `json:"group_id"`
+		Name      string `json:"name"`
+		StartDate string `json:"start_date"`
+	}{
+		GroupID:   groupId,
+		Name:      name,
+		StartDate: time.Now().Add(-time.Hour * 24).Format("2006-01-02"),
+	}
+	err := c.request("POST", fmt.Sprintf("/v1/pages/%s/components", pageID), &struct {
+		Component interface{} `json:"component"`
+	}{
+		Component: data,
+	}, comp)
+	if err != nil {
+		return nil, err
+	}
+	return comp, nil
 }
 
 func (c *Client) UpdateComponentStatus(comp *Component, status string) error {
