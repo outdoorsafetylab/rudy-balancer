@@ -1,0 +1,7 @@
+port: 8080
+endpoint: /v1
+webroot: /webroot
+mirrors:
+  file: /mirrors.yaml
+firestore:
+  collection: RudyMirrors

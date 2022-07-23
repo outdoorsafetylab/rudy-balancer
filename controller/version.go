@@ -1,24 +1,24 @@
 package controller
 
 import (
+	"encoding/json"
+	"net/http"
 	"service/api"
 	"service/version"
-	"time"
-
-	"github.com/crosstalkio/rest"
 )
 
 type ConfigController struct{}
 
-func (c *ConfigController) Get(s *rest.Session) {
-	v := version.Get()
+func (c *ConfigController) GetVersion(w http.ResponseWriter, r *http.Request) {
 	res := &api.GetVersionResponse{
-		Time: &api.GetVersionResponse_Time{
-			Epoch:   v.Time.Unix(),
-			Rfc3339: v.Time.Format(time.RFC3339),
-		},
-		Commit: v.Commit,
-		Tag:    v.Tag,
+		Commit: version.GitHash,
+		Tag:    version.GitTag,
 	}
-	s.Status(200, res)
+	enc := json.NewEncoder(w)
+	err := enc.Encode(res)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
 }

@@ -3,11 +3,6 @@ package api;
 option go_package = "./api";
 
 message GetVersionResponse {
-    message Time {
-        int64 epoch = 1;
-        string rfc3339 = 2;
-    }
-    Time time = 1;
     string tag = 2;
     string commit = 3;
 }

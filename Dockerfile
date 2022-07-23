@@ -1,4 +1,4 @@
-FROM golang:1.15-alpine as builder
+FROM golang:1.15-alpine as go-builder
 
 RUN apk update \
     && apk upgrade \
@@ -12,10 +12,8 @@ COPY . /src/
 WORKDIR /src/
 
 ARG GIT_HASH
-ARG GIT_TAG
-RUN make clean \
-    && make tidy \
-    && make GIT_HASH=${GIT_HASH} GIT_TAG=${GIT_TAG}
+ARG GIT_TAGGIT_TAG
+RUN go build -ldflags="-X service/version.GitHash=${GIT_HASH} -X service/version.GitTag=${GIT_TAG}" -o serviced .
 
 FROM alpine:3.12
 
@@ -24,17 +22,12 @@ RUN apk update \
     && apk add --no-cache \
     && rm -rf /var/cache/apk/* /tmp/*
 
-COPY --from=builder /src/serviced /usr/sbin/
+COPY --from=go-builder /src/serviced /usr/sbin/
 RUN mkdir -p /etc/serviced/
-COPY .docker/entrypoint.sh /
-COPY config.yaml /
-COPY mirrors.yaml /
+COPY config/docker.yaml /
+COPY config/mirrors.yaml /
 COPY webroot /webroot
-
-ENV GEOIP2_LICENSE_KEY=
 
 EXPOSE 8080
 
-VOLUME ["/var/lib/serviced"]
-
-CMD ["/entrypoint.sh"]
+ENTRYPOINT [ "/usr/sbin/serviced", "-e", "docker", "-w", "/webroot" ]

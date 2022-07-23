@@ -9,11 +9,13 @@ BUILD_TIME ?= $(shell date +'%s')
 GIT_HASH ?= $(shell git rev-parse --short HEAD)
 GIT_TAG ?= $(shell git describe --tags --exact-match 2>/dev/null || echo "")
 
+IMAGE_NAME := outdoorsafetylab/rudy-balancer
+
 VARS :=
 VARS += BuildTime=$(BUILD_TIME)
 VARS += GitHash=$(GIT_HASH)
 VARS += GitTag=$(GIT_TAG)
-LDFLAGS := $(addprefix -X version.,$(VARS))
+LDFLAGS := $(addprefix -X service/version.,$(VARS))
 
 all: $(EXEC)
 
@@ -24,7 +26,7 @@ include .make/watcher.mk
 include .make/docker.mk
 
 watch: $(PBGO) $(WEBINDEX) $(WATCHER) tidy
-	$(realpath $(WATCHER)) -c local
+	$(realpath $(WATCHER))
 
 tidy: $(PBGO)
 	go mod tidy

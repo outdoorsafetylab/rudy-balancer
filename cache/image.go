@@ -3,6 +3,7 @@ package cache
 import (
 	"bytes"
 	"image"
+	"image/jpeg"
 	"io/ioutil"
 	"net/http"
 )
@@ -29,7 +30,10 @@ func GetImage(url string) (image.Image, error) {
 	}
 	img, _, err := image.Decode(bytes.NewBuffer(data))
 	if err != nil {
-		return nil, err
+		img, err = jpeg.Decode(bytes.NewBuffer(data))
+		if err != nil {
+			return nil, err
+		}
 	}
 	return img, nil
 }

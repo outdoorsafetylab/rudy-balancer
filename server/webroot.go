@@ -5,69 +5,51 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
-
-	"github.com/crosstalkio/log"
 )
 
 type webrootHandler struct {
-	log.Sugar
-	webroot string
+	path string
 }
 
 func (h *webrootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Cache-Control", "no-cache")
-	w.Header().Add("Cache-Control", "no-store")
-	w.Header().Set("Pragma", "no-cache")
-	path := fmt.Sprintf("%s%s", h.webroot, r.URL.Path)
-	_, err := os.Stat(path)
-	if err == nil {
-		sum := sha1sum(path)
-		if sum != "" {
-			match := r.Header.Get("If-None-Match")
-			if match == sum {
-				w.WriteHeader(304)
-				return
-			} else {
-				w.Header().Set("ETag", sum)
-			}
-		}
-		http.FileServer(http.Dir(h.webroot)).ServeHTTP(w, r)
-	} else {
-		var data []byte
-		f, err := os.Open(fmt.Sprintf("%s/index.html", h.webroot))
-		if err != nil {
-			h.Errorf("Failed to open index page: %s", err.Error())
-			w.WriteHeader(500)
-			return
-		}
-		data, err = ioutil.ReadAll(f)
-		if err != nil {
-			h.Errorf("Failed to read index page: %s", err.Error())
-			w.WriteHeader(500)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html")
-		_, err = w.Write(data)
-		if err != nil {
-			h.Errorf("Failed to write index page: %s", err.Error())
-			w.WriteHeader(500)
-			return
-		}
+	path := fmt.Sprintf("%s%s", h.path, r.URL.Path)
+	st, err := os.Stat(path)
+	if err != nil || st.IsDir() {
+		path = fmt.Sprintf("%s/index.html", h.path)
 	}
+	sum, err := sha1sum(path)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	match := r.Header.Get("If-None-Match")
+	if match == sum {
+		w.WriteHeader(304)
+		return
+	}
+	w.Header().Set("ETag", sum)
+	http.ServeFile(w, r, path)
 }
 
-func sha1sum(path string) string {
+var sha1sumCache = map[string]string{}
+
+func sha1sum(path string) (string, error) {
+	sum := sha1sumCache[path]
+	if sum != "" {
+		return sum, nil
+	}
 	f, err := os.Open(path)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	defer f.Close()
 	h := sha1.New()
 	if _, err := io.Copy(h, f); err != nil {
-		return ""
+		return "", err
 	}
-	return hex.EncodeToString(h.Sum(nil))
+	sum = hex.EncodeToString(h.Sum(nil))
+	sha1sumCache[path] = sum
+	return sum, nil
 }
