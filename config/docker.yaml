@@ -4,4 +4,5 @@ webroot: /webroot
 mirrors:
   file: /mirrors.yaml
 firestore:
+  project_id: "*detect-project-id*"
   collection: RudyMirrors
