@@ -157,12 +157,12 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 
 func (dao *HealthDao) GetAvailableURLs(artifact *model.Artifact) ([]*url.URL, error) {
 	cfg := config.Get()
-	sites := make(map[string]map[string]string)
+	sites := make(map[string]map[string]*model.Source)
 	for _, src := range artifact.Sources {
 		if sites[src.Site.Name] != nil {
 			continue
 		}
-		sites[src.Site.Name] = make(map[string]string)
+		sites[src.Site.Name] = make(map[string]*model.Source)
 	}
 	for name, site := range sites {
 		log.Debugf("Getting site status: %s", name)
@@ -182,8 +182,18 @@ func (dao *HealthDao) GetAvailableURLs(artifact *model.Artifact) ([]*url.URL, er
 	}
 	urls := make([]*url.URL, 0)
 	for _, source := range artifact.Sources {
-		switch sites[source.Site.Name][source.URL.String()] {
-		case "GOOD":
+		site := sites[source.Site.Name]
+		if site == nil {
+			log.Warnf("Site not found for %s: %s", source.URL.String(), source.Site.Name)
+			continue
+		}
+		saved := site[source.URL.String()]
+		if saved == nil {
+			log.Warnf("Health check record not found for %s", source.URL.String())
+			continue
+		}
+		switch saved.Status {
+		case model.GOOD:
 			urls = append(urls, source.URL)
 		}
 	}

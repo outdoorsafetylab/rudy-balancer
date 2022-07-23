@@ -33,6 +33,6 @@ func (c *ArtifactController) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	u := urls[rand.Intn(len(urls))]
-	log.Warningf("Redircting: %s (%s) => %s", c.Artifact.File, c.Artifact.File, u.String())
+	log.Warningf("Redircting: %s => %s", c.Artifact.File, u.String())
 	http.Redirect(w, r, u.String(), 302)
 }
