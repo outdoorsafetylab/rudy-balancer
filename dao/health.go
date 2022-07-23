@@ -217,7 +217,6 @@ func (dao *HealthDao) GetURLs(artifact *model.Artifact) ([]*url.URL, error) {
 			Sources: make(map[string]*model.Source),
 		}
 	}
-	var maxLatency time.Duration
 	for name, site := range sites {
 		log.Debugf("Getting site status: %s", name)
 		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(name).Get(dao.Context)
@@ -230,36 +229,41 @@ func (dao *HealthDao) GetURLs(artifact *model.Artifact) ([]*url.URL, error) {
 			if err != nil {
 				return nil, err
 			}
-			if site.Latency > maxLatency {
-				maxLatency = site.Latency
-			}
+		}
+	}
+	var maxLatency time.Duration
+	for _, src := range artifact.Sources {
+		site := sites[src.Site.Name]
+		if site == nil {
+			continue
+		}
+		s := site.Sources[src.URL.String()]
+		if s == nil {
+			continue
+		}
+		src.Latency = s.Latency
+		if s.Latency > maxLatency {
+			maxLatency = s.Latency
 		}
 	}
 	weights := make(map[string]int)
-	for name, site := range sites {
-		if site.Latency <= 0 {
+	for _, src := range artifact.Sources {
+		if src.Site.Hidden {
 			continue
 		}
-		weights[name] = int(math.Max(1.0, 100.0*float64(maxLatency)/float64(site.Latency)))
+		if src.Latency <= 0 {
+			continue
+		}
+		weights[src.URL.String()] = int(math.Max(1.0, 100.0*float64(maxLatency)/float64(src.Latency)))
 	}
-	log.Debugf("Site weights: %v", weights)
+	log.Debugf("URL weights: %v", weights)
 	urls := make([]*url.URL, 0)
-	for _, source := range artifact.Sources {
-		site := sites[source.Site.Name]
-		if site == nil {
-			log.Warnf("Site not found for %s: %s", source.URL.String(), source.Site.Name)
-			continue
-		}
-		src := site.Sources[source.URL.String()]
-		if src == nil {
-			log.Warnf("Health check record not found for %s", source.URL.String())
-			continue
-		}
-		weight := weights[source.Site.Name]
+	for _, src := range artifact.Sources {
+		weight := weights[src.URL.String()]
 		switch src.Status {
 		case model.GOOD:
 			for i := 0; i < weight; i++ {
-				urls = append(urls, source.URL)
+				urls = append(urls, src.URL)
 			}
 		}
 	}
