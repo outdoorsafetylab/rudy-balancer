@@ -3,6 +3,7 @@ endpoint: /v1
 webroot: /webroot
 mirrors:
   file: /mirrors.yaml
+  default_scheme: "https:"
 firestore:
   project_id: "*detect-project-id*"
   collection: RudyMirrors

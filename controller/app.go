@@ -17,16 +17,13 @@ func (c *AppController) List(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	prefix := config.Get().GetString("endpoint")
+	cfg := config.Get()
+	prefix := cfg.GetString("endpoint")
 	for _, app := range apps {
 		for _, v := range app.Variants {
 			for _, a := range v.Artifacts {
 				if a.Scheme == "" {
-					if r.TLS == nil {
-						a.Scheme = "http:"
-					} else {
-						a.Scheme = "https:"
-					}
+					a.Scheme = cfg.GetString("mirrors.default_scheme")
 				}
 				a.URL = fmt.Sprintf("%s//%s%s/%s", a.Scheme, r.Host, prefix, a.File)
 			}
