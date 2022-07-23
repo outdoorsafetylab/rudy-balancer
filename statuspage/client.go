@@ -111,7 +111,7 @@ func (c *Client) CreateIncident(pageID, componentID, name string) (*Incident, er
 		ComponentIDs []string `json:"component_ids"`
 	}{
 		Name:         name,
-		Status:       "identified",
+		Status:       "investigating",
 		ComponentIDs: []string{componentID},
 	}
 	incident := &Incident{}
