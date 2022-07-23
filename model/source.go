@@ -14,7 +14,7 @@ type Source struct {
 	LastModified     time.Time `json:"-"`
 	LastModifiedUnix int64     `json:"LastModified" firestore:"-"`
 	Size             int64
-	Latency          int64
+	Latency          time.Duration
 }
 
 func (s *Source) Check(client *http.Client) error {
@@ -32,7 +32,7 @@ func (s *Source) Check(client *http.Client) error {
 	}
 	s.Status = GOOD
 	s.Size = res.ContentLength
-	s.Latency = int64(duration)
+	s.Latency = (s.Latency + duration) / 2
 	s.LastModified, _ = http.ParseTime(res.Header.Get("Last-Modified"))
 	s.LastModifiedUnix = s.LastModified.Unix()
 	if s.LastModifiedUnix < 0 {

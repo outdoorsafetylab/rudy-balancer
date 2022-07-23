@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"service/config"
@@ -24,6 +25,7 @@ type HealthDao struct {
 type site struct {
 	Sources   map[string]*model.Source
 	LastCheck time.Time
+	Latency   time.Duration
 }
 
 func (dao *HealthDao) Apps() ([]*model.App, error) {
@@ -79,6 +81,7 @@ func (dao *HealthDao) Apps() ([]*model.App, error) {
 					}
 					s.Status = ss.Status
 					s.Size = ss.Size
+					s.Latency = ss.Latency
 					s.LastModified = ss.LastModified
 					s.LastModifiedUnix = s.LastModified.Unix()
 					if s.LastModifiedUnix < 0 {
@@ -119,7 +122,7 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 	for _, comp := range components {
 		componentsByName[comp.Name] = comp
 	}
-	for name := range sites {
+	for name, s := range sites {
 		log.Debugf("Updating site: %s", name)
 		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(name).Get(dao.Context)
 		if err != nil {
@@ -133,6 +136,7 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 			Sources:   make(map[string]*model.Source),
 		}
 		goods := make([]string, 0)
+		var latency time.Duration
 		bads := make([]string, 0)
 		for _, a := range artifacts {
 			for _, s := range a.Sources {
@@ -144,14 +148,21 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 				switch s.Status {
 				case model.GOOD:
 					goods = append(goods, url)
+					latency += s.Latency
 				case model.BAD:
 					bads = append(bads, url)
 				}
 			}
 		}
+		if len(goods) > 0 {
+			site.Latency = latency / time.Duration(len(goods))
+		}
 		_, err = doc.Ref.Set(dao.Context, site)
 		if err != nil {
 			return err
+		}
+		if s.Hidden {
+			continue
 		}
 		comp := componentsByName[name]
 		if comp == nil {
@@ -195,16 +206,18 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 func (dao *HealthDao) GetURLs(artifact *model.Artifact) ([]*url.URL, error) {
 	cfg := config.Get()
 	sites := make(map[string]*site)
-	weights := make(map[string]int)
 	for _, src := range artifact.Sources {
+		if src.Site.Hidden {
+			continue
+		}
 		if sites[src.Site.Name] != nil {
 			continue
 		}
 		sites[src.Site.Name] = &site{
 			Sources: make(map[string]*model.Source),
 		}
-		weights[src.Site.Name] = src.Site.Weight
 	}
+	var maxLatency time.Duration
 	for name, site := range sites {
 		log.Debugf("Getting site status: %s", name)
 		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(name).Get(dao.Context)
@@ -217,8 +230,19 @@ func (dao *HealthDao) GetURLs(artifact *model.Artifact) ([]*url.URL, error) {
 			if err != nil {
 				return nil, err
 			}
+			if site.Latency > maxLatency {
+				maxLatency = site.Latency
+			}
 		}
 	}
+	weights := make(map[string]int)
+	for name, site := range sites {
+		if site.Latency <= 0 {
+			continue
+		}
+		weights[name] = int(math.Max(1.0, 100.0*float64(maxLatency)/float64(site.Latency)))
+	}
+	log.Debugf("Site weights: %v", weights)
 	urls := make([]*url.URL, 0)
 	for _, source := range artifact.Sources {
 		site := sites[source.Site.Name]

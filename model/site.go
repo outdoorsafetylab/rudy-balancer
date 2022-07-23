@@ -7,7 +7,7 @@ import (
 
 type Site struct {
 	Name     string
-	Weight   int
+	Hidden   bool
 	Endpoint string `json:"-"`
 	Scheme   string `json:"-"`
 }
