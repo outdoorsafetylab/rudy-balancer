@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -109,12 +110,12 @@ func (c *Client) CreateIncident(pageID, componentID, name string, affectedUrls [
 		Name         string   `json:"name"`
 		Status       string   `json:"status"`
 		ComponentIDs []string `json:"component_ids"`
-		Metadata     map[string]interface{}
+		Body         string   `json:"body"`
 	}{
 		Name:         name,
 		Status:       "investigating",
 		ComponentIDs: []string{componentID},
-		Metadata:     map[string]interface{}{"affected_urls": affectedUrls},
+		Body:         fmt.Sprintf("Affected URLs: %s", strings.Join(affectedUrls, ", ")),
 	}
 	incident := &Incident{}
 	err := c.request("POST", fmt.Sprintf("/v1/pages/%s/incidents", pageID), &struct {
