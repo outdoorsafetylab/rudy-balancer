@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"service/config"
@@ -171,6 +172,19 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 		err = client.UpdateComponentStatus(comp, status)
 		if err != nil {
 			return err
+		}
+		if comp.Status == "operational" && status != comp.Status {
+			log.Warnf("Creating incident due to %s is down", name)
+			_, err = client.CreateIncident(pageID, comp.ID, fmt.Sprintf("%s is not operational.", name))
+			if err != nil {
+				return err
+			}
+		} else if status == "operational" && status != comp.Status {
+			log.Warnf("Resolving incident due to %s is back", name)
+			err = client.ResolveIncidents(pageID, comp.ID)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

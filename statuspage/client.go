@@ -40,7 +40,7 @@ func (c *Client) request(method, uri string, reqData, resData interface{}) error
 		return err
 	}
 	defer res.Body.Close()
-	if res.StatusCode < 300 {
+	if res.StatusCode >= 300 {
 		str, err := ioutil.ReadAll(res.Body)
 		if err == nil {
 			log.Debugf("%s", str)
@@ -66,7 +66,6 @@ func (c *Client) ListComponents(pageID string) ([]*Component, error) {
 }
 
 func (c *Client) CreateComponent(pageID, groupId, name string) (*Component, error) {
-	comp := &Component{}
 	data := &struct {
 		GroupID   string `json:"group_id"`
 		Name      string `json:"name"`
@@ -76,6 +75,7 @@ func (c *Client) CreateComponent(pageID, groupId, name string) (*Component, erro
 		Name:      name,
 		StartDate: time.Now().Add(-time.Hour * 24).Format("2006-01-02"),
 	}
+	comp := &Component{}
 	err := c.request("POST", fmt.Sprintf("/v1/pages/%s/components", pageID), &struct {
 		Component interface{} `json:"component"`
 	}{
@@ -90,15 +90,77 @@ func (c *Client) CreateComponent(pageID, groupId, name string) (*Component, erro
 func (c *Client) UpdateComponentStatus(comp *Component, status string) error {
 	data := struct {
 		Status string `json:"status"`
-		// StartDate string `json:"start_date"`
 	}{
 		Status: status,
-		// StartDate: "2022-07-22",
 	}
 	err := c.request("PATCH", fmt.Sprintf("/v1/pages/%s/components/%s", comp.PageID, comp.ID), &struct {
 		Component interface{} `json:"component"`
 	}{
 		Component: data,
+	}, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) CreateIncident(pageID, componentID, name string) (*Incident, error) {
+	data := &struct {
+		Name         string   `json:"name"`
+		Status       string   `json:"status"`
+		ComponentIDs []string `json:"component_ids"`
+	}{
+		Name:         name,
+		Status:       "identified",
+		ComponentIDs: []string{componentID},
+	}
+	incident := &Incident{}
+	err := c.request("POST", fmt.Sprintf("/v1/pages/%s/incidents", pageID), &struct {
+		Incident interface{} `json:"incident"`
+	}{
+		Incident: data,
+	}, incident)
+	if err != nil {
+		return nil, err
+	}
+	return incident, nil
+}
+
+func (c *Client) ResolveIncidents(pageID, componentID string) error {
+	incidents, err := c.listUnresolvedIncidents(pageID)
+	if err != nil {
+		return err
+	}
+	for _, i := range incidents {
+		if len(i.Components) > 0 && i.Components[0].ID == componentID {
+			err = c.updateIncidentStatus(i, "resolved")
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (c *Client) listUnresolvedIncidents(pageID string) ([]*Incident, error) {
+	list := make([]*Incident, 0)
+	err := c.request("GET", fmt.Sprintf("/v1/pages/%s/incidents/unresolved", pageID), nil, &list)
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+func (c *Client) updateIncidentStatus(incident *Incident, status string) error {
+	data := struct {
+		Status string `json:"status"`
+	}{
+		Status: status,
+	}
+	err := c.request("PATCH", fmt.Sprintf("/v1/pages/%s/incidents/%s", incident.PageID, incident.ID), &struct {
+		Incident interface{} `json:"incident"`
+	}{
+		Incident: data,
 	}, nil)
 	if err != nil {
 		return err

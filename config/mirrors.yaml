@@ -3,7 +3,7 @@ sites:
   endpoint: rudy.basecamp.tw
   scheme: https
   weight: 1
-- name: KCWu
+- name: KC Wu
   endpoint: moi.kcwu.csie.org
   scheme: https
   weight: 2
