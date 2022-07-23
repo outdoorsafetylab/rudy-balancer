@@ -104,15 +104,17 @@ func (c *Client) UpdateComponentStatus(comp *Component, status string) error {
 	return nil
 }
 
-func (c *Client) CreateIncident(pageID, componentID, name string) (*Incident, error) {
+func (c *Client) CreateIncident(pageID, componentID, name string, affectedUrls []string) (*Incident, error) {
 	data := &struct {
 		Name         string   `json:"name"`
 		Status       string   `json:"status"`
 		ComponentIDs []string `json:"component_ids"`
+		Metadata     map[string]interface{}
 	}{
 		Name:         name,
 		Status:       "investigating",
 		ComponentIDs: []string{componentID},
+		Metadata:     map[string]interface{}{"affected_urls": affectedUrls},
 	}
 	incident := &Incident{}
 	err := c.request("POST", fmt.Sprintf("/v1/pages/%s/incidents", pageID), &struct {

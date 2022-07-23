@@ -132,18 +132,20 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 			LastCheck: time.Now(),
 			Sources:   make(map[string]*model.Source),
 		}
-		goods := 0
-		total := 0
+		goods := make([]string, 0)
+		bads := make([]string, 0)
 		for _, a := range artifacts {
 			for _, s := range a.Sources {
 				if name != s.Site.Name {
 					continue
 				}
-				site.Sources[s.URL.String()] = s
-				total++
+				url := s.URL.String()
+				site.Sources[url] = s
 				switch s.Status {
 				case model.GOOD:
-					goods++
+					goods = append(goods, url)
+				case model.BAD:
+					bads = append(bads, url)
 				}
 			}
 		}
@@ -160,7 +162,7 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 			}
 		}
 		var status string
-		percentage := 100.0 * goods / total
+		percentage := 100.0 * len(goods) / (len(goods) + len(bads))
 		if percentage >= 100 {
 			status = "operational"
 		} else if percentage <= 0 {
@@ -174,8 +176,8 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 			return err
 		}
 		if comp.Status == "operational" && status != comp.Status {
-			log.Warnf("Creating incident due to %s is down", name)
-			_, err = client.CreateIncident(pageID, comp.ID, fmt.Sprintf("%s is not operational.", name))
+			log.Warnf("Creating incident due to %s is not operational", name)
+			_, err = client.CreateIncident(pageID, comp.ID, fmt.Sprintf("%s is not operational.", name), bads)
 			if err != nil {
 				return err
 			}
