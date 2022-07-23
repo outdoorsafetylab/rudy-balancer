@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"math/rand"
 	"net/http"
 	"service/dao"
@@ -15,14 +14,9 @@ type ArtifactController struct {
 	URI      string
 }
 
-func (c *ArtifactController) URL(w http.ResponseWriter, r *http.Request) {
-	url := fmt.Sprintf("%s//%s%s", c.Artifact.Scheme, r.Host, c.URI)
-	http.Error(w, url, 200)
-}
-
 func (c *ArtifactController) Download(w http.ResponseWriter, r *http.Request) {
 	dao := &dao.HealthDao{Context: r.Context()}
-	urls, err := dao.GetAvailableURLs(c.Artifact)
+	urls, err := dao.GetURLs(c.Artifact)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return

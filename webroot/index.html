@@ -82,7 +82,7 @@
                 <div class="card-body">
                   <h5 class="card-title">{{artifact.Name}}</h5>
                   <div>
-                    <span v-for="source in artifact.Sources" style="padding-right: 2pt;"><span v-bind:class="badgeClasses(source.Status)">{{source.Site.Name}}</span></span>
+                    <span v-for="source in artifact.Sources" style="padding-right: 2pt;"><span v-bind:class="badgeClasses(source)">{{source.Site.Name}}</span></span>
                   </div>
                   <div class="input-group mb-3">
                     <textarea rows="4" class="form-control" onfocus="this.select();"
@@ -192,8 +192,12 @@
           } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
           return bytes.toFixed(dp) + ' ' + units[u];
         },
-        badgeClasses(status) {
-          switch (status) {
+        badgeClasses(source) {
+          console.log("Source:", source);
+          if (source.Site.Weight <= 0) {
+            return 'd-none';
+          }
+          switch (source.Status) {
             case 0:
               return 'badge bg-success mb-1';
             case 1:

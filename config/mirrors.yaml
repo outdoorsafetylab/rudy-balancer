@@ -1,13 +1,20 @@
 sites:
 - name: Rex
-  endpoint: rudy.basecamp.tw/
+  endpoint: rudy.basecamp.tw
   scheme: https
+  weight: 1
 - name: KCWu
-  endpoint: moi.kcwu.csie.org/
+  endpoint: moi.kcwu.csie.org
   scheme: https
+  weight: 2
 - name: Happyman
-  endpoint: map.happyman.idv.tw/rudy/
+  endpoint: map.happyman.idv.tw/rudy
   scheme: https
+  weight: 1
+- name: Map Manager
+  endpoint: d3r5lsn28erp7o.cloudfront.net
+  scheme: https
+  weight: 0
 apps:
 - id: gts
   name: 綠野遊蹤

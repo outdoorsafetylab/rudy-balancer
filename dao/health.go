@@ -43,8 +43,12 @@ func (dao *HealthDao) Apps() ([]*model.App, error) {
 		log.Debugf("Getting site status: %s", name)
 		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(name).Get(dao.Context)
 		if err != nil {
-			log.Errorf("Failed to get site %s: %s", name, err.Error())
-			return nil, err
+			if status.Code(err) != codes.NotFound {
+				log.Errorf("Failed to get site %s: %s", name, err.Error())
+				return nil, err
+			} else {
+				continue
+			}
 		}
 		data := make(map[string]*model.Source)
 		err = doc.DataTo(&data)
@@ -155,23 +159,23 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 	return nil
 }
 
-func (dao *HealthDao) GetAvailableURLs(artifact *model.Artifact) ([]*url.URL, error) {
+func (dao *HealthDao) GetURLs(artifact *model.Artifact) ([]*url.URL, error) {
 	cfg := config.Get()
 	sites := make(map[string]map[string]*model.Source)
+	weights := make(map[string]int)
 	for _, src := range artifact.Sources {
 		if sites[src.Site.Name] != nil {
 			continue
 		}
 		sites[src.Site.Name] = make(map[string]*model.Source)
+		weights[src.Site.Name] = src.Site.Weight
 	}
 	for name, site := range sites {
 		log.Debugf("Getting site status: %s", name)
 		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(name).Get(dao.Context)
 		if err != nil {
-			if status.Code(err) != codes.NotFound {
-				log.Errorf("Failed to get site %s: %s", name, err.Error())
-				return nil, err
-			}
+			log.Warnf("Failed to get site %s: %s", name, err.Error())
+			continue
 		}
 		if doc.Exists() {
 			err = doc.DataTo(&site)
@@ -192,9 +196,12 @@ func (dao *HealthDao) GetAvailableURLs(artifact *model.Artifact) ([]*url.URL, er
 			log.Warnf("Health check record not found for %s", source.URL.String())
 			continue
 		}
+		weight := weights[source.Site.Name]
 		switch saved.Status {
 		case model.GOOD:
-			urls = append(urls, source.URL)
+			for i := 0; i < weight; i++ {
+				urls = append(urls, source.URL)
+			}
 		}
 	}
 	return urls, nil

@@ -48,7 +48,7 @@ func load() (*metadata, error) {
 				a.Variant = v
 				a.Sources = make([]*model.Source, 0)
 				for _, s := range meta.Sites {
-					u, err := url.Parse(fmt.Sprintf("%s://%s%s", s.Scheme, s.Endpoint, a.File))
+					u, err := url.Parse(fmt.Sprintf("%s://%s/%s", s.Scheme, s.Endpoint, a.File))
 					if err != nil {
 						return nil, err
 					}
