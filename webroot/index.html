@@ -194,7 +194,7 @@
         },
         badgeClasses(source) {
           console.log("Source:", source);
-          if (source.Site.Weight <= 0) {
+          if (source.Site.Hidden) {
             return 'd-none';
           }
           switch (source.Status) {
