@@ -2,40 +2,43 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
-	"service/db"
+
+	"service/firestore"
 	"service/server"
 
 	"service/config"
-	"service/log"
+
+	log "github.com/sirupsen/logrus"
 )
 
+var arguments = &struct {
+	environment string
+	webroot     string
+}{
+	environment: "local",
+	webroot:     "webroot",
+}
+
 func main() {
-	name := flag.String("c", "config", "config")
-	flag.Usage = func() {
-		fmt.Printf("Usage: %s -c <config name>\n", os.Args[0])
-		os.Exit(1)
-	}
+	flag.StringVar(&arguments.environment, "e", arguments.environment, "Environemnt")
+	flag.StringVar(&arguments.webroot, "w", arguments.webroot, "Web root")
 	flag.Parse()
-	if err := config.Init(*name); err != nil {
+	if err := config.Init(arguments.environment); err != nil {
 		os.Exit(1)
 	}
-	err := log.Init()
+	log.SetLevel(log.TraceLevel)
+	err := firestore.Init()
 	if err != nil {
 		os.Exit(-1)
 	}
-	s := log.GetSugar()
-	err = db.Init(s)
-	if err != nil {
-		os.Exit(-1)
-	}
-	defer db.Deinit(s)
-	server := server.New(s)
-	err = server.Run()
+	defer firestore.Deinit()
+	server := server.New()
+	err = server.Run(arguments.webroot)
 	if err == nil {
 		os.Exit(0)
 	} else {
+		log.Errorf("Failed to run: %s", err.Error())
 		os.Exit(-1)
 	}
 }

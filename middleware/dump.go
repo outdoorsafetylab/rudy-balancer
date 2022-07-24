@@ -3,27 +3,16 @@ package middleware
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"runtime/debug"
 	"strings"
 
-	"github.com/crosstalkio/log"
-	"github.com/crosstalkio/rest"
+	log "github.com/sirupsen/logrus"
 )
 
-var responseWriterKey = new(interface{})
-
-func GetResponseWriter(s *rest.Session) http.ResponseWriter {
-	switch v := s.Data[responseWriterKey].(type) {
-	case http.ResponseWriter:
-		return v
-	}
-	return nil
-}
-
 type responseDumper struct {
-	l log.Sugar
 	w http.ResponseWriter
 	b bytes.Buffer
 	s int
@@ -43,60 +32,61 @@ func (d *responseDumper) WriteHeader(statusCode int) {
 		d.w.WriteHeader(statusCode)
 		d.s = statusCode
 	} else {
-		d.l.Warningf("Attempt to write header again: %d", statusCode)
+		log.Warningf("Attempt to write header again: %d", statusCode)
 		debug.PrintStack()
 	}
 }
 
-func Dump(handler rest.HandlerFunc) rest.HandlerFunc {
-	return func(s *rest.Session) {
-		s.Debugf("Handling: %s %s", s.Request.Method, s.Request.RequestURI)
-		data, err := ioutil.ReadAll(s.Request.Body)
+func Dump(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Debugf("Handling: %s %s", r.Method, r.RequestURI)
+		data, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			s.Statusf(500, "Failed to read request body: %s", err.Error())
+			http.Error(w, fmt.Sprintf("Failed to read request body: %s", err.Error()), 500)
 			return
 		}
 		if data != nil {
-			s.Request.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+			r.Body = ioutil.NopCloser(bytes.NewBuffer(data))
 		}
-		s.Data[responseWriterKey] = s.ResponseWriter
-		res := &responseDumper{l: s, w: s.ResponseWriter}
-		s.ResponseWriter = res
-		handler(s)
-		err = dump(s, s.Request, data, res)
+		dumper := &responseDumper{w: w}
+		handler.ServeHTTP(dumper, r)
+		err = dump(r, data, dumper)
 		if err != nil {
-			s.Errorf("Failed to dump: %s", err.Error())
+			log.Errorf("Failed to dump: %s", err.Error())
 		}
-	}
+	})
 }
 
-func dump(log log.Sugar, r *http.Request, data []byte, d *responseDumper) error {
-	type requestDump struct {
-		RequestDump
-		Body interface{} `json:"body,omitempty"`
-	}
-	type responseDump struct {
-		ResponseDump
-		Body interface{} `json:"body,omitempty"`
-	}
+type request struct {
+	Method  string
+	URI     string
+	Proto   string
+	Host    string
+	Headers http.Header
+	Body    interface{}
+}
+
+type response struct {
+	Code    int
+	Headers http.Header
+	Body    interface{}
+}
+
+func dump(r *http.Request, data []byte, d *responseDumper) error {
 	out := &struct {
-		Request  *requestDump  `json:"request"`
-		Response *responseDump `json:"response"`
+		Request  *request
+		Response *response
 	}{
-		Request: &requestDump{
-			RequestDump: RequestDump{
-				Method: r.Method,
-				Uri:    r.RequestURI,
-				Proto:  r.Proto,
-			},
+		Request: &request{
+			Method:  r.Method,
+			URI:     r.RequestURI,
+			Proto:   r.Proto,
+			Headers: r.Header,
 		},
-		Response: &responseDump{
-			ResponseDump: ResponseDump{
-				Code: int32(d.s),
-			},
+		Response: &response{
+			Code: d.s,
 		},
 	}
-	out.Request.Headers = dumpHeaders(r.Header)
 	if len(data) > 0 {
 		ctype := r.Header.Get("Content-Type")
 		if strings.HasPrefix(ctype, "application/json") {
@@ -108,7 +98,7 @@ func dump(log log.Sugar, r *http.Request, data []byte, d *responseDumper) error 
 	if out.Response.Code == 0 {
 		out.Response.Code = 200
 	}
-	out.Response.Headers = dumpHeaders(d.Header())
+	out.Response.Headers = d.Header()
 	data = d.b.Bytes()
 	if len(data) > 0 {
 		ctype := d.Header().Get("Content-Type")
@@ -125,12 +115,4 @@ func dump(log log.Sugar, r *http.Request, data []byte, d *responseDumper) error 
 	}
 	log.Debugf("%s", data)
 	return nil
-}
-
-func dumpHeaders(header http.Header) []*HeaderDump {
-	headers := make([]*HeaderDump, 0)
-	for k, v := range header {
-		headers = append(headers, &HeaderDump{Name: k, Values: v})
-	}
-	return headers
 }

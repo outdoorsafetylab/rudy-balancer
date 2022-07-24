@@ -4,52 +4,48 @@ import (
 	"fmt"
 	"service/config"
 	"service/controller"
-	"service/db"
 	"service/middleware"
+	"service/mirror"
 
-	"github.com/crosstalkio/log"
-	"github.com/crosstalkio/rest"
 	"github.com/gorilla/mux"
 )
 
-func NewRouter(s log.Sugar) *mux.Router {
+func NewRouter(webroot string) (*mux.Router, error) {
 	cfg := config.Get()
-	rest := rest.NewServer(s)
-	rest.Use(middleware.Dump)
-	rest.Use(middleware.NoCache)
 
 	r := mux.NewRouter()
 
-	endpoint := r.PathPrefix(cfg.GetString("endpoint")).Subrouter()
+	prefix := cfg.GetString("endpoint")
+	endpoint := r.PathPrefix(prefix).Subrouter()
+	endpoint.Use(middleware.Dump)
+	endpoint.Use(middleware.NoCache)
 
 	config := &controller.ConfigController{}
-	endpoint.Methods("GET").Path("/version").Handler(rest.HandlerFunc(config.Get))
+	endpoint.HandleFunc("/version", config.GetVersion).Methods("GET")
 
-	apps := &controller.AppsController{}
-	endpoint.Methods("GET").Path("/apps").Handler(rest.HandlerFunc(apps.Get))
+	health := &controller.HealthController{}
+	endpoint.HandleFunc("/healthcheck", health.Check).Methods("GET")
 
-	for _, app := range db.GetApps() {
-		for _, a := range app.GetArtifacts() {
-			path := fmt.Sprintf("/mirror/%s", a.GetPath())
-			mirror := &controller.MirrorController{
-				Artifact: a,
-			}
-			endpoint.Methods("GET").Path(path).Handler(rest.HandlerFunc(mirror.Get))
-			endpoint.Methods("HEAD").Path(path).Handler(rest.HandlerFunc(mirror.Get))
-			qrcode := &controller.QRCodeController{
-				Artifact: a,
-			}
-			path = fmt.Sprintf("/qrcode/%s", a.GetPath())
-			endpoint.Methods("GET").Path(path).Handler(rest.HandlerFunc(qrcode.Get))
-		}
+	qrcode := &controller.QRCodeController{}
+	endpoint.HandleFunc("/qrcode", qrcode.Generate).Methods("GET", "HEAD")
+
+	mirror, err := mirror.Get()
+	if err != nil {
+		return nil, err
+	}
+	for _, file := range mirror.Files {
+		c := &controller.FileController{File: file}
+		endpoint.HandleFunc(fmt.Sprintf("/%s", file), c.Download).Methods("GET", "HEAD")
 	}
 
-	webroot := cfg.GetString("webroot")
-	if webroot != "" {
-		r.NotFoundHandler = &webrootHandler{
-			Sugar:   s,
-			webroot: webroot,
-		}
+	app := &controller.AppController{}
+	endpoint.HandleFunc("/apps", app.List).Methods("GET")
+	site := &controller.SiteController{}
+	endpoint.HandleFunc("/sites", site.List).Methods("GET")
+	file := &controller.FileController{}
+	endpoint.HandleFunc("/files", file.List).Methods("GET")
+	r.NotFoundHandler = &webrootHandler{
+		path: webroot,
 	}
-	return r
+	return r, nil
 }

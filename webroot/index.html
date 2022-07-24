@@ -9,6 +9,7 @@
   <title>魯地圖分流器</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
     crossorigin="anonymous"></script>
@@ -24,7 +25,12 @@
     <header>
       <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-          <a class="navbar-brand" href="#">魯地圖分流器</a>
+          <a class="navbar-brand position-relative" href="#">魯地圖分流器
+            <span v-if="version"
+              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              {{version}}
+            </span>
+          </a>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
             aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -78,22 +84,24 @@
           <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
             <div v-for="artifact in variant.Artifacts" :key="app.ID + '/' + variant.ID + '/' + artifact.ID" class="col">
               <div class="card shadow-sm">
-                <img class="bd-placeholder-img card-img-top" v-bind:src="qrcodeURL(app, variant, artifact)">
+                <img class="bd-placeholder-img card-img-top" v-bind:src="qrcodeURL(artifact)">
                 <div class="card-body">
                   <h5 class="card-title">{{artifact.Name}}</h5>
                   <div>
-                    <span v-for="health in artifact.Healths" style="padding-right: 2pt;"><span v-bind:class="badgeClasses(health.Status)">{{health.Site.Name}}</span></span>
+                    <span v-for="source in artifact.Sources" style="padding-right: 2pt;">
+                      <span v-bind:class="badgeClasses(source)" data-bs-toggle="tooltip"
+                        v-bind:title="sourceTooltip(source)">{{source.Site.Name}}</span>
+                    </span>
                   </div>
                   <div class="input-group mb-3">
                     <textarea rows="4" class="form-control" onfocus="this.select();"
-                      readonly>{{artifactURL(app, variant, artifact)}}</textarea>
+                      readonly>{{artifact.URL}}</textarea>
                   </div>
                   <div class="d-flex justify-content-between align-items-center">
                     <div class="btn-group">
-                      <a class="btn btn-sm btn-outline-secondary"
-                        v-bind:href="artifactURL(app, variant, artifact)">開啟連結</a>
+                      <a class="btn btn-sm btn-outline-secondary" v-bind:href="artifact.URL">開啟連結</a>
                     </div>
-                    <small class="text-muted">{{humanFileSize(artifact.ContentLength)}}</small>
+                    <small class="text-muted">{{readableFileSize(artifact.Size)}}</small>
                   </div>
                 </div>
               </div>
@@ -111,16 +119,11 @@
         apps: [],
         selectedApp: null,
         selectedVariant: null,
+        version: null,
       },
       mounted() {
-        var xhr = new XMLHttpRequest();
-        var self = this;
-        xhr.open("GET", "/v1/apps");
-        xhr.onload = function () {
-          self.apps = JSON.parse(xhr.responseText);
-          self.init();
-        };
-        xhr.send();
+        this.getVersion();
+        this.getApps();
       },
       computed: {
         selectedApps: function () {
@@ -131,7 +134,35 @@
         },
       },
       methods: {
-        init: function() {
+        getVersion() {
+          var self = this;
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/v1/version");
+          xhr.onload = function () {
+            if (xhr.status != 200) {
+              alert(xhr.responseText);
+              return;
+            }
+            var json = JSON.parse(xhr.responseText);
+            self.version = json.tag ? json.tag : json.commit;
+          };
+          xhr.send();
+        },
+        getApps() {
+          var self = this;
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/v1/apps");
+          xhr.onload = function () {
+            if (xhr.status != 200) {
+              alert(xhr.responseText);
+              return;
+            }
+            self.apps = JSON.parse(xhr.responseText);
+            self.populateApps();
+          };
+          xhr.send();
+        },
+        populateApps() {
           var apps = this.apps;
           var paths = window.location.pathname.split('/');
           paths.shift();
@@ -156,11 +187,12 @@
               }
             }
           }
-          this.$watch('selectedApp', function(app) {
+          this.$watch('selectedApp', function (app) {
             this.selectedVariant = null;
             history.replaceState({}, null, '/' + app.ID);
           });
-          this.$watch('selectedVariant', function(variant) {
+          this.$watch('selectedVariant', function (variant) {
+            if (!variant) return;
             history.replaceState({}, null, '/' + this.selectedApp.ID + '/' + variant.ID);
           });
         },
@@ -173,15 +205,37 @@
           }
           return [this.selectedVariant];
         },
-        artifactURL(app, variant, artifact) {
-          var host = document.location.host;
-          var scheme = artifact.Scheme || document.location.protocol;
-          return scheme + '//' + host + '/v1/mirror/' + app.ID + '/' + variant.ID + '/' + artifact.ID + artifact.Ext;
+        qrcodeURL(artifact) {
+          return '/v1/qrcode?text=' + encodeURIComponent(artifact.URL) + '&icon=' + encodeURIComponent(artifact.Icon);
         },
-        qrcodeURL(app, variant, artifact) {
-          return '/v1/qrcode/' + app.ID + '/' + variant.ID + '/' + artifact.ID + artifact.Ext + '?text=' + encodeURIComponent(this.artifactURL(app, variant, artifact));
+        badgeClasses(source) {
+          if (source.Site.Hidden) {
+            return 'd-none';
+          }
+          switch (source.Status) {
+            case 0:
+              return 'badge bg-success mb-1';
+            case 1:
+              return 'badge bg-danger mb-1';
+          }
         },
-        humanFileSize(bytes, si = false, dp = 1) {
+        sourceTooltip(source) {
+          var tooltip;
+          switch (source.Status) {
+            case 0: {
+              tooltip = '檔案日期: ' + new Date(source.LastModified * 1000).toLocaleDateString() + '\n回應時間: ' + Math.round(source.Latency / 1000000) + '亳秒';
+              break;
+            }
+            case 1: {
+              tooltip = '無法使用';
+              break;
+            }
+          }
+          var lastCheck = new Date().getTime() / 1000 - source.LastCheck;
+          tooltip = tooltip + '\n檢查時間:' + this.readableElapsedTime(lastCheck) + '前'
+          return tooltip;
+        },
+        readableFileSize(bytes, si = false, dp = 1) {
           const thresh = si ? 1000 : 1024;
           if (Math.abs(bytes) < thresh) {
             return bytes + ' B';
@@ -197,17 +251,20 @@
           } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
           return bytes.toFixed(dp) + ' ' + units[u];
         },
-        badgeClasses(status) {
-          switch (status) {
-            case 0:
-              return 'badge bg-success mb-1';
-            case 1:
-              return 'badge bg-warning text-dark mb-1';
-            case 2:
-              return 'badge bg-danger mb-1';
+        readableElapsedTime(seconds) {
+          if (seconds <= 60) {
+            return Math.round(seconds) + '秒';
+          } else if (seconds <= 3600) {
+            return Math.round(seconds / 60) + '分';
+          } else {
+            return Math.round(seconds / 3600) + '小時';
           }
-        }
+        },
       }
+    })
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
     })
   </script>
 

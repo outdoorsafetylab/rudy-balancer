@@ -1,14 +1,21 @@
 sites:
 - name: Rex
-  endpoint: rudy.basecamp.tw/
-- name: KCWu
-  endpoint: moi.kcwu.csie.org/
+  endpoint: rudy.basecamp.tw
+  scheme: https
+- name: KC Wu
+  endpoint: moi.kcwu.csie.org
+  scheme: https
 - name: Happyman
-  endpoint: map.happyman.idv.tw/rudy/
+  endpoint: map.happyman.idv.tw/rudy
+  scheme: https
+- name: Map Manager
+  endpoint: d3r5lsn28erp7o.cloudfront.net
+  scheme: https
+  hidden: true
 apps:
 - id: gts
   name: 綠野遊蹤
-  icon: https://rudy.basecamp.tw/images/GTS.png
+  icon: https://github.com/alpha-rudy/taiwan-topo/raw/master/docs/images/GTS.png
   variants:
   - id: standard
     name: 傳統版
@@ -50,44 +57,44 @@ apps:
       file: hgt90.zip
 - id: oruxmaps
   name: OruxMaps
-  icon: https://rudy.basecamp.tw/images/OruxMaps.jpeg
+  icon: https://github.com/alpha-rudy/taiwan-topo/raw/master/docs/images/OruxMaps.jpeg
   variants:
   - id: default
     artifacts:
     - id: map
       name: 離線地圖
-      icon: http://rudy.basecamp.tw/images/OruxMaps_map.jpeg
+      icon: https://github.com/alpha-rudy/taiwan-topo/raw/master/docs/images/OruxMaps_map.jpeg
       scheme: "orux-map:"
       file: MOI_OSM_Taiwan_TOPO_Rudy.map.zip
     - id: style
       name: 風格主題
-      icon: http://rudy.basecamp.tw/images/OruxMaps_style.jpeg
+      icon: https://github.com/alpha-rudy/taiwan-topo/raw/master/docs/images/OruxMaps_style.jpeg
       scheme: "orux-mf-theme:"
       file: MOI_OSM_Taiwan_TOPO_Rudy_style.zip
     - id: hgt
       name: 高程檔
-      icon: http://rudy.basecamp.tw/images/OruxMaps_dem.jpeg
+      icon: https://github.com/alpha-rudy/taiwan-topo/raw/master/docs/images/OruxMaps_dem.jpeg
       file: hgtmix.zip
 - id: carto
   name: Cartograph Pro 2
-  icon: https://rudy.basecamp.tw/images/Cartograph.png
+  icon: https://github.com/alpha-rudy/taiwan-topo/raw/master/docs/images/Cartograph.png
   variants:
   - id: default
     name: 分開安裝
     artifacts:
     - id: map
       name: 離線地圖
-      icon: http://rudy.basecamp.tw/images/Cartograph_map.png
+      icon: https://github.com/alpha-rudy/taiwan-topo/raw/master/docs/images/Cartograph_map.png
       scheme: "cartograph-map:"
       file: carto_map.cpkg
     - id: style
       name: 風格主題
-      icon: http://rudy.basecamp.tw/images/Cartograph_style.png
+      icon: https://github.com/alpha-rudy/taiwan-topo/raw/master/docs/images/Cartograph_style.png
       scheme: "cartograph-map:"
       file: carto_style.cpkg
     - id: hgt
       name: 高程檔
-      icon: http://rudy.basecamp.tw/images/Cartograph_dem.png
+      icon: https://github.com/alpha-rudy/taiwan-topo/raw/master/docs/images/Cartograph_dem.png
       scheme: "cartograph-map:"
       file: carto_dem.cpkg
   - id: allinone

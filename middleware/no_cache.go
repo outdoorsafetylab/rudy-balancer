@@ -1,27 +1,26 @@
 package middleware
 
 import (
+	"net/http"
 	"strings"
-
-	"github.com/crosstalkio/rest"
 )
 
 var Cacheables = []string{}
 
-func NoCache(handler rest.HandlerFunc) rest.HandlerFunc {
-	return func(s *rest.Session) {
-		handler(s)
+func NoCache(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handler.ServeHTTP(w, r)
 		cacheable := false
 		for _, c := range Cacheables {
-			if strings.HasPrefix(s.Request.URL.Path, c) {
+			if strings.HasPrefix(r.URL.Path, c) {
 				cacheable = true
 				break
 			}
 		}
 		if !cacheable {
-			s.ResponseHeader().Add("Cache-Control", "no-cache")
-			s.ResponseHeader().Add("Cache-Control", "no-store")
-			s.ResponseHeader().Set("Pragma", "no-cache")
+			w.Header().Add("Cache-Control", "no-cache")
+			w.Header().Add("Cache-Control", "no-store")
+			w.Header().Set("Pragma", "no-cache")
 		}
-	}
+	})
 }

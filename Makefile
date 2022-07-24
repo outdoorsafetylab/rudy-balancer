@@ -1,6 +1,3 @@
-PROTOS := $(wildcard *.proto) $(wildcard */*.proto) $(wildcard */*/*.proto)
-
-PBGO := $(PROTOS:.proto=.pb.go)
 GOSRCS := go.mod $(wildcard *.go) $(wildcard */*.go) $(wildcard */*/*.go)
 
 EXEC := serviced
@@ -13,40 +10,31 @@ VARS :=
 VARS += BuildTime=$(BUILD_TIME)
 VARS += GitHash=$(GIT_HASH)
 VARS += GitTag=$(GIT_TAG)
-LDFLAGS := $(addprefix -X version.,$(VARS))
+LDFLAGS := $(addprefix -X service/version.,$(VARS))
 
 all: $(EXEC)
 
 include .make/golangci-lint.mk
-include .make/protoc.mk
-include .make/protoc-gen-go.mk
 include .make/watcher.mk
 include .make/docker.mk
 
-watch: $(PBGO) $(WEBINDEX) $(WATCHER) tidy
-	$(realpath $(WATCHER)) -c local
+watch: $(WEBINDEX) $(WATCHER) tidy
+	$(realpath $(WATCHER))
 
-tidy: $(PBGO)
+tidy:
 	go mod tidy
 
 lint: $(GOLANGCI_LINT)
 	$(realpath $(GOLANGCI_LINT)) run
 
-$(EXEC): $(PBGO) $(GOSRCS)
+$(EXEC): $(GOSRCS)
 	go mod tidy
 	go build -ldflags="$(LDFLAGS)" -o $@
 
 cloud-run:
 	cloud-build-local \
-		--config=.cloudbuild/cloud-run.yaml \
+		--config=cloudbuild.yaml \
 		--substitutions=_SERVICE_NAME=ruby-balancer,_REGION=asia-east1 \
-		--dryrun=false \
-		.
-
-app-engine:
-	cloud-build-local \
-		--config=.cloudbuild/app-engine.yaml \
-		--substitutions=_PROJECT_NAME=rudy-mirror \
 		--dryrun=false \
 		.
 

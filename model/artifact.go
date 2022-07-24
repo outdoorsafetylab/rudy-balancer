@@ -1,25 +1,16 @@
 package model
 
-import (
-	"fmt"
-	"net/url"
-)
-
 type Artifact struct {
-	App           *App     `json:"-"`
-	Variant       *Variant `json:"-"`
-	ID            string
-	Name          string
-	Icon          string
-	Scheme        string
-	File          string
-	Ext           string
-	Size          string
-	ContentLength int64
-	Healths       []*Health
-	HealthyURLs   []*url.URL `json:"-"`
-}
-
-func (a *Artifact) GetPath() string {
-	return fmt.Sprintf("%s/%s/%s%s", a.App.ID, a.Variant.ID, a.ID, a.Ext)
+	ID          string
+	App         *App     `json:"-"`
+	Variant     *Variant `json:"-"`
+	AppName     string   `json:"App,omitempty"`
+	VariantName string   `json:"Variant,omitempty"`
+	Name        string
+	Icon        string
+	Scheme      string `json:"-"`
+	File        string
+	Size        int64
+	URL         string
+	Sources     []*Source
 }

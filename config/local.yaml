@@ -1,8 +1,15 @@
-log:
-  dev: true
 port: 8080
 endpoint: /v1
 webroot: ./webroot
-db:
-  file: mirrors.yaml
-  #check: 30s
+mirrors:
+  file: config/mirrors.yaml
+  default_scheme: "http:"
+firestore:
+  # project_id: test
+  project_id: "*detect-project-id*"
+  credential: config/firestoredb.json
+  collection: RudyMirrors
+statuspage:
+  key: 9d6e4756-debb-44a7-b6c5-49315faeb4f0
+  page: 4fbwbd76cnj2
+  group: ljdltg39cz1q

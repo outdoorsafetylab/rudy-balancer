@@ -6,42 +6,38 @@ import (
 	"image/draw"
 	"image/png"
 	"io"
+	"net/http"
 	"service/cache"
-	"service/model"
-	"strconv"
 
-	"github.com/crosstalkio/rest"
 	"github.com/nfnt/resize"
+	log "github.com/sirupsen/logrus"
 	"github.com/skip2/go-qrcode"
 )
 
 type QRCodeController struct {
-	Artifact *model.Artifact
 }
 
-func (c *QRCodeController) Get(s *rest.Session) {
-	text := s.Var("text", "")
+func (c *QRCodeController) Generate(w http.ResponseWriter, r *http.Request) {
+	text := stringVar(r, "text", "")
 	if text == "" {
-		s.Status(400, "Missing 'text'")
+		http.Error(w, "Missing 'text'", 500)
 		return
 	}
-	v := s.Var("size", "512")
-	size, err := strconv.ParseInt(v, 10, 32)
-	if err != nil {
-		s.Status(400, err)
-		return
-	}
+	icon := stringVar(r, "icon", "")
+	size := intVar(r, "size", 512)
 	var buf bytes.Buffer
+	log.Debugf("Generating QR code: %s", text)
 	code, err := qrcode.New(text, qrcode.Highest)
 	if err != nil {
-		s.Status(500, err)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 	img := code.Image(int(size))
-	if c.Artifact.Icon != "" {
-		iconImage, err := cache.GetImage(c.Artifact.Icon)
+	if icon != "" {
+		iconImage, err := cache.GetImage(icon)
 		if err != nil {
-			s.Status(500, err)
+			log.Errorf("Failed to get icon: %s: %s", icon, err.Error())
+			http.Error(w, err.Error(), 500)
 			return
 		}
 		percent := 20
@@ -51,16 +47,15 @@ func (c *QRCodeController) Get(s *rest.Session) {
 	}
 	err = png.Encode(&buf, img)
 	if err != nil {
-		s.Status(500, err)
+		http.Error(w, err.Error(), 500)
 		return
 	}
-	s.ResponseHeader().Set("Content-Type", "image/png")
-	_, err = io.Copy(s.ResponseWriter, &buf)
+	_, err = io.Copy(w, &buf)
 	if err != nil {
-		s.Status(500, err)
+		http.Error(w, err.Error(), 500)
 		return
 	}
-	s.Status(200, nil)
+	w.Header().Set("Content-Type", "image/png")
 }
 
 func (c *QRCodeController) overlayLogo(srcImage, logoImage image.Image) image.Image {

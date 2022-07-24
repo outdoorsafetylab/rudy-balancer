@@ -9,7 +9,7 @@ steps:
   - '-t'
   - 'asia.gcr.io/$PROJECT_ID/rudy-balancer'
   - '-f'
-  - '.docker/Dockerfile'
+  - 'Dockerfile'
   - '.'
 - name: 'gcr.io/cloud-builders/docker'
   args: 
