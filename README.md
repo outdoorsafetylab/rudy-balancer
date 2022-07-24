@@ -12,7 +12,7 @@
 
 ### 定時測試
 
-1. 每五分鐘對各 mirror 站台進行 HTTP HEAD 測試, 超過5秒沒有回應則為逾時。
+1. 每5分鐘對各 mirror 站台進行 HTTP HEAD 測試, 超過5秒沒有回應則為逾時。
    1. 所有連結都有回應時則判定為 Operational
    1. 部份連結沒有回應時則判定為 Partial outage
    1. 所有連結都無回應時則判定為 Major outage
@@ -21,6 +21,7 @@
 1. 由其它狀態回覆為 Operational 後即會自動 Resolve Incident。
 
 > TODO
+>
 > 檢查 Last-Modifed，若日期太過老舊則視為 Degraded performance 或 Partial outage。
 
 ### 分流方式
