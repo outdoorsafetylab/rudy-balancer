@@ -22,9 +22,9 @@ func (c *HealthController) Check(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, site := range sites {
 		for _, s := range site.Sources {
-			log.Debugf("Checking source: %s", s.URL.String())
+			log.Debugf("Checking source: %s", s.URL)
 			_ = s.Check(client)
-			log.Debugf("%s => %s @ %v", s.URL.String(), s.Status.String(), s.Latency)
+			log.Debugf("%s => %s @ %v", s.URL, s.Status.String(), s.Latency)
 		}
 	}
 	err = dao.Update(sites)

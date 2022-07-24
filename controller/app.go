@@ -26,7 +26,7 @@ func (c *AppController) List(w http.ResponseWriter, r *http.Request) {
 				}
 				a.URL = fmt.Sprintf("%s//%s%s/%s", a.Scheme, r.Host, prefix, a.File)
 				for _, s := range a.Sources {
-					s.URLString = ""
+					s.URL = ""
 				}
 			}
 		}

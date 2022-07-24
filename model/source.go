@@ -3,15 +3,13 @@ package model
 import (
 	"errors"
 	"net/http"
-	"net/url"
 	"time"
 )
 
 type Source struct {
 	Site             *Site     `json:",omitempty" firestore:"-"`
 	File             string    `json:"-" firestore:"-"`
-	URL              *url.URL  `json:"-" firestore:"-"`
-	URLString        string    `json:"URL,omitempty" firestore:"-"`
+	URL              string    `json:",omitempty" firestore:"-"`
 	LastCheck        time.Time `json:"-"`
 	LastCheckUnix    int64     `json:"LastCheck" firestore:"-"`
 	Status           Status
@@ -24,7 +22,7 @@ type Source struct {
 func (s *Source) Check(client *http.Client) error {
 	s.LastCheck = time.Now()
 	s.LastCheckUnix = s.LastCheck.Unix()
-	res, err := client.Head(s.URL.String())
+	res, err := client.Head(s.URL)
 	duration := time.Since(s.LastCheck)
 	if err != nil {
 		s.Status = BAD

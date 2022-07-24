@@ -192,6 +192,7 @@
             history.replaceState({}, null, '/' + app.ID);
           });
           this.$watch('selectedVariant', function (variant) {
+            if (!variant) return;
             history.replaceState({}, null, '/' + this.selectedApp.ID + '/' + variant.ID);
           });
         },

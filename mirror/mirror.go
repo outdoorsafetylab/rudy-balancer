@@ -1,7 +1,6 @@
 package mirror
 
 import (
-	"net/url"
 	"path/filepath"
 	"service/config"
 	"service/model"
@@ -45,21 +44,16 @@ func load() (*Mirror, error) {
 				a.Variant = v
 				a.Sources = make([]*model.Source, 0)
 				for _, s := range meta.Sites {
-					urlString := s.GetURL(a.File)
-					src := sources[urlString]
+					u := s.GetURL(a.File)
+					src := sources[u]
 					if src == nil {
-						u, err := url.Parse(urlString)
-						if err != nil {
-							return nil, err
-						}
 						src = &model.Source{
-							Site:      s,
-							URL:       u,
-							URLString: urlString,
-							File:      a.File,
+							Site: s,
+							URL:  u,
+							File: a.File,
 						}
 						s.Sources = append(s.Sources, src)
-						sources[urlString] = src
+						sources[u] = src
 					}
 					a.Sources = append(a.Sources, src)
 				}

@@ -26,8 +26,8 @@ func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	u := urls[rand.Intn(len(urls))]
-	log.Warningf("Redircting: %s => %s", c.File, u.String())
-	http.Redirect(w, r, u.String(), 302)
+	log.Warningf("Redircting: %s => %s", c.File, u)
+	http.Redirect(w, r, u, 302)
 }
 
 func (c *FileController) List(w http.ResponseWriter, r *http.Request) {

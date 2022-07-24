@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"net/url"
 	"service/config"
 	"service/firestore"
 	"service/mirror"
@@ -51,9 +50,9 @@ func (dao *HealthDao) load() (*mirror.Mirror, error) {
 			return nil, err
 		}
 		for _, s := range s.Sources {
-			ss := saved.Sources[s.URLString]
+			ss := saved.Sources[s.URL]
 			if ss == nil {
-				log.Warnf("Source states not available: %s", s.URLString)
+				log.Warnf("Source states not available: %s", s.URL)
 				continue
 			}
 			s.LastCheck = ss.LastCheck
@@ -164,13 +163,13 @@ func (dao *HealthDao) Update(sites []*model.Site) error {
 		var latency time.Duration
 		bads := make([]string, 0)
 		for _, s := range s.Sources {
-			site.Sources[s.URLString] = s
+			site.Sources[s.URL] = s
 			switch s.Status {
 			case model.GOOD:
-				goods = append(goods, s.URLString)
+				goods = append(goods, s.URL)
 				latency += s.Latency
 			case model.BAD:
-				bads = append(bads, s.URLString)
+				bads = append(bads, s.URL)
 			}
 		}
 		if len(goods) > 0 {
@@ -222,7 +221,7 @@ func (dao *HealthDao) Update(sites []*model.Site) error {
 	return nil
 }
 
-func (dao *HealthDao) GetURLs(file string) ([]*url.URL, error) {
+func (dao *HealthDao) GetURLs(file string) ([]string, error) {
 	mirror, err := dao.load()
 	if err != nil {
 		return nil, err
@@ -252,12 +251,12 @@ func (dao *HealthDao) GetURLs(file string) ([]*url.URL, error) {
 		if src.Latency <= 0 {
 			continue
 		}
-		weights[src.URLString] = int(math.Max(1.0, 100.0*float64(maxLatency)/float64(src.Latency)))
+		weights[src.URL] = int(math.Max(1.0, 100.0*float64(maxLatency)/float64(src.Latency)))
 	}
 	log.Debugf("URL weights: %v", weights)
-	urls := make([]*url.URL, 0)
+	urls := make([]string, 0)
 	for _, src := range sources {
-		weight := weights[src.URLString]
+		weight := weights[src.URL]
 		switch src.Status {
 		case model.GOOD:
 			for i := 0; i < weight; i++ {
