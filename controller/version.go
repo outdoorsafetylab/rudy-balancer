@@ -3,14 +3,16 @@ package controller
 import (
 	"encoding/json"
 	"net/http"
-	"service/api"
 	"service/version"
 )
 
 type ConfigController struct{}
 
 func (c *ConfigController) GetVersion(w http.ResponseWriter, r *http.Request) {
-	res := &api.GetVersionResponse{
+	res := &struct {
+		Commit string `json:"commit"`
+		Tag    string `json:"tag"`
+	}{
 		Commit: version.GitHash,
 		Tag:    version.GitTag,
 	}

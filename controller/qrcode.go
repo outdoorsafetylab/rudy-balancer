@@ -50,12 +50,12 @@ func (c *QRCodeController) Generate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	w.Header().Set("Content-Type", "image/png")
 	_, err = io.Copy(w, &buf)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
+	w.Header().Set("Content-Type", "image/png")
 }
 
 func (c *QRCodeController) overlayLogo(srcImage, logoImage image.Image) image.Image {
