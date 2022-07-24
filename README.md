@@ -3,9 +3,9 @@
 魯地圖下載分流器:
 
 1. [下載主頁](https://rudy.outdoorsafetylab.org/)
-   1. [OruxMaps傳送門](https://rudy.outdoorsafetylab.org/oruxmaps)
+   1. [OruxMaps 傳送門](https://rudy.outdoorsafetylab.org/oruxmaps)
    1. [綠野遊蹤傳送門](https://rudy.outdoorsafetylab.org/gts)
-   1. [Cartograph Pro 2傳送門](https://rudy.outdoorsafetylab.org/carto)
+   1. [Cartograph Pro 2 傳送門](https://rudy.outdoorsafetylab.org/carto)
 1. [監控主頁](https://outdoorsafetylab1.statuspage.io/)
 
 ## 運作方式
@@ -17,10 +17,11 @@
    1. 部份連結沒有回應時則判定為 Partial outage
    1. 所有連結都無回應時則判定為 Major outage
    1. 每次成功的測試都會紀錄 Latency，並與已儲存的 Latency 值平均後再存回資料庫。
+   1. 使用 [Statuspage API](https://developer.statuspage.io/) 來更新狀態。
 1. 由 Operational 轉為其它狀態時會自動建立 Incident，例如：[Rex is not operational](https://outdoorsafetylab1.statuspage.io/incidents/lghlzv7h9ztq)
 1. 由其它狀態回覆為 Operational 後即會自動 Resolve Incident。
 
-> TODO
+> **TODO**
 >
 > 檢查 Last-Modifed，若日期太過老舊則視為 Degraded performance 或 Partial outage。
 
