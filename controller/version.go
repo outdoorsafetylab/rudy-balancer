@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"net/http"
 	"service/version"
 )
@@ -16,11 +15,5 @@ func (c *ConfigController) GetVersion(w http.ResponseWriter, r *http.Request) {
 		Commit: version.GitHash,
 		Tag:    version.GitTag,
 	}
-	enc := json.NewEncoder(w)
-	err := enc.Encode(res)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
+	writeJSON(w, r, res)
 }

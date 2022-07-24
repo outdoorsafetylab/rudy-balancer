@@ -42,6 +42,8 @@ func NewRouter(webroot string) (*mux.Router, error) {
 
 	app := &controller.AppController{}
 	endpoint.HandleFunc("/apps", app.List).Methods("GET")
+	artifact := &controller.ArtifactController{}
+	endpoint.HandleFunc("/artifacts", artifact.List).Methods("GET")
 	r.NotFoundHandler = &webrootHandler{
 		path: webroot,
 	}

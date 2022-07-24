@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"service/config"
@@ -29,11 +28,5 @@ func (c *AppController) List(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	enc := json.NewEncoder(w)
-	err = enc.Encode(apps)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
+	writeJSON(w, r, apps)
 }

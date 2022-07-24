@@ -79,6 +79,11 @@ func (dao *HealthDao) Apps() ([]*model.App, error) {
 						log.Warnf("No such source: %s", s.URL.String())
 						continue
 					}
+					s.LastCheck = ss.LastCheck
+					s.LastCheckUnix = s.LastCheck.Unix()
+					if s.LastCheckUnix < 0 {
+						s.LastCheckUnix = 0
+					}
 					s.Status = ss.Status
 					s.Size = ss.Size
 					s.Latency = ss.Latency

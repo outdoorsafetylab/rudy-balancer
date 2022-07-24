@@ -9,6 +9,7 @@
   <title>魯地圖分流器</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
     crossorigin="anonymous"></script>
@@ -25,7 +26,8 @@
       <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
           <a class="navbar-brand position-relative" href="#">魯地圖分流器
-            <span v-if="version" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            <span v-if="version"
+              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
               {{version}}
             </span>
           </a>
@@ -86,8 +88,10 @@
                 <div class="card-body">
                   <h5 class="card-title">{{artifact.Name}}</h5>
                   <div>
-                    <span v-for="source in artifact.Sources" style="padding-right: 2pt;"><span
-                        v-bind:class="badgeClasses(source)">{{source.Site.Name}}</span></span>
+                    <span v-for="source in artifact.Sources" style="padding-right: 2pt;">
+                      <span v-bind:class="badgeClasses(source)" data-bs-toggle="tooltip"
+                        v-bind:title="sourceTooltip(source)">{{source.Site.Name}}</span>
+                    </span>
                   </div>
                   <div class="input-group mb-3">
                     <textarea rows="4" class="form-control" onfocus="this.select();"
@@ -97,7 +101,7 @@
                     <div class="btn-group">
                       <a class="btn btn-sm btn-outline-secondary" v-bind:href="artifact.URL">開啟連結</a>
                     </div>
-                    <small class="text-muted">{{humanFileSize(artifact.Size)}}</small>
+                    <small class="text-muted">{{readableFileSize(artifact.Size)}}</small>
                   </div>
                 </div>
               </div>
@@ -130,7 +134,7 @@
         },
       },
       methods: {
-        getVersion: function () {
+        getVersion() {
           var self = this;
           var xhr = new XMLHttpRequest();
           xhr.open("GET", "/v1/version");
@@ -144,7 +148,7 @@
           };
           xhr.send();
         },
-        getApps: function () {
+        getApps() {
           var self = this;
           var xhr = new XMLHttpRequest();
           xhr.open("GET", "/v1/apps");
@@ -154,11 +158,11 @@
               return;
             }
             self.apps = JSON.parse(xhr.responseText);
-            self.populate();
+            self.populateApps();
           };
           xhr.send();
         },
-        populate: function () {
+        populateApps() {
           var apps = this.apps;
           var paths = window.location.pathname.split('/');
           paths.shift();
@@ -203,7 +207,34 @@
         qrcodeURL(artifact) {
           return '/v1/qrcode?text=' + encodeURIComponent(artifact.URL) + '&icon=' + encodeURIComponent(artifact.Icon);
         },
-        humanFileSize(bytes, si = false, dp = 1) {
+        badgeClasses(source) {
+          if (source.Site.Hidden) {
+            return 'd-none';
+          }
+          switch (source.Status) {
+            case 0:
+              return 'badge bg-success mb-1';
+            case 1:
+              return 'badge bg-danger mb-1';
+          }
+        },
+        sourceTooltip(source) {
+          var tooltip;
+          switch (source.Status) {
+            case 0: {
+              tooltip = '檔案日期: ' + new Date(source.LastModified * 1000).toLocaleDateString() + '\n回應時間: ' + Math.round(source.Latency / 1000000) + '亳秒';
+              break;
+            }
+            case 1: {
+              tooltip = '無法使用';
+              break;
+            }
+          }
+          var lastCheck = new Date().getTime() / 1000 - source.LastCheck;
+          tooltip = tooltip + '\n檢查時間:' + this.readableElapsedTime(lastCheck) + '前'
+          return tooltip;
+        },
+        readableFileSize(bytes, si = false, dp = 1) {
           const thresh = si ? 1000 : 1024;
           if (Math.abs(bytes) < thresh) {
             return bytes + ' B';
@@ -219,18 +250,20 @@
           } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
           return bytes.toFixed(dp) + ' ' + units[u];
         },
-        badgeClasses(source) {
-          if (source.Site.Hidden) {
-            return 'd-none';
+        readableElapsedTime(seconds) {
+          if (seconds <= 60) {
+            return Math.round(seconds) + '秒';
+          } else if (seconds <= 3600) {
+            return Math.round(seconds / 60) + '分';
+          } else {
+            return Math.round(seconds / 3600) + '小時';
           }
-          switch (source.Status) {
-            case 0:
-              return 'badge bg-success mb-1';
-            case 1:
-              return 'badge bg-danger mb-1';
-          }
-        }
+        },
       }
+    })
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
     })
   </script>
 

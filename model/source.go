@@ -8,8 +8,10 @@ import (
 )
 
 type Source struct {
-	Site             *Site    `firestore:"-"`
-	URL              *url.URL `json:"-" firestore:"-"`
+	Site             *Site     `firestore:"-"`
+	URL              *url.URL  `json:"-" firestore:"-"`
+	LastCheck        time.Time `json:"-"`
+	LastCheckUnix    int64     `json:"LastCheck" firestore:"-"`
 	Status           Status
 	LastModified     time.Time `json:"-"`
 	LastModifiedUnix int64     `json:"LastModified" firestore:"-"`
@@ -18,9 +20,10 @@ type Source struct {
 }
 
 func (s *Source) Check(client *http.Client) error {
-	start := time.Now()
+	s.LastCheck = time.Now()
+	s.LastCheckUnix = s.LastCheck.Unix()
 	res, err := client.Head(s.URL.String())
-	duration := time.Since(start)
+	duration := time.Since(s.LastCheck)
 	if err != nil {
 		s.Status = BAD
 		return err

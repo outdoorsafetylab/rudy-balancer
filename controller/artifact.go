@@ -30,3 +30,23 @@ func (c *ArtifactController) Download(w http.ResponseWriter, r *http.Request) {
 	log.Warningf("Redircting: %s => %s", c.Artifact.File, u.String())
 	http.Redirect(w, r, u.String(), 302)
 }
+
+func (c *ArtifactController) List(w http.ResponseWriter, r *http.Request) {
+	dao := &dao.HealthDao{Context: r.Context()}
+	apps, err := dao.Apps()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	artifacts := make([]*model.Artifact, 0)
+	for _, app := range apps {
+		for _, v := range app.Variants {
+			for _, a := range v.Artifacts {
+				a.AppName = app.Name
+				a.VariantName = v.Name
+				artifacts = append(artifacts, a)
+			}
+		}
+	}
+	writeJSON(w, r, artifacts)
+}
