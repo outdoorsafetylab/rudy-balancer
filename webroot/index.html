@@ -24,7 +24,11 @@
     <header>
       <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-          <a class="navbar-brand" href="#">魯地圖分流器</a>
+          <a class="navbar-brand position-relative" href="#">魯地圖分流器
+            <span v-if="version" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              {{version}}
+            </span>
+          </a>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
             aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -82,7 +86,8 @@
                 <div class="card-body">
                   <h5 class="card-title">{{artifact.Name}}</h5>
                   <div>
-                    <span v-for="source in artifact.Sources" style="padding-right: 2pt;"><span v-bind:class="badgeClasses(source)">{{source.Site.Name}}</span></span>
+                    <span v-for="source in artifact.Sources" style="padding-right: 2pt;"><span
+                        v-bind:class="badgeClasses(source)">{{source.Site.Name}}</span></span>
                   </div>
                   <div class="input-group mb-3">
                     <textarea rows="4" class="form-control" onfocus="this.select();"
@@ -90,8 +95,7 @@
                   </div>
                   <div class="d-flex justify-content-between align-items-center">
                     <div class="btn-group">
-                      <a class="btn btn-sm btn-outline-secondary"
-                        v-bind:href="artifact.URL">開啟連結</a>
+                      <a class="btn btn-sm btn-outline-secondary" v-bind:href="artifact.URL">開啟連結</a>
                     </div>
                     <small class="text-muted">{{humanFileSize(artifact.Size)}}</small>
                   </div>
@@ -111,20 +115,11 @@
         apps: [],
         selectedApp: null,
         selectedVariant: null,
+        version: null,
       },
       mounted() {
-        var xhr = new XMLHttpRequest();
-        var self = this;
-        xhr.open("GET", "/v1/apps");
-        xhr.onload = function () {
-          if (xhr.status != 200) {
-            alert(xhr.responseText);
-            return;
-          }
-          self.apps = JSON.parse(xhr.responseText);
-          self.init();
-        };
-        xhr.send();
+        this.getVersion();
+        this.getApps();
       },
       computed: {
         selectedApps: function () {
@@ -135,7 +130,35 @@
         },
       },
       methods: {
-        init: function() {
+        getVersion: function () {
+          var self = this;
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/v1/version");
+          xhr.onload = function () {
+            if (xhr.status != 200) {
+              alert(xhr.responseText);
+              return;
+            }
+            var json = JSON.parse(xhr.responseText);
+            self.version = json.tag ? json.tag : json.commit;
+          };
+          xhr.send();
+        },
+        getApps: function () {
+          var self = this;
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/v1/apps");
+          xhr.onload = function () {
+            if (xhr.status != 200) {
+              alert(xhr.responseText);
+              return;
+            }
+            self.apps = JSON.parse(xhr.responseText);
+            self.populate();
+          };
+          xhr.send();
+        },
+        populate: function () {
           var apps = this.apps;
           var paths = window.location.pathname.split('/');
           paths.shift();
@@ -160,11 +183,11 @@
               }
             }
           }
-          this.$watch('selectedApp', function(app) {
+          this.$watch('selectedApp', function (app) {
             this.selectedVariant = null;
             history.replaceState({}, null, '/' + app.ID);
           });
-          this.$watch('selectedVariant', function(variant) {
+          this.$watch('selectedVariant', function (variant) {
             history.replaceState({}, null, '/' + this.selectedApp.ID + '/' + variant.ID);
           });
         },
