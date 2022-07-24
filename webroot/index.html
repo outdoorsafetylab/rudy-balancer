@@ -117,6 +117,10 @@
         var self = this;
         xhr.open("GET", "/v1/apps");
         xhr.onload = function () {
+          if (xhr.status != 200) {
+            alert(xhr.responseText);
+            return;
+          }
           self.apps = JSON.parse(xhr.responseText);
           self.init();
         };
@@ -193,7 +197,6 @@
           return bytes.toFixed(dp) + ' ' + units[u];
         },
         badgeClasses(source) {
-          console.log("Source:", source);
           if (source.Site.Hidden) {
             return 'd-none';
           }
