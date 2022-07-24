@@ -25,6 +25,9 @@ func (c *AppController) List(w http.ResponseWriter, r *http.Request) {
 					a.Scheme = cfg.GetString("mirrors.default_scheme")
 				}
 				a.URL = fmt.Sprintf("%s//%s%s/%s", a.Scheme, r.Host, prefix, a.File)
+				for _, s := range a.Sources {
+					s.URLString = ""
+				}
 			}
 		}
 	}

@@ -1,7 +1,6 @@
 package mirror
 
 import (
-	"fmt"
 	"net/url"
 	"path/filepath"
 	"service/config"
@@ -10,12 +9,13 @@ import (
 	"github.com/spf13/viper"
 )
 
-type metadata struct {
+type Mirror struct {
 	Sites []*model.Site
 	Apps  []*model.App
+	Files []string
 }
 
-func load() (*metadata, error) {
+func load() (*Mirror, error) {
 	filename := config.Get().GetString("mirrors.file")
 	cfg := viper.New()
 	cfg.SetConfigType("yaml")
@@ -25,12 +25,13 @@ func load() (*metadata, error) {
 	if err != nil {
 		return nil, err
 	}
-	meta := &metadata{}
+	meta := &Mirror{}
 	err = cfg.Unmarshal(meta)
 	if err != nil {
 		return nil, err
 	}
-	files := make(map[string]*model.Artifact)
+	files := make(map[string]string)
+	sources := make(map[string]*model.Source)
 	for _, app := range meta.Apps {
 		for _, v := range app.Variants {
 			if v.Icon == "" {
@@ -40,27 +41,43 @@ func load() (*metadata, error) {
 				if a.Icon == "" {
 					a.Icon = v.Icon
 				}
-				b := files[a.File]
-				if b != nil {
-					return nil, fmt.Errorf("duplicated artifact: %s", b.File)
-				}
 				a.App = app
 				a.Variant = v
 				a.Sources = make([]*model.Source, 0)
 				for _, s := range meta.Sites {
-					u, err := url.Parse(fmt.Sprintf("%s://%s/%s", s.Scheme, s.Endpoint, a.File))
-					if err != nil {
-						return nil, err
+					urlString := s.GetURL(a.File)
+					src := sources[urlString]
+					if src == nil {
+						u, err := url.Parse(urlString)
+						if err != nil {
+							return nil, err
+						}
+						src = &model.Source{
+							Site:      s,
+							URL:       u,
+							URLString: urlString,
+							File:      a.File,
+						}
+						s.Sources = append(s.Sources, src)
+						sources[urlString] = src
 					}
-					a.Sources = append(a.Sources, &model.Source{
-						Site: s,
-						URL:  u,
-					})
+					a.Sources = append(a.Sources, src)
+				}
+				if files[a.File] == "" {
+					files[a.File] = a.File
 				}
 			}
 		}
 	}
+	meta.Files = make([]string, 0)
+	for _, file := range files {
+		meta.Files = append(meta.Files, file)
+	}
 	return meta, nil
+}
+
+func Get() (*Mirror, error) {
+	return load()
 }
 
 func Apps() ([]*model.App, error) {
@@ -69,6 +86,14 @@ func Apps() ([]*model.App, error) {
 		return nil, err
 	}
 	return meta.Apps, nil
+}
+
+func Sites() ([]*model.Site, error) {
+	meta, err := load()
+	if err != nil {
+		return nil, err
+	}
+	return meta.Sites, nil
 }
 
 func Artifacts() ([]*model.Artifact, error) {

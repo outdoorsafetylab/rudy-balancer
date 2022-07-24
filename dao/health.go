@@ -28,70 +28,55 @@ type site struct {
 	Latency   time.Duration
 }
 
-func (dao *HealthDao) Apps() ([]*model.App, error) {
-	apps, err := mirror.Apps()
+func (dao *HealthDao) load() (*mirror.Mirror, error) {
+	mirror, err := mirror.Get()
 	if err != nil {
 		return nil, err
 	}
 	cfg := config.Get()
-	sites := make(map[string]*model.Site)
-	for _, app := range apps {
-		for _, v := range app.Variants {
-			for _, a := range v.Artifacts {
-				for _, s := range a.Sources {
-					if sites[s.Site.Name] != nil {
-						continue
-					}
-					sites[s.Site.Name] = s.Site
-				}
-			}
-		}
-	}
-	sources := make(map[string]*model.Source)
-	for name := range sites {
-		log.Debugf("Getting site status: %s", name)
-		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(name).Get(dao.Context)
+	for _, s := range mirror.Sites {
+		log.Debugf("Loading site status: %s", s.Name)
+		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(s.Name).Get(dao.Context)
 		if err != nil {
 			if status.Code(err) != codes.NotFound {
-				log.Errorf("Failed to get site %s: %s", name, err.Error())
+				log.Errorf("Failed to load site %s: %s", s.Name, err.Error())
 				return nil, err
 			} else {
 				continue
 			}
 		}
-		site := &site{}
-		err = doc.DataTo(&site)
+		saved := &site{}
+		err = doc.DataTo(&saved)
 		if err != nil {
 			return nil, err
 		}
-		for url, source := range site.Sources {
-			sources[url] = source
+		for _, s := range s.Sources {
+			ss := saved.Sources[s.URLString]
+			if ss == nil {
+				log.Warnf("Source states not available: %s", s.URLString)
+				continue
+			}
+			s.LastCheck = ss.LastCheck
+			s.LastCheckUnix = s.LastCheck.Unix()
+			if s.LastCheckUnix < 0 {
+				s.LastCheckUnix = 0
+			}
+			s.Status = ss.Status
+			s.Size = ss.Size
+			s.Latency = ss.Latency
+			s.LastModified = ss.LastModified
+			s.LastModifiedUnix = s.LastModified.Unix()
+			if s.LastModifiedUnix < 0 {
+				s.LastModifiedUnix = 0
+			}
 		}
 	}
-	for _, app := range apps {
+	for _, app := range mirror.Apps {
 		for _, v := range app.Variants {
 			for _, a := range v.Artifacts {
 				size := int64(0)
 				count := 0
 				for _, s := range a.Sources {
-					ss := sources[s.URL.String()]
-					if ss == nil {
-						log.Warnf("No such source: %s", s.URL.String())
-						continue
-					}
-					s.LastCheck = ss.LastCheck
-					s.LastCheckUnix = s.LastCheck.Unix()
-					if s.LastCheckUnix < 0 {
-						s.LastCheckUnix = 0
-					}
-					s.Status = ss.Status
-					s.Size = ss.Size
-					s.Latency = ss.Latency
-					s.LastModified = ss.LastModified
-					s.LastModifiedUnix = s.LastModified.Unix()
-					if s.LastModifiedUnix < 0 {
-						s.LastModifiedUnix = 0
-					}
 					if s.Status == model.GOOD {
 						size += s.Size
 						count++
@@ -101,20 +86,55 @@ func (dao *HealthDao) Apps() ([]*model.App, error) {
 			}
 		}
 	}
-	return apps, nil
+	return mirror, nil
 }
 
-func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
-	cfg := config.Get()
-	sites := make(map[string]*model.Site)
-	for _, a := range artifacts {
-		for _, s := range a.Sources {
-			if sites[s.Site.Name] != nil {
-				continue
+func (dao *HealthDao) Apps() ([]*model.App, error) {
+	mirror, err := dao.load()
+	if err != nil {
+		return nil, err
+	}
+	return mirror.Apps, nil
+}
+
+func (dao *HealthDao) Sites() ([]*model.Site, error) {
+	mirror, err := dao.load()
+	if err != nil {
+		return nil, err
+	}
+	return mirror.Sites, nil
+}
+
+func (dao *HealthDao) Files() (map[string][]*model.Source, error) {
+	mirror, err := dao.load()
+	if err != nil {
+		return nil, err
+	}
+	files := make(map[string][]*model.Source)
+	for _, site := range mirror.Sites {
+		for _, src := range site.Sources {
+			sources := files[src.File]
+			if sources == nil {
+				sources = make([]*model.Source, 0)
 			}
-			sites[s.Site.Name] = s.Site
+			exist := false
+			for _, b := range sources {
+				if src == b {
+					exist = true
+					break
+				}
+			}
+			if !exist {
+				sources = append(sources, src)
+			}
+			files[src.File] = sources
 		}
 	}
+	return files, nil
+}
+
+func (dao *HealthDao) Update(sites []*model.Site) error {
+	cfg := config.Get()
 	client := &statuspage.Client{Client: http.DefaultClient, APIKey: cfg.GetString("statuspage.key")}
 	pageID := cfg.GetString("statuspage.page")
 	groupID := cfg.GetString("statuspage.group")
@@ -127,12 +147,12 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 	for _, comp := range components {
 		componentsByName[comp.Name] = comp
 	}
-	for name, s := range sites {
-		log.Debugf("Updating site: %s", name)
-		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(name).Get(dao.Context)
+	for _, s := range sites {
+		log.Debugf("Updating site: %s", s.Name)
+		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(s.Name).Get(dao.Context)
 		if err != nil {
 			if status.Code(err) != codes.NotFound {
-				log.Errorf("Failed to get site %s: %s", name, err.Error())
+				log.Errorf("Failed to get site %s: %s", s.Name, err.Error())
 				return err
 			}
 		}
@@ -143,20 +163,14 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 		goods := make([]string, 0)
 		var latency time.Duration
 		bads := make([]string, 0)
-		for _, a := range artifacts {
-			for _, s := range a.Sources {
-				if name != s.Site.Name {
-					continue
-				}
-				url := s.URL.String()
-				site.Sources[url] = s
-				switch s.Status {
-				case model.GOOD:
-					goods = append(goods, url)
-					latency += s.Latency
-				case model.BAD:
-					bads = append(bads, url)
-				}
+		for _, s := range s.Sources {
+			site.Sources[s.URLString] = s
+			switch s.Status {
+			case model.GOOD:
+				goods = append(goods, s.URLString)
+				latency += s.Latency
+			case model.BAD:
+				bads = append(bads, s.URLString)
 			}
 		}
 		if len(goods) > 0 {
@@ -169,10 +183,10 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 		if s.Hidden {
 			continue
 		}
-		comp := componentsByName[name]
+		comp := componentsByName[s.Name]
 		if comp == nil {
-			log.Warnf("Creating component: %s", name)
-			comp, err = client.CreateComponent(pageID, groupID, name)
+			log.Warnf("Creating component: %s", s.Name)
+			comp, err = client.CreateComponent(pageID, groupID, s.Name)
 			if err != nil {
 				return err
 			}
@@ -186,19 +200,19 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 		} else {
 			status = "partial_outage"
 		}
-		log.Debugf("Updating status: %s => %s", name, status)
+		log.Debugf("Updating component status: %s => %s", s.Name, status)
 		err = client.UpdateComponentStatus(comp, status)
 		if err != nil {
 			return err
 		}
 		if comp.Status == "operational" && status != comp.Status {
-			log.Warnf("Creating incident due to %s is not operational", name)
-			_, err = client.CreateIncident(pageID, comp.ID, fmt.Sprintf("%s is not operational.", name), bads)
+			log.Warnf("Creating incident due to %s is not operational", s.Name)
+			_, err = client.CreateIncident(pageID, comp.ID, fmt.Sprintf("%s is not operational.", s.Name), bads)
 			if err != nil {
 				return err
 			}
 		} else if status == "operational" && status != comp.Status {
-			log.Warnf("Resolving incident due to %s is back", name)
+			log.Warnf("Resolving incident due to %s is back", s.Name)
 			err = client.ResolveIncidents(pageID, comp.ID)
 			if err != nil {
 				return err
@@ -208,63 +222,42 @@ func (dao *HealthDao) Update(artifacts []*model.Artifact) error {
 	return nil
 }
 
-func (dao *HealthDao) GetURLs(artifact *model.Artifact) ([]*url.URL, error) {
-	cfg := config.Get()
-	sites := make(map[string]*site)
-	for _, src := range artifact.Sources {
-		if src.Site.Hidden {
-			continue
-		}
-		if sites[src.Site.Name] != nil {
-			continue
-		}
-		sites[src.Site.Name] = &site{
-			Sources: make(map[string]*model.Source),
-		}
+func (dao *HealthDao) GetURLs(file string) ([]*url.URL, error) {
+	mirror, err := dao.load()
+	if err != nil {
+		return nil, err
 	}
-	for name, site := range sites {
-		log.Debugf("Getting site status: %s", name)
-		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(name).Get(dao.Context)
-		if err != nil {
-			log.Warnf("Failed to get site %s: %s", name, err.Error())
-			continue
-		}
-		if doc.Exists() {
-			err = doc.DataTo(site)
-			if err != nil {
-				return nil, err
+	sources := make([]*model.Source, 0)
+	for _, site := range mirror.Sites {
+		for _, src := range site.Sources {
+			if src.File == file {
+				sources = append(sources, src)
 			}
 		}
 	}
 	var maxLatency time.Duration
-	for _, src := range artifact.Sources {
-		site := sites[src.Site.Name]
-		if site == nil {
+	for _, src := range sources {
+		if src.Site.Hidden {
 			continue
 		}
-		s := site.Sources[src.URL.String()]
-		if s == nil {
-			continue
-		}
-		src.Latency = s.Latency
-		if s.Latency > maxLatency {
-			maxLatency = s.Latency
+		if src.Latency > maxLatency {
+			maxLatency = src.Latency
 		}
 	}
 	weights := make(map[string]int)
-	for _, src := range artifact.Sources {
+	for _, src := range sources {
 		if src.Site.Hidden {
 			continue
 		}
 		if src.Latency <= 0 {
 			continue
 		}
-		weights[src.URL.String()] = int(math.Max(1.0, 100.0*float64(maxLatency)/float64(src.Latency)))
+		weights[src.URLString] = int(math.Max(1.0, 100.0*float64(maxLatency)/float64(src.Latency)))
 	}
 	log.Debugf("URL weights: %v", weights)
 	urls := make([]*url.URL, 0)
-	for _, src := range artifact.Sources {
-		weight := weights[src.URL.String()]
+	for _, src := range sources {
+		weight := weights[src.URLString]
 		switch src.Status {
 		case model.GOOD:
 			for i := 0; i < weight; i++ {

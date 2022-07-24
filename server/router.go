@@ -29,21 +29,21 @@ func NewRouter(webroot string) (*mux.Router, error) {
 	qrcode := &controller.QRCodeController{}
 	endpoint.HandleFunc("/qrcode", qrcode.Generate).Methods("GET", "HEAD")
 
-	artifacts, err := mirror.Artifacts()
+	mirror, err := mirror.Get()
 	if err != nil {
 		return nil, err
 	}
-	for _, a := range artifacts {
-		artifact := &controller.ArtifactController{
-			Artifact: a,
-		}
-		endpoint.HandleFunc(fmt.Sprintf("/%s", a.File), artifact.Download).Methods("GET", "HEAD")
+	for _, file := range mirror.Files {
+		c := &controller.FileController{File: file}
+		endpoint.HandleFunc(fmt.Sprintf("/%s", file), c.Download).Methods("GET", "HEAD")
 	}
 
 	app := &controller.AppController{}
 	endpoint.HandleFunc("/apps", app.List).Methods("GET")
-	artifact := &controller.ArtifactController{}
-	endpoint.HandleFunc("/artifacts", artifact.List).Methods("GET")
+	site := &controller.SiteController{}
+	endpoint.HandleFunc("/sites", site.List).Methods("GET")
+	file := &controller.FileController{}
+	endpoint.HandleFunc("/files", file.List).Methods("GET")
 	r.NotFoundHandler = &webrootHandler{
 		path: webroot,
 	}
