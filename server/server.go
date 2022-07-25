@@ -26,7 +26,7 @@ func New() *server {
 
 func (s *server) Run(webroot string) error {
 	cfg := config.Get()
-	r, err := NewRouter(webroot)
+	r, err := newRouter(webroot)
 	if err != nil {
 		return err
 	}

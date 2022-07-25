@@ -1,16 +1,17 @@
 sites:
-- name: Rex
-  endpoint: rudy.basecamp.tw
-  scheme: https
 - name: KC Wu
-  endpoint: moi.kcwu.csie.org
   scheme: https
+  host: moi.kcwu.csie.org
 - name: Happyman
-  endpoint: map.happyman.idv.tw/rudy
   scheme: https
+  host: map.happyman.idv.tw
+  prefix: /rudy
+- name: Rex
+  scheme: https
+  host: rudy.basecamp.tw
 - name: Map Manager
-  endpoint: d3r5lsn28erp7o.cloudfront.net
   scheme: https
+  host: d3r5lsn28erp7o.cloudfront.net
   hidden: true
 apps:
 - id: gts
