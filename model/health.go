@@ -5,6 +5,7 @@ type Status int
 const (
 	GOOD = iota
 	BAD
+	UNKNWON
 )
 
 func (s Status) String() string {
@@ -14,7 +15,7 @@ func (s Status) String() string {
 	case BAD:
 		return "BAD"
 	}
-	return ""
+	return "UNKNWON"
 }
 
 type Health struct {

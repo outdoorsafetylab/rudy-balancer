@@ -38,11 +38,12 @@ func newRouter(webroot string) (*mux.Router, error) {
 	if err != nil {
 		return nil, err
 	}
-	for _, file := range mirror.Files {
-		c := &controller.FileController{File: file}
-		endpoint.HandleFunc(fmt.Sprintf("/%s", file), c.Download).Methods("GET", "HEAD")
+	for _, files := range mirror.Files {
+		for _, file := range files {
+			c := &controller.FileController{File: file}
+			endpoint.HandleFunc(fmt.Sprintf("/%s", file), c.Download).Methods("GET", "HEAD")
+		}
 	}
-
 	app := &controller.AppController{}
 	endpoint.HandleFunc("/apps", app.List).Methods("GET")
 	site := &controller.SiteController{}

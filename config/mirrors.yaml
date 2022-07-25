@@ -1,3 +1,44 @@
+files:
+  others:
+  - extra/Markchoo.map.zip
+  - extra/Compartment.map.zip
+  - hgtmix.zip
+  - hgt90.zip
+  - legend_V1R1.pdf
+  daily:
+  - drops/MOI_OSM_Taiwan_TOPO_Rudy.map.zip
+  - drops/MOI_OSM_Taiwan_TOPO_Rudy_style.zip
+  - drops/MOI_OSM_Taiwan_TOPO_Rudy_hs_style.zip
+  - drops/MOI_OSM_Taiwan_TOPO_Rudy_locus_style.zip
+  - drops/MOI_OSM_extra_style.zip
+  - drops/MOI_OSM_bn_style.zip
+  - drops/MOI_OSM_dn_style.zip
+  - drops/Install_MOI_Taiwan_TOPO_camp3D.exe
+  - drops/Taiwan_moi_zh_camp3D.gmap.zip
+  weekly:
+  - carto_all.cpkg
+  - carto_upgrade.cpkg
+  - carto_dem.cpkg
+  - carto_style.cpkg
+  - carto_map.cpkg
+  - MOI_OSM_Taiwan_TOPO_Rudy.map.zip
+  - MOI_OSM_Taiwan_TOPO_Rudy.zip
+  - MOI_OSM_Taiwan_TOPO_Rudy_locus.zip
+  - MOI_OSM_Taiwan_TOPO_Rudy_hs_style.zip
+  - MOI_OSM_Taiwan_TOPO_Lite.zip
+  - MOI_OSM_Taiwan_TOPO_Lite.map.zip
+  - MOI_OSM_Taiwan_TOPO_Lite_style.zip
+  - MOI_OSM_Taiwan_TOPO_Rudy.poi.zip
+  - MOI_OSM_Taiwan_TOPO_Rudy_style.zip
+  - MOI_OSM_twmap_style.zip
+  - MOI_OSM_Taiwan_TOPO_Rudy_locus_style.zip
+  - MOI_OSM_extra_style.zip
+  - MOI_OSM_bn_style.zip
+  - MOI_OSM_dn_style.zip
+  - gmapsupp_Taiwan_moi_zh_bw.img.zip
+  - gmapsupp_Taiwan_moi_zh_odc.img.zip
+  - Install_MOI_Taiwan_TOPO_odc3D.exe
+  - Taiwan_moi_zh_odc3D.gmap.zip
 sites:
 - name: Rex
   scheme: https
