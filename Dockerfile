@@ -12,7 +12,7 @@ WORKDIR /src/
 
 ARG GIT_HASH
 ARG GIT_TAG
-RUN go build -ldflags="-X service/version.GitHash=${GIT_HASH} -X service/version.GitTag=${GIT_TAG}" -o serviced .
+RUN go mod tidy && go build -ldflags="-X service/version.GitHash=${GIT_HASH} -X service/version.GitTag=${GIT_TAG}" -o serviced .
 
 FROM alpine:3.12
 
