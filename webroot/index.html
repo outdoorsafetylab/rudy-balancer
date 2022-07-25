@@ -74,7 +74,7 @@
     <main class="container">
       <div v-for="app in selectedApps" :key="app.ID" class="my-3 p-3 bg-body rounded shadow-sm">
         <div class="d-flex align-items-center p-2 text-white bg-dark rounded shadow-sm">
-          <img class="me-3" v-bind:src="app.Icon" alt="" width="32" height="32">
+          <img class="me-3" v-bind:src="iconUrl(app.Icon)" alt="" width="32" height="32">
           <div class="lh-1">
             <h1 class="h6 mb-0 text-white lh-1">{{app.Name}}</h1>
           </div>
@@ -207,8 +207,15 @@
           }
           return [this.selectedVariant];
         },
+        iconUrl(icon) {
+          if (icon.startsWith('/')) {
+            return window.location.origin + icon;
+          } else {
+            return icon;
+          }
+        },
         qrcodeURL(artifact) {
-          return '/v1/qrcode?text=' + encodeURIComponent(artifact.URL) + '&icon=' + encodeURIComponent(artifact.Icon);
+          return '/v1/qrcode?text=' + encodeURIComponent(artifact.URL) + '&icon=' + encodeURIComponent(this.iconUrl(artifact.Icon));
         },
         artifactDate(artifact) {
           var newest = 0;
@@ -251,7 +258,7 @@
           tooltip = tooltip + '\n檢查時間: ' + this.readableElapsedTime(lastCheck) + '前'
           return tooltip;
         },
-        readableFileSize(bytes, si = false, dp = 1) {
+        readableFileSize(bytes, si = true, dp = 0) {
           const thresh = si ? 1000 : 1024;
           if (Math.abs(bytes) < thresh) {
             return bytes + ' B';
