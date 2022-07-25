@@ -1,10 +1,9 @@
-FROM golang:1.15-alpine as go-builder
+FROM golang:1.18-alpine as go-builder
 
 RUN apk update \
     && apk upgrade \
     && apk add --no-cache \
-      curl ca-certificates protobuf \
-      git make \
+      git \
     && rm -rf /var/cache/apk/* /tmp/*
 
 RUN mkdir -p /src/

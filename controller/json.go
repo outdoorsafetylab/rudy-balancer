@@ -9,18 +9,12 @@ import (
 
 func writeJSON(w http.ResponseWriter, r *http.Request, body interface{}) {
 	if boolVar(r, "pretty", false) {
-		data, err := json.Marshal(body)
+		data, err := json.MarshalIndent(body, "", "  ")
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
 		}
-		var dst bytes.Buffer
-		err = json.Indent(&dst, data, "", "  ")
-		if err != nil {
-			http.Error(w, err.Error(), 500)
-			return
-		}
-		_, err = io.Copy(w, &dst)
+		_, err = io.Copy(w, bytes.NewBuffer(data))
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
