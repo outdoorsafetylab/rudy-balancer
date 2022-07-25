@@ -86,9 +86,9 @@
               <div class="card shadow-sm">
                 <img class="bd-placeholder-img card-img-top" v-bind:src="qrcodeURL(artifact)">
                 <div class="card-body">
-                  <h5 class="card-title">{{artifact.Name}}</h5>
+                  <h5 class="card-title position-relative">{{artifact.Name}} <sup>({{artifactDate(artifact)}})</sup></h5>
                   <div>
-                    <span v-for="source in artifact.Sources" style="padding-right: 2pt;">
+                    <span v-for="source in artifact.Sources" class="me-1">
                       <span v-bind:class="badgeClasses(source)" data-bs-toggle="tooltip"
                         v-bind:title="sourceTooltip(source)">{{source.Site.Name}}</span>
                     </span>
@@ -210,6 +210,20 @@
         qrcodeURL(artifact) {
           return '/v1/qrcode?text=' + encodeURIComponent(artifact.URL) + '&icon=' + encodeURIComponent(artifact.Icon);
         },
+        artifactDate(artifact) {
+          var newest = 0;
+          for (var i = 0; i < artifact.Sources.length; i++) {
+            let source = artifact.Sources[i];
+            if (source.Status == 0) {
+              newest = Math.max(source.LastModified)
+            }
+          }
+          if (newest > 0) {
+            return new Date(newest*1000).toLocaleDateString();
+          } else {
+            return '日期不明';
+          }
+        },
         badgeClasses(source) {
           if (source.Site.Hidden) {
             return 'd-none';
@@ -234,7 +248,7 @@
             }
           }
           var lastCheck = new Date().getTime() / 1000 - source.LastCheck;
-          tooltip = tooltip + '\n檢查時間:' + this.readableElapsedTime(lastCheck) + '前'
+          tooltip = tooltip + '\n檢查時間: ' + this.readableElapsedTime(lastCheck) + '前'
           return tooltip;
         },
         readableFileSize(bytes, si = false, dp = 1) {
@@ -257,7 +271,7 @@
           if (seconds <= 60) {
             return Math.round(seconds) + '秒';
           } else if (seconds <= 3600) {
-            return Math.round(seconds / 60) + '分';
+            return Math.round(seconds / 60) + '分鐘';
           } else {
             return Math.round(seconds / 3600) + '小時';
           }
