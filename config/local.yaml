@@ -6,6 +6,8 @@ webroot: ./webroot
 mirrors:
   file: config/mirrors.yaml
   default_scheme: "http:"
+healthcheck:
+  auth: test
 firestore:
   # project_id: test
   project_id: "*detect-project-id*"
