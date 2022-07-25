@@ -1,4 +1,8 @@
 sites:
+- name: Rex
+  scheme: https
+  host: rudy.basecamp.tw
+  weight: 1
 - name: KC Wu
   scheme: https
   host: moi.kcwu.csie.org
@@ -7,10 +11,6 @@ sites:
   scheme: https
   host: map.happyman.idv.tw
   prefix: /rudy
-  weight: 1
-- name: Rex
-  scheme: https
-  host: rudy.basecamp.tw
   weight: 1
 - name: Map Manager
   scheme: https
