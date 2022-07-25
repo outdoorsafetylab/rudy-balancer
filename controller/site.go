@@ -9,11 +9,12 @@ import (
 type SiteController struct{}
 
 type site struct {
-	Name     string
-	Hidden   bool
-	Endpoint string
-	Scheme   string
-	Sources  []*model.Source
+	Name    string
+	Hidden  bool
+	Scheme  string
+	Host    string
+	Prefix  string
+	Sources []*model.Source
 }
 
 func (c *SiteController) List(w http.ResponseWriter, r *http.Request) {
@@ -31,11 +32,12 @@ func (c *SiteController) List(w http.ResponseWriter, r *http.Request) {
 	res := make([]*site, len(sites))
 	for i, s := range sites {
 		res[i] = &site{
-			Name:     s.Name,
-			Hidden:   s.Hidden,
-			Endpoint: s.Endpoint,
-			Scheme:   s.Scheme,
-			Sources:  s.Sources,
+			Name:    s.Name,
+			Hidden:  s.Hidden,
+			Scheme:  s.Scheme,
+			Host:    s.Host,
+			Prefix:  s.Prefix,
+			Sources: s.Sources,
 		}
 	}
 	writeJSON(w, r, &res)

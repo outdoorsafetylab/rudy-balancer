@@ -3,7 +3,6 @@ package dao
 import (
 	"context"
 	"fmt"
-	"math"
 	"net/http"
 	"service/config"
 	"service/firestore"
@@ -234,24 +233,25 @@ func (dao *HealthDao) GetURLs(file string) ([]string, error) {
 			}
 		}
 	}
-	var maxLatency time.Duration
-	for _, src := range sources {
-		if src.Site.Hidden {
-			continue
-		}
-		if src.Latency > maxLatency {
-			maxLatency = src.Latency
-		}
-	}
+	// var maxLatency time.Duration
+	// for _, src := range sources {
+	// 	if src.Site.Hidden {
+	// 		continue
+	// 	}
+	// 	if src.Latency > maxLatency {
+	// 		maxLatency = src.Latency
+	// 	}
+	// }
 	weights := make(map[string]int)
 	for _, src := range sources {
 		if src.Site.Hidden {
 			continue
 		}
-		if src.Latency <= 0 {
-			continue
-		}
-		weights[src.URL] = int(math.Max(1.0, 100.0*float64(maxLatency)/float64(src.Latency)))
+		weights[src.URL] = src.Site.Weight
+		// if src.Latency <= 0 {
+		// 	continue
+		// }
+		// weights[src.URL] = int(math.Max(1.0, 100.0*float64(maxLatency)/float64(src.Latency)))
 	}
 	log.Debugf("URL weights: %v", weights)
 	urls := make([]string, 0)
@@ -264,5 +264,6 @@ func (dao *HealthDao) GetURLs(file string) ([]string, error) {
 			}
 		}
 	}
+	log.Debugf("URL candidates: %v", urls)
 	return urls, nil
 }

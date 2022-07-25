@@ -116,6 +116,7 @@
     new Vue({
       el: '#app',
       data: {
+        prefix: '/app',
         apps: [],
         selectedApp: null,
         selectedVariant: null,
@@ -166,6 +167,7 @@
           var apps = this.apps;
           var paths = window.location.pathname.split('/');
           paths.shift();
+          if (this.prefix) paths.shift();
           var appID = paths.shift();
           if (appID) {
             for (var i = 0; i < apps.length; i++) {
@@ -189,11 +191,11 @@
           }
           this.$watch('selectedApp', function (app) {
             this.selectedVariant = null;
-            history.replaceState({}, null, '/' + app.ID);
+            history.replaceState({}, null, this.prefix + '/' + app.ID);
           });
           this.$watch('selectedVariant', function (variant) {
             if (!variant) return;
-            history.replaceState({}, null, '/' + this.selectedApp.ID + '/' + variant.ID);
+            history.replaceState({}, null, this.prefix + '/' + this.selectedApp.ID + '/' + variant.ID);
           });
         },
         selectedVariants: function (app) {

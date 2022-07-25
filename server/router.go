@@ -2,6 +2,8 @@ package server
 
 import (
 	"fmt"
+	"net/http/httputil"
+	"net/url"
 	"service/config"
 	"service/controller"
 	"service/middleware"
@@ -10,10 +12,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func NewRouter(webroot string) (*mux.Router, error) {
+func newRouter(webroot string) (*mux.Router, error) {
 	cfg := config.Get()
 
 	r := mux.NewRouter()
+	r.PathPrefix("/app").Handler(&webrootHandler{
+		path: webroot,
+	})
 
 	prefix := cfg.GetString("endpoint")
 	endpoint := r.PathPrefix(prefix).Subrouter()
@@ -44,8 +49,11 @@ func NewRouter(webroot string) (*mux.Router, error) {
 	endpoint.HandleFunc("/sites", site.List).Methods("GET")
 	file := &controller.FileController{}
 	endpoint.HandleFunc("/files", file.List).Methods("GET")
-	r.NotFoundHandler = &webrootHandler{
-		path: webroot,
+	// r.NotFoundHandler = newProxy(mirror.Sites)
+	target, err := url.Parse(cfg.GetString("proxy.target"))
+	if err != nil {
+		return nil, err
 	}
+	r.NotFoundHandler = httputil.NewSingleHostReverseProxy(target)
 	return r, nil
 }
