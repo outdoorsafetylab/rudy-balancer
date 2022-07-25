@@ -1,6 +1,7 @@
 package mirror
 
 import (
+	"fmt"
 	"path/filepath"
 	"service/config"
 	"service/model"
@@ -9,9 +10,9 @@ import (
 )
 
 type Mirror struct {
+	Files map[string][]string
 	Sites []*model.Site
 	Apps  []*model.App
-	Files []string
 }
 
 func load() (*Mirror, error) {
@@ -30,42 +31,45 @@ func load() (*Mirror, error) {
 		return nil, err
 	}
 	files := make(map[string]string)
+	for _, list := range meta.Files {
+		for _, filename := range list {
+			if files[filename] != "" {
+				return nil, fmt.Errorf("duplicated file: %s", filename)
+			}
+			files[filename] = filename
+		}
+	}
 	sources := make(map[string]*model.Source)
+	for _, site := range meta.Sites {
+		for filename := range files {
+			source := &model.Source{
+				Site: site,
+				URL:  site.GetURL(filename),
+				File: filename,
+			}
+			site.Sources = append(site.Sources, source)
+			sources[source.URL] = source
+		}
+	}
 	for _, app := range meta.Apps {
 		for _, v := range app.Variants {
 			if v.Icon == "" {
 				v.Icon = app.Icon
 			}
 			for _, a := range v.Artifacts {
+				if files[a.File] == "" {
+					return nil, fmt.Errorf("undefined file: %s", a.File)
+				}
 				if a.Icon == "" {
 					a.Icon = v.Icon
 				}
 				a.App = app
 				a.Variant = v
-				a.Sources = make([]*model.Source, 0)
-				for _, s := range meta.Sites {
-					u := s.GetURL(a.File)
-					src := sources[u]
-					if src == nil {
-						src = &model.Source{
-							Site: s,
-							URL:  u,
-							File: a.File,
-						}
-						s.Sources = append(s.Sources, src)
-						sources[u] = src
-					}
-					a.Sources = append(a.Sources, src)
-				}
-				if files[a.File] == "" {
-					files[a.File] = a.File
+				for _, site := range meta.Sites {
+					a.Sources = append(a.Sources, sources[site.GetURL(a.File)])
 				}
 			}
 		}
-	}
-	meta.Files = make([]string, 0)
-	for _, file := range files {
-		meta.Files = append(meta.Files, file)
 	}
 	return meta, nil
 }

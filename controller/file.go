@@ -22,7 +22,7 @@ func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
 	}
 	if urls == nil || len(urls) <= 0 {
 		log.Warningf("No available sources: %s", c.File)
-		http.Error(w, fmt.Sprintf("No available sources: %s", c.File), 501)
+		http.Error(w, fmt.Sprintf("No available sources: %s", c.File), 502)
 		return
 	}
 	u := urls[rand.Intn(len(urls))]

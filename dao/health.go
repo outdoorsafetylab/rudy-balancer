@@ -52,6 +52,7 @@ func (dao *HealthDao) load() (*mirror.Mirror, error) {
 			ss := saved.Sources[s.URL]
 			if ss == nil {
 				log.Warnf("Source states not available: %s", s.URL)
+				s.Status = model.UNKNWON
 				continue
 			}
 			s.LastCheck = ss.LastCheck

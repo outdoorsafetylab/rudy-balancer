@@ -28,7 +28,7 @@ func (c *HealthController) Check(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	client := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 1 * time.Second,
 	}
 	for _, site := range sites {
 		for _, s := range site.Sources {
