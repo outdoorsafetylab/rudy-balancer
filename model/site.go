@@ -16,6 +16,7 @@ type Site struct {
 	Host    string    `json:"-"`
 	Prefix  string    `json:"-"`
 	Sources []*Source `json:"-"`
+	Weight  int       `json:"-"`
 }
 
 func (s *Site) GetURL(uri string) string {

@@ -2,16 +2,20 @@ sites:
 - name: KC Wu
   scheme: https
   host: moi.kcwu.csie.org
+  weight: 1
 - name: Happyman
   scheme: https
   host: map.happyman.idv.tw
   prefix: /rudy
+  weight: 1
 - name: Rex
   scheme: https
   host: rudy.basecamp.tw
+  weight: 1
 - name: Map Manager
   scheme: https
   host: d3r5lsn28erp7o.cloudfront.net
+  weight: 0
   hidden: true
 apps:
 - id: gts
