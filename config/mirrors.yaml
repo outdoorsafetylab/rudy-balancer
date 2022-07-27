@@ -35,10 +35,21 @@ files:
   - MOI_OSM_extra_style.zip
   - MOI_OSM_bn_style.zip
   - MOI_OSM_dn_style.zip
+  - MOI_OSM_tn_style.zip
+  - gmapsupp_Taiwan_moi_en_bw.img.zip
   - gmapsupp_Taiwan_moi_zh_bw.img.zip
+  - gmapsupp_Taiwan_moi_zh_bw3D.img.zip
   - gmapsupp_Taiwan_moi_zh_odc.img.zip
+  - gmapsupp_Taiwan_moi_zh_odc3D.img.zip
+  - gmapsupp_Taiwan_moi_zh_camp3D.img.zip
   - Install_MOI_Taiwan_TOPO_odc3D.exe
+  - Install_MOI_Taiwan_TOPO_camp.exe
+  - Install_MOI_Taiwan_TOPO_camp3D_en.exe
+  - Install_MOI_Taiwan_TOPO_camp3D.exe
+  - Taiwan_moi_en_camp3D.gmap.zip
   - Taiwan_moi_zh_odc3D.gmap.zip
+  - Taiwan_moi_zh_camp.gmap.zip
+  - Taiwan_moi_zh_camp3D.gmap.zip
 sites:
 - name: Rex
   scheme: https
