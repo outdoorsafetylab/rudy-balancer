@@ -9,6 +9,7 @@ import (
 type SiteController struct{}
 
 type site struct {
+	ID      string
 	Name    string
 	Hidden  bool
 	Scheme  string
@@ -32,6 +33,7 @@ func (c *SiteController) List(w http.ResponseWriter, r *http.Request) {
 	res := make([]*site, len(sites))
 	for i, s := range sites {
 		res[i] = &site{
+			ID:      s.ID,
 			Name:    s.Name,
 			Hidden:  s.Hidden,
 			Scheme:  s.Scheme,

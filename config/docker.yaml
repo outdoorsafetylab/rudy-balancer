@@ -1,7 +1,5 @@
 port: 8080
 endpoint: /v1
-proxy:
-  target: https://map.happyman.idv.tw/rudy
 webroot: /webroot
 mirrors:
   file: /mirrors.yaml

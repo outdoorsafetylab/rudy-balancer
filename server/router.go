@@ -2,12 +2,14 @@ package server
 
 import (
 	"fmt"
+	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"service/config"
 	"service/controller"
 	"service/middleware"
 	"service/mirror"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -50,11 +52,27 @@ func newRouter(webroot string) (*mux.Router, error) {
 	endpoint.HandleFunc("/sites", site.List).Methods("GET")
 	file := &controller.FileController{}
 	endpoint.HandleFunc("/files", file.List).Methods("GET")
-	// r.NotFoundHandler = newProxy(mirror.Sites)
-	target, err := url.Parse(cfg.GetString("proxy.target"))
-	if err != nil {
-		return nil, err
+	reverseProxy := &proxyHandler{
+		ProbeClient: http.Client{Timeout: time.Second},
+		Redirects:   make(map[string]bool),
 	}
-	r.NotFoundHandler = httputil.NewSingleHostReverseProxy(target)
+	for _, files := range mirror.Files {
+		for _, file := range files {
+			reverseProxy.Redirects["/"+file] = true
+		}
+	}
+	for _, site := range mirror.Sites {
+		url, err := url.Parse(site.GetURL(""))
+		if err != nil {
+			return nil, err
+		}
+		for i := 0; i < site.Weight; i++ {
+			reverseProxy.Targets = append(reverseProxy.Targets, &proxyTarget{
+				Site:  site,
+				Proxy: httputil.NewSingleHostReverseProxy(url),
+			})
+		}
+	}
+	r.NotFoundHandler = reverseProxy
 	return r, nil
 }

@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"net/http"
 	"service/dao"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -25,6 +26,7 @@ func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("No available sources: %s", c.File), 502)
 		return
 	}
+	rand.Seed(time.Now().UnixNano())
 	u := urls[rand.Intn(len(urls))]
 	log.Warningf("Redircting: %s => %s", c.File, u)
 	http.Redirect(w, r, u, 302)

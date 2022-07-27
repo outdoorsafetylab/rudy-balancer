@@ -10,11 +10,13 @@ import (
 )
 
 type Site struct {
+	ID      string `json:"-" firestore:"-"`
 	Name    string
 	Hidden  bool      `json:",omitempty"`
 	Scheme  string    `json:"-"`
 	Host    string    `json:"-"`
 	Prefix  string    `json:"-"`
+	Landing string    `json:"-"`
 	Sources []*Source `json:"-"`
 	Weight  int       `json:"-"`
 }

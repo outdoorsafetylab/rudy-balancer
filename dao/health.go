@@ -33,13 +33,16 @@ func (dao *HealthDao) load() (*mirror.Mirror, error) {
 	}
 	cfg := config.Get()
 	for _, s := range mirror.Sites {
-		log.Debugf("Loading site status: %s", s.Name)
-		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(s.Name).Get(dao.Context)
+		log.Debugf("Loading site status: %s", s.ID)
+		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(s.ID).Get(dao.Context)
 		if err != nil {
 			if status.Code(err) != codes.NotFound {
-				log.Errorf("Failed to load site %s: %s", s.Name, err.Error())
+				log.Errorf("Failed to load site %s: %s", s.ID, err.Error())
 				return nil, err
 			} else {
+				for _, s := range s.Sources {
+					s.Status = model.UNKNWON
+				}
 				continue
 			}
 		}
@@ -147,11 +150,11 @@ func (dao *HealthDao) Update(sites []*model.Site) error {
 		componentsByName[comp.Name] = comp
 	}
 	for _, s := range sites {
-		log.Debugf("Updating site: %s", s.Name)
-		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(s.Name).Get(dao.Context)
+		log.Debugf("Updating site: %s", s.ID)
+		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(s.ID).Get(dao.Context)
 		if err != nil {
 			if status.Code(err) != codes.NotFound {
-				log.Errorf("Failed to get site %s: %s", s.Name, err.Error())
+				log.Errorf("Failed to get site %s: %s", s.ID, err.Error())
 				return err
 			}
 		}
@@ -182,10 +185,10 @@ func (dao *HealthDao) Update(sites []*model.Site) error {
 		if s.Hidden {
 			continue
 		}
-		comp := componentsByName[s.Name]
+		comp := componentsByName[s.ID]
 		if comp == nil {
-			log.Warnf("Creating component: %s", s.Name)
-			comp, err = client.CreateComponent(pageID, groupID, s.Name)
+			log.Warnf("Creating component: %s", s.ID)
+			comp, err = client.CreateComponent(pageID, groupID, s.ID)
 			if err != nil {
 				return err
 			}
@@ -199,19 +202,19 @@ func (dao *HealthDao) Update(sites []*model.Site) error {
 		} else {
 			status = "partial_outage"
 		}
-		log.Debugf("Updating component status: %s => %s", s.Name, status)
+		log.Debugf("Updating component status: %s => %s", s.ID, status)
 		err = client.UpdateComponentStatus(comp, status)
 		if err != nil {
 			return err
 		}
 		if comp.Status == "operational" && status != comp.Status {
-			log.Warnf("Creating incident due to %s is not operational", s.Name)
-			_, err = client.CreateIncident(pageID, comp.ID, fmt.Sprintf("%s is not operational.", s.Name), bads)
+			log.Warnf("Creating incident due to %s is not operational", s.ID)
+			_, err = client.CreateIncident(pageID, comp.ID, fmt.Sprintf("%s is not operational.", s.ID), bads)
 			if err != nil {
 				return err
 			}
 		} else if status == "operational" && status != comp.Status {
-			log.Warnf("Resolving incident due to %s is back", s.Name)
+			log.Warnf("Resolving incident due to %s is back", s.ID)
 			err = client.ResolveIncidents(pageID, comp.ID)
 			if err != nil {
 				return err

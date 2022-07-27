@@ -47,13 +47,15 @@ sites:
 - name: KC Wu
   scheme: https
   host: moi.kcwu.csie.org
+  landing: taiwan_topo.html
   weight: 1
 - name: Happyman
   scheme: https
   host: map.happyman.idv.tw
   prefix: /rudy
   weight: 1
-- name: Map Manager
+- id: Map Manager
+  name: OSL
   scheme: https
   host: d3r5lsn28erp7o.cloudfront.net
   weight: 0

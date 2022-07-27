@@ -238,7 +238,7 @@
           switch (source.Status) {
             case 0:
               return 'badge bg-success mb-1';
-            case 1:
+            default:
               return 'badge bg-danger mb-1';
           }
         },
@@ -253,9 +253,15 @@
               tooltip = '無法使用';
               break;
             }
+            default: {
+              tooltip = '尚未檢查';
+              break;
+            }
           }
-          var lastCheck = new Date().getTime() / 1000 - source.LastCheck;
-          tooltip = tooltip + '\n檢查時間: ' + this.readableElapsedTime(lastCheck) + '前'
+          if (source.LastCheck > 0) {
+            var lastCheck = new Date().getTime() / 1000 - source.LastCheck;
+            tooltip = tooltip + '\n檢查時間: ' + this.readableElapsedTime(lastCheck) + '前'
+          }
           return tooltip;
         },
         readableFileSize(bytes, si = true, dp = 0) {
