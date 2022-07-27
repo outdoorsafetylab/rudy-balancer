@@ -21,6 +21,9 @@ include .make/docker.mk
 watch: $(WEBINDEX) $(WATCHER) tidy
 	$(realpath $(WATCHER))
 
+healthcheck:
+	curl -H "Authorization: test" http://localhost:8080/v1/healthcheck
+
 tidy:
 	go mod tidy
 
@@ -45,4 +48,4 @@ clean: clean/golangci-lint clean/protoc clean/protoc-gen-go clean/proto clean/wa
 	rm -f go.sum
 	rm -f $(EXEC)
 
-.PHONY: all tidy lint clean test
+.PHONY: all tidy lint clean test healthcheck

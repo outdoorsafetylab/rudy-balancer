@@ -59,7 +59,7 @@ sites:
   scheme: https
   host: moi.kcwu.csie.org
   landing: taiwan_topo.html
-  weight: 1
+  weight: 4
 - name: Happyman
   scheme: https
   host: map.happyman.idv.tw
@@ -69,7 +69,7 @@ sites:
   name: OSL
   scheme: https
   host: d3r5lsn28erp7o.cloudfront.net
-  weight: 1
+  weight: 2
   hidden: false
 apps:
 - id: gts
