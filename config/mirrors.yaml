@@ -43,7 +43,7 @@ sites:
 - name: Rex
   scheme: https
   host: rudy.basecamp.tw
-  weight: 1
+  weight: 0
 - name: KC Wu
   scheme: https
   host: moi.kcwu.csie.org
@@ -58,8 +58,8 @@ sites:
   name: OSL
   scheme: https
   host: d3r5lsn28erp7o.cloudfront.net
-  weight: 0
-  hidden: true
+  weight: 1
+  hidden: false
 apps:
 - id: gts
   name: 綠野遊蹤
