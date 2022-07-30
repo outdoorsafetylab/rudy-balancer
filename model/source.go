@@ -13,6 +13,7 @@ type Source struct {
 	LastCheck        time.Time `json:"-"`
 	LastCheckUnix    int64     `json:"LastCheck" firestore:"-"`
 	Status           Status
+	Error            error     `json:"-" firestore:"-"`
 	LastModified     time.Time `json:"-"`
 	LastModifiedUnix int64     `json:"LastModified" firestore:"-"`
 	Size             int64
@@ -26,12 +27,14 @@ func (s *Source) Check(client *http.Client) error {
 	duration := time.Since(s.LastCheck)
 	if err != nil {
 		s.Status = BAD
+		s.Error = err
 		return err
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
 		s.Status = BAD
-		return errors.New(res.Status)
+		s.Error = errors.New(res.Status)
+		return s.Error
 	}
 	s.Status = GOOD
 	s.Size = res.ContentLength

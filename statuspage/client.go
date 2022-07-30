@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"service/model"
 	"strings"
 	"time"
 
@@ -105,7 +106,11 @@ func (c *Client) UpdateComponentStatus(comp *Component, status string) error {
 	return nil
 }
 
-func (c *Client) CreateIncident(pageID, componentID, name string, affectedUrls []string) (*Incident, error) {
+func (c *Client) CreateIncident(pageID, componentID, name string, affectedSources []*model.Source) (*Incident, error) {
+	urlAndErrors := make([]string, len(affectedSources))
+	for i, s := range affectedSources {
+		urlAndErrors[i] = fmt.Sprintf("%s => %s", s.URL, s.Error)
+	}
 	data := &struct {
 		Name         string   `json:"name"`
 		Status       string   `json:"status"`
@@ -115,7 +120,7 @@ func (c *Client) CreateIncident(pageID, componentID, name string, affectedUrls [
 		Name:         name,
 		Status:       "investigating",
 		ComponentIDs: []string{componentID},
-		Body:         fmt.Sprintf("Affected URLs: %s", strings.Join(affectedUrls, ", ")),
+		Body:         fmt.Sprintf("Affected URLs: %s", strings.Join(urlAndErrors, ", ")),
 	}
 	incident := &Incident{}
 	err := c.request("POST", fmt.Sprintf("/v1/pages/%s/incidents", pageID), &struct {

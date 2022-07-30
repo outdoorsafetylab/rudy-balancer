@@ -33,13 +33,14 @@ func (dao *HealthDao) load() (*mirror.Mirror, error) {
 	}
 	cfg := config.Get()
 	for _, s := range mirror.Sites {
-		log.Debugf("Loading site status: %s", s.ID)
-		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(s.ID).Get(dao.Context)
+		log.Debugf("Loading site: %s (%s)", s.Name, s.Firestore)
+		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(s.Firestore).Get(dao.Context)
 		if err != nil {
 			if status.Code(err) != codes.NotFound {
-				log.Errorf("Failed to load site %s: %s", s.ID, err.Error())
+				log.Errorf("Failed to load document %s: %s", s.Firestore, err.Error())
 				return nil, err
 			} else {
+				log.Debugf("Document not found: %s", s.Firestore)
 				for _, s := range s.Sources {
 					s.Status = model.UNKNWON
 				}
@@ -150,11 +151,11 @@ func (dao *HealthDao) Update(sites []*model.Site) error {
 		componentsByName[comp.Name] = comp
 	}
 	for _, s := range sites {
-		log.Debugf("Updating site: %s", s.ID)
-		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(s.ID).Get(dao.Context)
+		log.Debugf("Updating site: %s", s.Name)
+		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(s.Firestore).Get(dao.Context)
 		if err != nil {
 			if status.Code(err) != codes.NotFound {
-				log.Errorf("Failed to get site %s: %s", s.ID, err.Error())
+				log.Errorf("Failed to get document %s: %s", s.Firestore, err.Error())
 				return err
 			}
 		}
@@ -162,17 +163,17 @@ func (dao *HealthDao) Update(sites []*model.Site) error {
 			LastCheck: time.Now(),
 			Sources:   make(map[string]*model.Source),
 		}
-		goods := make([]string, 0)
+		goods := make([]*model.Source, 0)
 		var latency time.Duration
-		bads := make([]string, 0)
+		bads := make([]*model.Source, 0)
 		for _, s := range s.Sources {
 			site.Sources[s.URL] = s
 			switch s.Status {
 			case model.GOOD:
-				goods = append(goods, s.URL)
+				goods = append(goods, s)
 				latency += s.Latency
 			case model.BAD:
-				bads = append(bads, s.URL)
+				bads = append(bads, s)
 			}
 		}
 		if len(goods) > 0 {
@@ -185,10 +186,10 @@ func (dao *HealthDao) Update(sites []*model.Site) error {
 		if s.Hidden {
 			continue
 		}
-		comp := componentsByName[s.ID]
+		comp := componentsByName[s.StatusPage]
 		if comp == nil {
-			log.Warnf("Creating component: %s", s.ID)
-			comp, err = client.CreateComponent(pageID, groupID, s.ID)
+			log.Warnf("Creating component: %s", s.StatusPage)
+			comp, err = client.CreateComponent(pageID, groupID, s.StatusPage)
 			if err != nil {
 				return err
 			}
@@ -202,19 +203,19 @@ func (dao *HealthDao) Update(sites []*model.Site) error {
 		} else {
 			status = "partial_outage"
 		}
-		log.Debugf("Updating component status: %s => %s", s.ID, status)
+		log.Debugf("Updating component status: %s => %s", s.StatusPage, status)
 		err = client.UpdateComponentStatus(comp, status)
 		if err != nil {
 			return err
 		}
 		if comp.Status == "operational" && status != comp.Status {
-			log.Warnf("Creating incident due to %s is not operational", s.ID)
-			_, err = client.CreateIncident(pageID, comp.ID, fmt.Sprintf("%s is not operational.", s.ID), bads)
+			log.Warnf("Creating incident due to site %s is not operational", s.Name)
+			_, err = client.CreateIncident(pageID, comp.ID, fmt.Sprintf("%s is not operational.", s.Name), bads)
 			if err != nil {
 				return err
 			}
 		} else if status == "operational" && status != comp.Status {
-			log.Warnf("Resolving incident due to %s is back", s.ID)
+			log.Warnf("Resolving incident due to site %s is back", s.Name)
 			err = client.ResolveIncidents(pageID, comp.ID)
 			if err != nil {
 				return err

@@ -41,8 +41,11 @@ func load() (*Mirror, error) {
 	}
 	sources := make(map[string]*model.Source)
 	for _, site := range meta.Sites {
-		if site.ID == "" {
-			site.ID = site.Name
+		if site.StatusPage == "" {
+			site.StatusPage = site.Name
+		}
+		if site.Firestore == "" {
+			site.Firestore = site.Name
 		}
 		for filename := range files {
 			source := &model.Source{

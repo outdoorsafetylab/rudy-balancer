@@ -65,8 +65,9 @@ sites:
   host: map.happyman.idv.tw
   prefix: /rudy
   weight: 1
-- id: Map Manager
-  name: OSL
+- name: OSL
+  statuspage: Outdoor Safety Lab
+  firestore: Map Manager
   scheme: https
   host: d3r5lsn28erp7o.cloudfront.net
   weight: 2
