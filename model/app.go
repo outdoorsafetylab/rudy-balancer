@@ -5,5 +5,7 @@ type App struct {
 	Name        string
 	Icon        string
 	Description string
+	Android     bool
+	IOS         bool
 	Variants    []*Variant `json:",omitempty"`
 }

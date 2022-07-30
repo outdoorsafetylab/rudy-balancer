@@ -75,6 +75,7 @@ sites:
 apps:
 - id: gts
   name: 綠野遊蹤
+  android: true
   icon: /images/GTS.png
   description: |
     <p>綠野遊蹤支援 Android 平台。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=com.mountain.tracks">Google Play</a> 進行安裝。</p>
@@ -121,6 +122,7 @@ apps:
       file: hgt90.zip
 - id: oruxmaps
   name: OruxMaps
+  android: true
   description: |
     <p>OruxMaps 支援 Android 平台。若您還沒在手機上安裝，請先到 <a href="https://play.google.com/store/apps/details?id=com.orux.oruxmapsDonate">Google Play</a> 安裝贊助版，或至其<a href="https://www.oruxmaps.com/cs/en/more/downloads">官網</a>安裝免費版。</p>
   icon: /images/OruxMaps.jpeg
@@ -169,6 +171,7 @@ apps:
       file: hgt90.zip
 - id: locus
   name: Locus Map
+  android: true
   icon: /images/Locus.jpeg
   description: |
     <p>Locus 支援 Android 平台。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=menion.android.locus">Google Play</a> 安裝。</p>
@@ -208,6 +211,8 @@ apps:
       file: hgtmix.zip
 - id: carto
   name: Cartograph Pro 2
+  android: true
+  iOS: true
   icon: /images/Cartograph.png
   description: |
     <p>Cartograph 支援 iPhone (iOS) 及 Android 雙平台。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=eu.cartograph.pro">Google Play 安裝 Android 版</a>，或至<a href="https://apps.apple.com/tw/app/cartograph-2-maps/id1082995961">App Store 安裝 iOS 版</a>。</p>

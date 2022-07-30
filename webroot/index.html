@@ -70,7 +70,7 @@
       <div v-if="!selectedApp" class="row g-4 py-4 row-cols-1 row-cols-lg-3">
         <div v-for="app in apps" class="feature col">
           <div class="px-3">
-            <div class="mb-1"><img width="48" height="48" :src="app.Icon" :alt="app.Name"></div>
+            <div class="mb-1"><img width="48" height="48" :src="app.Icon" :alt="app.Name"><span v-if="app.IOS" class="badge bg-secondary ms-2 align-top">iOS</span><span v-if="app.Android" class="badge bg-success ms-2 align-top">Android</span></div>
             <h3>{{app.Name}}</h3>
             <div v-html="app.Description">
             </div>
