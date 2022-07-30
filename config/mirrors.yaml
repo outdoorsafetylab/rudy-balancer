@@ -76,6 +76,8 @@ apps:
 - id: gts
   name: 綠野遊蹤
   icon: /images/GTS.png
+  description: |
+    <p>提供綠野遊蹤的魯地圖自動安裝。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=com.mountain.tracks">Play Store</a> 進行安裝。</p>
   variants:
   - id: standard
     name: 傳統版
@@ -117,6 +119,8 @@ apps:
       file: hgt90.zip
 - id: oruxmaps
   name: OruxMaps
+  description: |
+    <p>提供 OruxMaps 的魯地圖自動安裝。若您還沒在手機上安裝，請先到 <a href="https://play.google.com/store/apps/details?id=com.orux.oruxmapsDonate">Play Store</a> 安裝贊助版，或至其<a href="https://www.oruxmaps.com/cs/en/more/downloads">官網</a>安裝免費版。</p>
   icon: /images/OruxMaps.jpeg
   variants:
   - id: standard
@@ -153,11 +157,48 @@ apps:
       name: 高程檔
       icon: /images/OruxMaps_dem.jpeg
       file: hgt90.zip
+- id: locus
+  name: Locus Map
+  icon: /images/Locus.jpeg
+  description: |
+    <p>提供 Locus Map 的魯地圖自動安裝。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=menion.android.locus">Play Store</a> 安裝。</p>
+  variants:
+  - id: separate
+    name: 分開安裝
+    artifacts:
+    - id: map
+      name: 離線地圖
+      icon: /images/Locus_map.jpeg
+      url: locus-actions://https/rudy.outdoors.tw/locus_map-cedric.xml
+      file: MOI_OSM_Taiwan_TOPO_Rudy_locus.zip
+    - id: style
+      name: 風格主題
+      icon: /images/Locus_style.jpeg
+      url: locus-actions://https/rudy.outdoors.tw/locus_style-cedric.xml
+      file: MOI_OSM_Taiwan_TOPO_Rudy_locus_style.zip
+    - id: hgt
+      name: 高程檔
+      icon: /images/Locus_dem.jpeg
+      url: locus-actions://https/rudy.outdoors.tw/locus_dem-cedric.xml
+      file: hgtmix.zip
+  - id: together
+    name: 合併安裝
+    artifacts:
+    - id: allinone
+      name: 三合一 (首次安裝)
+      icon: /images/Locus.jpeg
+      url: locus-actions://https/rudy.outdoors.tw/locus_all-cedric.xml
+    - id: upgrade
+      name: 地圖及風格 (後續更新)
+      icon: /images/Locus.jpeg
+      url: locus-actions://https/rudy.outdoors.tw/locus_upgrade-cedric.xml
 - id: carto
   name: Cartograph Pro 2
   icon: /images/Cartograph.png
+  description: |
+    <p>提供 Cartograph Pro 2 的魯地圖自動安裝。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=eu.cartograph.pro">Play Store 安裝 Android 版</a>，或至<a href="https://apps.apple.com/tw/app/cartograph-2-maps/id1082995961">App Store 安裝 iOS 版</a>。</p>
   variants:
-  - id: default
+  - id: separate
     name: 分開安裝
     artifacts:
     - id: map
@@ -175,14 +216,14 @@ apps:
       icon: /images/Cartograph_dem.png
       scheme: "cartograph-map:"
       file: carto_dem.cpkg
-  - id: allinone
-    name: 三合一
+  - id: together
+    name: 合併安裝
     artifacts:
-    - id: install
-      name: 首次安裝
+    - id: allinone
+      name: 三合一 (首次安裝)
       scheme: "cartograph-map:"
       file: carto_all.cpkg
-    - id: update
-      name: 更新
+    - id: upgrade
+      name: 地圖及風格 (後續更新)
       scheme: "cartograph-map:"
       file: carto_upgrade.cpkg

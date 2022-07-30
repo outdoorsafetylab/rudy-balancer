@@ -9,8 +9,8 @@ type Artifact struct {
 	Name        string
 	Icon        string
 	Scheme      string `json:"-"`
-	File        string
-	Size        int64
+	File        string `json:",omitempty"`
+	Size        int64  `json:",omitempty"`
 	URL         string
-	Sources     []*Source
+	Sources     []*Source `json:",omitempty"`
 }

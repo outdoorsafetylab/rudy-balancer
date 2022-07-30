@@ -77,6 +77,9 @@ func (dao *HealthDao) load() (*mirror.Mirror, error) {
 	for _, app := range mirror.Apps {
 		for _, v := range app.Variants {
 			for _, a := range v.Artifacts {
+				if len(a.Sources) <= 0 {
+					continue
+				}
 				size := int64(0)
 				count := 0
 				for _, s := range a.Sources {
