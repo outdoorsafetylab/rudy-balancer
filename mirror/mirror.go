@@ -59,18 +59,15 @@ func load() (*Mirror, error) {
 	}
 	for _, app := range meta.Apps {
 		for _, v := range app.Variants {
-			if v.Icon == "" {
-				v.Icon = app.Icon
-			}
 			for _, a := range v.Artifacts {
-				if files[a.File] == "" {
-					return nil, fmt.Errorf("undefined file: %s", a.File)
-				}
-				if a.Icon == "" {
-					a.Icon = v.Icon
-				}
 				a.App = app
 				a.Variant = v
+				if a.File == "" {
+					continue
+				}
+				if files[a.File] == "" {
+					return nil, fmt.Errorf("undefined file: %s > %s > %s: %s", app.Name, v.Name, a.Name, a.File)
+				}
 				for _, site := range meta.Sites {
 					a.Sources = append(a.Sources, sources[site.GetURL(a.File)])
 				}

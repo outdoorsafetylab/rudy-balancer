@@ -21,10 +21,12 @@ func (c *AppController) List(w http.ResponseWriter, r *http.Request) {
 	for _, app := range apps {
 		for _, v := range app.Variants {
 			for _, a := range v.Artifacts {
-				if a.Scheme == "" {
-					a.Scheme = cfg.GetString("mirrors.default_scheme")
+				if a.URL == "" {
+					if a.Scheme == "" {
+						a.Scheme = cfg.GetString("mirrors.default_scheme")
+					}
+					a.URL = fmt.Sprintf("%s//%s%s/%s", a.Scheme, r.Host, prefix, a.File)
 				}
-				a.URL = fmt.Sprintf("%s//%s%s/%s", a.Scheme, r.Host, prefix, a.File)
 				for _, s := range a.Sources {
 					s.URL = ""
 				}
