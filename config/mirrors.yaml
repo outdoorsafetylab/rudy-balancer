@@ -185,11 +185,11 @@ apps:
     name: 合併安裝
     artifacts:
     - id: allinone
-      name: 三合一 (首次安裝)
+      name: 三合一
       icon: /images/Locus.jpeg
       url: locus-actions://https/rudy.outdoors.tw/locus_all-cedric.xml
     - id: upgrade
-      name: 地圖及風格 (後續更新)
+      name: 地圖及風格
       icon: /images/Locus.jpeg
       url: locus-actions://https/rudy.outdoors.tw/locus_upgrade-cedric.xml
 - id: carto
@@ -220,10 +220,10 @@ apps:
     name: 合併安裝
     artifacts:
     - id: allinone
-      name: 三合一 (首次安裝)
+      name: 三合一
       scheme: "cartograph-map:"
       file: carto_all.cpkg
     - id: upgrade
-      name: 地圖及風格 (後續更新)
+      name: 地圖及風格
       scheme: "cartograph-map:"
       file: carto_upgrade.cpkg
