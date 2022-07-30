@@ -133,13 +133,13 @@ apps:
     artifacts:
     - id: map
       name: 離線地圖
-      description: <p>請至狀態列確認下載進度，安裝後記得切換地圖。</p>
+      description: <p>圖資下載需要一點時間，請至狀態列確認進度，完成後也請務必切換地圖。</p>
       icon: /images/OruxMaps_map.jpeg
       scheme: "orux-map:"
       file: MOI_OSM_Taiwan_TOPO_Rudy.map.zip
     - id: style
       name: 風格主題
-      description: <p>請至狀態列確認下載進度，安裝後記得切換風格。</p>
+      description: <p>安裝後請切換地圖風格為 MOI_OSM。</p>
       icon: /images/OruxMaps_style.jpeg
       scheme: "orux-mf-theme:"
       file: MOI_OSM_Taiwan_TOPO_Rudy_style.zip
@@ -154,13 +154,13 @@ apps:
     artifacts:
     - id: map
       name: 離線地圖
-      description: <p>請至狀態列確認下載進度，安裝後記得切換地圖。</p>
+      description: <p>圖資下載需要一點時間，請至狀態列確認進度，完成後也請務必切換地圖。</p>
       icon: /images/OruxMaps_map.jpeg
       scheme: "orux-map:"
       file: MOI_OSM_Taiwan_TOPO_Lite.map.zip
     - id: style
       name: 風格主題
-      description: <p>請至狀態列確認下載進度，安裝後記得切換風格。</p>
+      description: <p>安裝後請切換地圖風格為 MOI_OSM。</p>
       icon: /images/OruxMaps_style.jpeg
       scheme: "orux-mf-theme:"
       file: MOI_OSM_Taiwan_TOPO_Lite_style.zip
