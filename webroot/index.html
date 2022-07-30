@@ -68,8 +68,9 @@
       </nav>
     </header>
     <main class="container">
-      <div v-if="!selectedApp" class="row g-4 py-3 py-sm-5 row-cols-1 row-cols-lg-3">
+      <div v-if="!selectedApp" class="row g-4 py-4 row-cols-1 row-cols-lg-3">
         <div v-for="app in apps" class="feature col">
+          <div class="px-3">
           <div class="mb-1"><img width="48" height="48" :src="app.Icon" :alt="app.Name"></div>
           <h3>{{app.Name}}</h3>
           <div v-html="app.Description">
@@ -80,6 +81,7 @@
               <use xlink:href="#chevron-right" />
             </svg>
           </a>
+          </div>
         </div>
       </div>
       <div v-if="selectedApp" class="my-3 p-3 bg-body rounded shadow-sm">
