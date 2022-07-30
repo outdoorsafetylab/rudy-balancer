@@ -77,7 +77,7 @@ apps:
   name: 綠野遊蹤
   icon: /images/GTS.png
   description: |
-    <p>提供綠野遊蹤的魯地圖自動安裝。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=com.mountain.tracks">Play Store</a> 進行安裝。</p>
+    <p>綠野遊蹤支援 Android 平台。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=com.mountain.tracks">Play Store</a> 進行安裝。</p>
   variants:
   - id: standard
     name: 傳統版
@@ -120,7 +120,7 @@ apps:
 - id: oruxmaps
   name: OruxMaps
   description: |
-    <p>提供 OruxMaps 的魯地圖自動安裝。若您還沒在手機上安裝，請先到 <a href="https://play.google.com/store/apps/details?id=com.orux.oruxmapsDonate">Play Store</a> 安裝贊助版，或至其<a href="https://www.oruxmaps.com/cs/en/more/downloads">官網</a>安裝免費版。</p>
+    <p>OruxMaps 支援 Android 平台。若您還沒在手機上安裝，請先到 <a href="https://play.google.com/store/apps/details?id=com.orux.oruxmapsDonate">Play Store</a> 安裝贊助版，或至其<a href="https://www.oruxmaps.com/cs/en/more/downloads">官網</a>安裝免費版。</p>
   icon: /images/OruxMaps.jpeg
   variants:
   - id: standard
@@ -161,7 +161,7 @@ apps:
   name: Locus Map
   icon: /images/Locus.jpeg
   description: |
-    <p>提供 Locus Map 的魯地圖自動安裝。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=menion.android.locus">Play Store</a> 安裝。</p>
+    <p>Locus 支援 Android 平台。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=menion.android.locus">Play Store</a> 安裝。</p>
   variants:
   - id: separate
     name: 分開安裝
@@ -196,7 +196,7 @@ apps:
   name: Cartograph Pro 2
   icon: /images/Cartograph.png
   description: |
-    <p>提供 Cartograph Pro 2 的魯地圖自動安裝。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=eu.cartograph.pro">Play Store 安裝 Android 版</a>，或至<a href="https://apps.apple.com/tw/app/cartograph-2-maps/id1082995961">App Store 安裝 iOS 版</a>。</p>
+    <p>Cartograph 支援 iPhone (iOS) 及 Android 雙平台。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=eu.cartograph.pro">Play Store 安裝 Android 版</a>，或至<a href="https://apps.apple.com/tw/app/cartograph-2-maps/id1082995961">App Store 安裝 iOS 版</a>。</p>
   variants:
   - id: separate
     name: 分開安裝
