@@ -26,11 +26,8 @@
     <header>
       <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #3a4280;">
         <div class="container-fluid">
-          <a class="navbar-brand position-relative" href="#" @click.prevent="select(null)">魯地圖分流器
-            <span v-if="version"
-              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-              {{version}}
-            </span>
+          <a class="navbar-brand position-relative" href="#" @click.prevent="select(null)" data-bs-toggle="tooltip" :title="version">
+            魯地圖分流器
           </a>
           <button v-if="selectedApp" class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
             aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
