@@ -5,7 +5,6 @@ import (
 	"image"
 	"image/draw"
 	"image/png"
-	"io"
 	"net/http"
 	"service/cache"
 
@@ -15,42 +14,48 @@ import (
 )
 
 type QRCodeController struct {
+	Cache map[string][]byte
 }
 
 func (c *QRCodeController) Generate(w http.ResponseWriter, r *http.Request) {
-	text := stringVar(r, "text", "")
-	if text == "" {
-		http.Error(w, "Missing 'text'", 500)
-		return
-	}
-	icon := stringVar(r, "icon", "")
-	size := intVar(r, "size", 512)
-	var buf bytes.Buffer
-	log.Debugf("Generating QR code: %s", text)
-	code, err := qrcode.New(text, qrcode.Highest)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-	img := code.Image(int(size))
-	if icon != "" {
-		iconImage, err := cache.GetImage(icon)
+	data := c.Cache[r.RequestURI]
+	if data == nil {
+		text := stringVar(r, "text", "")
+		if text == "" {
+			http.Error(w, "Missing 'text'", 500)
+			return
+		}
+		icon := stringVar(r, "icon", "")
+		size := intVar(r, "size", 512)
+		log.Debugf("Generating QR code: %s", text)
+		code, err := qrcode.New(text, qrcode.Highest)
 		if err != nil {
-			log.Errorf("Failed to get icon: %s: %s", icon, err.Error())
 			http.Error(w, err.Error(), 500)
 			return
 		}
-		percent := 20
-		logoSize := uint(float64(size) * float64(percent) / 100)
-		logoImage := resize.Resize(logoSize, logoSize, iconImage, resize.Lanczos3)
-		img = c.overlayLogo(img, logoImage)
+		img := code.Image(int(size))
+		if icon != "" {
+			iconImage, err := cache.GetImage(icon)
+			if err != nil {
+				log.Errorf("Failed to get icon: %s: %s", icon, err.Error())
+				http.Error(w, err.Error(), 500)
+				return
+			}
+			percent := 20
+			logoSize := uint(float64(size) * float64(percent) / 100)
+			logoImage := resize.Resize(logoSize, logoSize, iconImage, resize.Lanczos3)
+			img = c.overlayLogo(img, logoImage)
+		}
+		var buf bytes.Buffer
+		err = png.Encode(&buf, img)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		data = buf.Bytes()
+		c.Cache[r.RequestURI] = data
 	}
-	err = png.Encode(&buf, img)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-	_, err = io.Copy(w, &buf)
+	_, err := w.Write(data)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return

@@ -33,7 +33,9 @@ func newRouter(webroot string) (*mux.Router, error) {
 	health := &controller.HealthController{}
 	endpoint.HandleFunc("/healthcheck", health.Check).Methods("GET")
 
-	qrcode := &controller.QRCodeController{}
+	qrcode := &controller.QRCodeController{
+		Cache: map[string][]byte{},
+	}
 	endpoint.HandleFunc("/qrcode", qrcode.Generate).Methods("GET", "HEAD")
 
 	mirror, err := mirror.Get()

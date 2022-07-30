@@ -77,10 +77,11 @@ apps:
   name: 綠野遊蹤
   icon: /images/GTS.png
   description: |
-    <p>綠野遊蹤支援 Android 平台。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=com.mountain.tracks">Play Store</a> 進行安裝。</p>
+    <p>綠野遊蹤支援 Android 平台。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=com.mountain.tracks">Google Play</a> 進行安裝。</p>
   variants:
   - id: standard
-    name: 傳統版
+    name: 傳統版 (10公尺等高線)
+    description: 檔案較大，適合較常走高山、中級山或經常使用離線地圖的山友。
     artifacts:
     - id: all
       name: 三合一
@@ -99,7 +100,8 @@ apps:
       scheme: 'gts-hgt:'
       file: hgtmix.zip
   - id: lite
-    name: 輕量版
+    name: 輕量版 (20公尺等高線)
+    description: 檔案較小，適合較常走郊山路線或不常使用離線地圖的山友。
     artifacts:
     - id: all
       name: 三合一
@@ -120,51 +122,74 @@ apps:
 - id: oruxmaps
   name: OruxMaps
   description: |
-    <p>OruxMaps 支援 Android 平台。若您還沒在手機上安裝，請先到 <a href="https://play.google.com/store/apps/details?id=com.orux.oruxmapsDonate">Play Store</a> 安裝贊助版，或至其<a href="https://www.oruxmaps.com/cs/en/more/downloads">官網</a>安裝免費版。</p>
+    <p>OruxMaps 支援 Android 平台。若您還沒在手機上安裝，請先到 <a href="https://play.google.com/store/apps/details?id=com.orux.oruxmapsDonate">Google Play</a> 安裝贊助版，或至其<a href="https://www.oruxmaps.com/cs/en/more/downloads">官網</a>安裝免費版。</p>
   icon: /images/OruxMaps.jpeg
   variants:
   - id: standard
-    name: 傳統版
+    name: 傳統版 (10公尺等高線)
+    description: 檔案較大，適合較常走高山、中級山或經常使用離線地圖的山友。
     artifacts:
     - id: map
       name: 離線地圖
+      description: <p>請至狀態列確認下載進度，安裝後記得切換地圖。</p>
       icon: /images/OruxMaps_map.jpeg
       scheme: "orux-map:"
       file: MOI_OSM_Taiwan_TOPO_Rudy.map.zip
     - id: style
       name: 風格主題
+      description: <p>請至狀態列確認下載進度，安裝後記得切換風格。</p>
       icon: /images/OruxMaps_style.jpeg
       scheme: "orux-mf-theme:"
       file: MOI_OSM_Taiwan_TOPO_Rudy_style.zip
     - id: hgt
       name: 高程檔
+      description: <p>OruxMaps 不支援自動安裝，下載後需要自行解壓縮至正確位置。</p>
       icon: /images/OruxMaps_dem.jpeg
       file: hgtmix.zip
   - id: lite
-    name: 輕量版
+    name: 輕量版 (20公尺等高線)
+    description: 檔案較小，適合較常走郊山路線或不常使用離線地圖的山友。
     artifacts:
     - id: map
       name: 離線地圖
+      description: <p>請至狀態列確認下載進度，安裝後記得切換地圖。</p>
       icon: /images/OruxMaps_map.jpeg
       scheme: "orux-map:"
       file: MOI_OSM_Taiwan_TOPO_Lite.map.zip
     - id: style
       name: 風格主題
+      description: <p>請至狀態列確認下載進度，安裝後記得切換風格。</p>
       icon: /images/OruxMaps_style.jpeg
       scheme: "orux-mf-theme:"
       file: MOI_OSM_Taiwan_TOPO_Lite_style.zip
     - id: hgt
       name: 高程檔
+      description: <p>OruxMaps 不支援自動安裝，下載後需要自行解壓縮至正確位置。</p>
       icon: /images/OruxMaps_dem.jpeg
       file: hgt90.zip
 - id: locus
   name: Locus Map
   icon: /images/Locus.jpeg
   description: |
-    <p>Locus 支援 Android 平台。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=menion.android.locus">Play Store</a> 安裝。</p>
+    <p>Locus 支援 Android 平台。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=menion.android.locus">Google Play</a> 安裝。</p>
   variants:
+  - id: together
+    name: 圖資合併安裝
+    description: 一鍵安裝地圖、風格或高程。
+    artifacts:
+    - id: allinone
+      name: 三合一
+      description: <p>首次安裝時使用，含地圖、風格及高程。</p>
+      icon: /images/Locus.jpeg
+      url: locus-actions://https/rudy.outdoors.tw/locus_all-cedric.xml
+    - id: upgrade
+      name: 地圖及風格
+      description: <p>後續更新時使用，高程較少變動故不需太常更新。</p>
+      icon: /images/Locus.jpeg
+      url: locus-actions://https/rudy.outdoors.tw/locus_upgrade-cedric.xml
   - id: separate
-    name: 分開安裝
+    name: 圖資個別安裝
+    description: 個別安裝地圖、風格及高程。
     artifacts:
     - id: map
       name: 離線地圖
@@ -181,25 +206,29 @@ apps:
       icon: /images/Locus_dem.jpeg
       url: locus-actions://https/rudy.outdoors.tw/locus_dem-cedric.xml
       file: hgtmix.zip
-  - id: together
-    name: 合併安裝
-    artifacts:
-    - id: allinone
-      name: 三合一
-      icon: /images/Locus.jpeg
-      url: locus-actions://https/rudy.outdoors.tw/locus_all-cedric.xml
-    - id: upgrade
-      name: 地圖及風格
-      icon: /images/Locus.jpeg
-      url: locus-actions://https/rudy.outdoors.tw/locus_upgrade-cedric.xml
 - id: carto
   name: Cartograph Pro 2
   icon: /images/Cartograph.png
   description: |
-    <p>Cartograph 支援 iPhone (iOS) 及 Android 雙平台。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=eu.cartograph.pro">Play Store 安裝 Android 版</a>，或至<a href="https://apps.apple.com/tw/app/cartograph-2-maps/id1082995961">App Store 安裝 iOS 版</a>。</p>
+    <p>Cartograph 支援 iPhone (iOS) 及 Android 雙平台。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=eu.cartograph.pro">Google Play 安裝 Android 版</a>，或至<a href="https://apps.apple.com/tw/app/cartograph-2-maps/id1082995961">App Store 安裝 iOS 版</a>。</p>
   variants:
+  - id: together
+    name: 圖資合併安裝
+    description: 一鍵安裝地圖、風格或高程。
+    artifacts:
+    - id: allinone
+      name: 三合一
+      description: <p>首次安裝時使用，含地圖、風格及高程。</p>
+      scheme: "cartograph-map:"
+      file: carto_all.cpkg
+    - id: upgrade
+      name: 地圖及風格
+      description: <p>後續更新時使用，高程較少變動故不需太常更新。</p>
+      scheme: "cartograph-map:"
+      file: carto_upgrade.cpkg
   - id: separate
-    name: 分開安裝
+    name: 圖資個別安裝
+    description: 個別安裝地圖、風格及高程。
     artifacts:
     - id: map
       name: 離線地圖
@@ -216,14 +245,3 @@ apps:
       icon: /images/Cartograph_dem.png
       scheme: "cartograph-map:"
       file: carto_dem.cpkg
-  - id: together
-    name: 合併安裝
-    artifacts:
-    - id: allinone
-      name: 三合一
-      scheme: "cartograph-map:"
-      file: carto_all.cpkg
-    - id: upgrade
-      name: 地圖及風格
-      scheme: "cartograph-map:"
-      file: carto_upgrade.cpkg

@@ -26,11 +26,13 @@
     <header>
       <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #3a4280;">
         <div class="container-fluid">
-          <a class="navbar-brand position-relative" href="#" @click.prevent="select(null)" data-bs-toggle="tooltip" :title="version">
+          <a class="navbar-brand position-relative" href="#" @click.prevent="select(null, null)" data-bs-toggle="tooltip"
+            :title="version">
             魯地圖分流器
           </a>
-          <button v-if="selectedApp" class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
-            aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+          <button v-if="selectedApp" class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false"
+            aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
           <div v-if="selectedApp" class="collapse navbar-collapse" id="navbarCollapse">
@@ -41,11 +43,11 @@
                   {{selectedApp.Name}}
                 </a>
                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                  <li v-for="app in apps"><a class="dropdown-item" href="#" @click.prevent="select(app)">{{app.Name}}</a></li>
+                  <li v-for="app in apps"><a class="dropdown-item" href="#"
+                      @click.prevent="select(app, null)">{{app.Name}}</a></li>
                 </ul>
               </li>
-              <li v-if="selectedApp.Variants.length > 1"
-                class="nav-item dropdown">
+              <li v-if="selectedApp.Variants.length > 1" class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
                   aria-expanded="false" style="font-weight: bold">
                   {{selectedVariant ? selectedVariant.Name : '顯示全部'}}
@@ -68,16 +70,16 @@
       <div v-if="!selectedApp" class="row g-4 py-4 row-cols-1 row-cols-lg-3">
         <div v-for="app in apps" class="feature col">
           <div class="px-3">
-          <div class="mb-1"><img width="48" height="48" :src="app.Icon" :alt="app.Name"></div>
-          <h3>{{app.Name}}</h3>
-          <div v-html="app.Description">
-          </div>
-          <a v-for="variant in app.Variants" href="#" class="icon-link me-1" @click.prevent="select(app, variant)">
-            {{variant.Name}}
-            <svg class="bi" width="1em" height="1em">
-              <use xlink:href="#chevron-right" />
-            </svg>
-          </a>
+            <div class="mb-1"><img width="48" height="48" :src="app.Icon" :alt="app.Name"></div>
+            <h3>{{app.Name}}</h3>
+            <div v-html="app.Description">
+            </div>
+            <a v-for="variant in app.Variants" href="#" class="icon-link me-2" @click.prevent="select(app, variant)" data-bs-toggle="tooltip" :title="variant.Description">
+              {{variant.Name}}
+              <svg class="bi" width="1em" height="1em">
+                <use xlink:href="#chevron-right" />
+              </svg>
+            </a>
           </div>
         </div>
       </div>
@@ -89,27 +91,31 @@
           </div>
         </div>
         <div v-for="variant in selectedVariants(selectedApp)" :key="selectedApp.ID + '/' + variant.ID">
-          <h5 class="p-2 mb-0">{{variant.Name}}</h5>
+          <div class="mt-3 mb-1"><h5 class="p-2 mb-0 d-inline">{{variant.Name}}</h5><span v-html="variant.Description"></span></div>
           <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-            <div v-for="artifact in variant.Artifacts" :key="selectedApp.ID + '/' + variant.ID + '/' + artifact.ID" class="col">
+            <div v-for="artifact in variant.Artifacts" :key="selectedApp.ID + '/' + variant.ID + '/' + artifact.ID"
+              class="col">
               <div class="card shadow-sm">
-                <img class="bd-placeholder-img card-img-top" v-bind:src="qrcodeURL(artifact)">
+                <img class="bd-placeholder-img card-img-top" v-bind:src="artifact.QRCode">
                 <div class="card-body">
-                  <h5 class="card-title position-relative">{{artifact.Name}} <sup v-if="artifact.Date">({{artifact.Date}})</sup>
-                  </h5>
+                  <h5 class="card-title position-relative">{{artifact.Name}} <sup
+                      v-if="artifact.Date">({{artifact.Date}})</sup>
+                  </h5>                  
+                  <div v-html="artifact.Description"></div>
                   <div>
                     <span v-for="source in artifact.Sources" class="me-1">
                       <span v-bind:class="badgeClasses(source)" data-bs-toggle="tooltip"
-                        v-bind:title="sourceTooltip(source)">{{source.Site.Name}}</span>
+                        v-bind:title="source.Tooltip">{{source.Site.Name}}</span>
                     </span>
                   </div>
                   <div class="input-group mb-3">
-                    <textarea rows="4" class="form-control" onfocus="this.select();"
+                    <textarea rows="3" class="form-control" onfocus="this.select();"
                       readonly>{{artifact.URL}}</textarea>
                   </div>
                   <div class="d-flex justify-content-between align-items-center">
                     <div class="btn-group">
-                      <a class="btn btn-sm btn-outline-secondary" v-bind:href="artifact.URL">{{artifact.URL.startsWith('http') ? '下載' : '安裝'}}</a>
+                      <a class="btn btn-sm btn-outline-secondary"
+                        v-bind:href="artifact.URL">{{artifact.URL.startsWith('http') ? '下載' : '安裝'}}</a>
                     </div>
                     <small class="text-muted">{{readableFileSize(artifact.Size)}}</small>
                   </div>
@@ -141,6 +147,7 @@
       mounted() {
         this.getVersion();
         this.getApps();
+        addEventListener('popstate', this.loadLocation);
       },
       methods: {
         getVersion() {
@@ -168,13 +175,13 @@
             }
             self.apps = JSON.parse(xhr.responseText);
             self.populateApps();
+            self.loadLocation();
           };
           xhr.send();
         },
         populateApps() {
-          let apps = this.apps;
-          for (let i = 0; i < apps.length; i++) {
-            let app = apps[i];
+          for (let i = 0; i < this.apps.length; i++) {
+            let app = this.apps[i];
             if (app.Icon.startsWith('/')) {
               app.Icon = window.location.origin + app.Icon;
             }
@@ -187,10 +194,12 @@
                 } else if (artifact.Icon.startsWith('/')) {
                   artifact.Icon = window.location.origin + artifact.Icon;
                 }
+                artifact.QRCode = '/v1/qrcode?text=' + encodeURIComponent(artifact.URL) + '&icon=' + encodeURIComponent(artifact.Icon);
                 if (!artifact.Sources) continue;
                 let newest = 0;
                 for (let i = 0; i < artifact.Sources.length; i++) {
                   let source = artifact.Sources[i];
+                  source.Toolip = this.sourceTooltip(source);
                   if (source.Status == 0) {
                     newest = Math.max(source.LastModified)
                   }
@@ -203,16 +212,20 @@
               }
             }
           }
+        },
+        loadLocation() {
           let paths = window.location.pathname.split('/');
           paths.shift();
-          if (this.prefix) paths.shift();
+          if (this.prefix) {
+            paths.shift();
+          }
           let appID = paths.shift();
           let variantID = paths.shift();
           let app, variant;
           if (appID) {
-            for (let i = 0; i < apps.length; i++) {
-              if (appID == apps[i].ID) {
-                app = apps[i];
+            for (let i = 0; i < this.apps.length; i++) {
+              if (appID == this.apps[i].ID) {
+                app = this.apps[i];
                 break;
               }
             }
@@ -225,9 +238,10 @@
               }
             }
           }
-          this.select(app, variant);
+          this.select(app, variant, false);
         },
-        select(app, variant = null) {
+        select(app, variant, push = true) {
+          if (app == this.selectedApp && variant == this.selectedVariant) return;
           this.selectedApp = app;
           this.selectedVariant = variant;
           let url = this.prefix;
@@ -237,7 +251,9 @@
           if (variant) {
             url += '/' + variant.ID;
           }
-          history.replaceState({}, null, url);
+          if (push) {
+            history.pushState({ app: app ? app.ID : null, variant: variant ? variant.ID : null }, null, url);
+          }
         },
         selectedVariants: function (app) {
           if (!this.selectedApp) {
@@ -247,9 +263,6 @@
             return this.selectedApp.Variants;
           }
           return [this.selectedVariant];
-        },
-        qrcodeURL(artifact) {
-          return '/v1/qrcode?text=' + encodeURIComponent(artifact.URL) + '&icon=' + encodeURIComponent(artifact.Icon);
         },
         badgeClasses(source) {
           if (source.Site.Hidden) {

@@ -6,8 +6,9 @@ type Artifact struct {
 	Variant     *Variant `json:"-"`
 	AppName     string   `json:"App,omitempty"`
 	VariantName string   `json:"Variant,omitempty"`
-	Name        string
 	Icon        string
+	Name        string
+	Description string `json:",omitempty"`
 	Scheme      string `json:"-"`
 	File        string `json:",omitempty"`
 	Size        int64  `json:",omitempty"`
