@@ -67,7 +67,7 @@
       </nav>
     </header>
     <main class="container">
-      <div v-if="!appAlertDismissed" class="alert alert-warning alert-dismissible fade show mt-2" role="alert">
+      <div v-if="!selectedApp && !appAlertDismissed" class="alert alert-warning alert-dismissible fade show mt-2" role="alert">
         如果您還沒有安裝以下任何應用程式，可以請朋友或山友建議，您不需要安裝所有的應用程式。
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" @click="appAlertDismissed = true"></button>
       </div>
