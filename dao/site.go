@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type HealthDao struct {
+type SiteDao struct {
 	Context context.Context
 }
 
@@ -26,15 +26,14 @@ type site struct {
 	Latency   time.Duration
 }
 
-func (dao *HealthDao) load() (*mirror.Mirror, error) {
+func (dao *SiteDao) load() (*mirror.Mirror, error) {
 	mirror, err := mirror.Get()
 	if err != nil {
 		return nil, err
 	}
-	cfg := config.Get()
 	for _, s := range mirror.Sites {
 		log.Debugf("Loading site: %s (%s)", s.Name, s.Firestore)
-		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(s.Firestore).Get(dao.Context)
+		doc, err := firestore.Collection().Doc(s.Firestore).Get(dao.Context)
 		if err != nil {
 			if status.Code(err) != codes.NotFound {
 				log.Errorf("Failed to load document %s: %s", s.Firestore, err.Error())
@@ -95,7 +94,7 @@ func (dao *HealthDao) load() (*mirror.Mirror, error) {
 	return mirror, nil
 }
 
-func (dao *HealthDao) Apps() ([]*model.App, error) {
+func (dao *SiteDao) Apps() ([]*model.App, error) {
 	mirror, err := dao.load()
 	if err != nil {
 		return nil, err
@@ -103,7 +102,7 @@ func (dao *HealthDao) Apps() ([]*model.App, error) {
 	return mirror.Apps, nil
 }
 
-func (dao *HealthDao) Sites() ([]*model.Site, error) {
+func (dao *SiteDao) Sites() ([]*model.Site, error) {
 	mirror, err := dao.load()
 	if err != nil {
 		return nil, err
@@ -111,35 +110,7 @@ func (dao *HealthDao) Sites() ([]*model.Site, error) {
 	return mirror.Sites, nil
 }
 
-func (dao *HealthDao) Files() (map[string][]*model.Source, error) {
-	mirror, err := dao.load()
-	if err != nil {
-		return nil, err
-	}
-	files := make(map[string][]*model.Source)
-	for _, site := range mirror.Sites {
-		for _, src := range site.Sources {
-			sources := files[src.File]
-			if sources == nil {
-				sources = make([]*model.Source, 0)
-			}
-			exist := false
-			for _, b := range sources {
-				if src == b {
-					exist = true
-					break
-				}
-			}
-			if !exist {
-				sources = append(sources, src)
-			}
-			files[src.File] = sources
-		}
-	}
-	return files, nil
-}
-
-func (dao *HealthDao) Update(sites []*model.Site) error {
+func (dao *SiteDao) Update(sites []*model.Site) error {
 	cfg := config.Get()
 	client := &statuspage.Client{Client: http.DefaultClient, APIKey: cfg.GetString("statuspage.key")}
 	pageID := cfg.GetString("statuspage.page")
@@ -155,7 +126,7 @@ func (dao *HealthDao) Update(sites []*model.Site) error {
 	}
 	for _, s := range sites {
 		log.Debugf("Updating site: %s", s.Name)
-		doc, err := firestore.Client().Collection(cfg.GetString("firestore.collection")).Doc(s.Firestore).Get(dao.Context)
+		doc, err := firestore.Collection().Doc(s.Firestore).Get(dao.Context)
 		if err != nil {
 			if status.Code(err) != codes.NotFound {
 				log.Errorf("Failed to get document %s: %s", s.Firestore, err.Error())
@@ -226,52 +197,4 @@ func (dao *HealthDao) Update(sites []*model.Site) error {
 		}
 	}
 	return nil
-}
-
-func (dao *HealthDao) GetURLs(file string) ([]string, error) {
-	mirror, err := dao.load()
-	if err != nil {
-		return nil, err
-	}
-	sources := make([]*model.Source, 0)
-	for _, site := range mirror.Sites {
-		for _, src := range site.Sources {
-			if src.File == file {
-				sources = append(sources, src)
-			}
-		}
-	}
-	// var maxLatency time.Duration
-	// for _, src := range sources {
-	// 	if src.Site.Hidden {
-	// 		continue
-	// 	}
-	// 	if src.Latency > maxLatency {
-	// 		maxLatency = src.Latency
-	// 	}
-	// }
-	weights := make(map[string]int)
-	for _, src := range sources {
-		if src.Site.Hidden {
-			continue
-		}
-		weights[src.URL] = src.Site.Weight
-		// if src.Latency <= 0 {
-		// 	continue
-		// }
-		// weights[src.URL] = int(math.Max(1.0, 100.0*float64(maxLatency)/float64(src.Latency)))
-	}
-	log.Debugf("URL weights: %v", weights)
-	urls := make([]string, 0)
-	for _, src := range sources {
-		weight := weights[src.URL]
-		switch src.Status {
-		case model.GOOD:
-			for i := 0; i < weight; i++ {
-				urls = append(urls, src.URL)
-			}
-		}
-	}
-	log.Debugf("URL candidates: %v", urls)
-	return urls, nil
 }

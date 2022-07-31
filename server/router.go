@@ -54,6 +54,8 @@ func newRouter(webroot string) (*mux.Router, error) {
 	endpoint.HandleFunc("/sites", site.List).Methods("GET")
 	file := &controller.FileController{}
 	endpoint.HandleFunc("/files", file.List).Methods("GET")
+	stats := &controller.StatsController{}
+	endpoint.HandleFunc("/stats/total", stats.Total).Methods("GET")
 	reverseProxy := &proxyHandler{
 		ProbeClient: http.Client{Timeout: time.Second},
 		Redirects:   make(map[string]bool),

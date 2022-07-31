@@ -21,7 +21,7 @@ func (c *HealthController) Check(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(401), 401)
 		return
 	}
-	dao := &dao.HealthDao{Context: r.Context()}
+	dao := &dao.SiteDao{Context: r.Context()}
 	sites, err := dao.Sites()
 	if err != nil {
 		http.Error(w, err.Error(), 500)
