@@ -27,8 +27,8 @@
     <header>
       <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #3a4280;">
         <div class="container-fluid">
-          <a class="navbar-brand position-relative" href="#" @click.prevent="select(null, null)" data-bs-toggle="tooltip"
-            :title="version">
+          <a class="navbar-brand position-relative" href="#" @click.prevent="select(null, null)"
+            data-bs-toggle="tooltip" :title="version">
             魯地圖分流器
           </a>
           <button v-if="selectedApp" class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -68,18 +68,23 @@
       </nav>
     </header>
     <main class="container">
-      <div v-if="!selectedApp && !appAlertDismissed" class="alert alert-warning alert-dismissible fade show mt-2" role="alert">
+      <div v-if="!selectedApp && !appAlertDismissed" class="alert alert-warning alert-dismissible fade show mt-2"
+        role="alert">
         如果您還沒有安裝以下任何應用程式，可以請朋友或山友建議，您不需要安裝全部。而除了以下列表之外，還有很多應用程式直接內建魯地圖喔！
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" @click="appAlertDismissed = true"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"
+          @click="appAlertDismissed = true"></button>
       </div>
       <div v-if="!selectedApp" class="row g-4 py-4 row-cols-1 row-cols-lg-3">
         <div v-for="app in apps" class="feature col">
           <div class="px-3">
-            <div class="mb-1"><img width="48" height="48" :src="app.Icon" :alt="app.Name"><span v-if="app.IOS" class="badge bg-secondary ms-2 align-top">iOS</span><span v-if="app.Android" class="badge bg-success ms-2 align-top">Android</span></div>
+            <div class="mb-1"><img width="48" height="48" :src="app.Icon" :alt="app.Name"><span v-if="app.IOS"
+                class="badge bg-secondary ms-2 align-top">iOS</span><span v-if="app.Android"
+                class="badge bg-success ms-2 align-top">Android</span></div>
             <h3>{{app.Name}}</h3>
             <div v-html="app.Description">
             </div>
-            <a v-for="variant in app.Variants" href="#" class="icon-link me-2" @click.prevent="select(app, variant)" data-bs-toggle="tooltip" :title="variant.Description">
+            <a v-for="variant in app.Variants" href="#" class="icon-link me-2" @click.prevent="select(app, variant)"
+              data-bs-toggle="tooltip" :title="variant.Description">
               {{variant.Name}}
               <svg class="bi" width="1em" height="1em">
                 <use xlink:href="#chevron-right" />
@@ -95,35 +100,49 @@
             <h1 class="h6 mb-0 text-white lh-1" style="font-weight: bold;">{{selectedApp.Name}}</h1>
           </div>
         </div>
-        <div v-for="variant in selectedVariants(selectedApp)" :key="selectedApp.ID + '/' + variant.ID">
-          <div class="mt-3 mb-1"><h5 class="p-2 mb-0 d-inline">{{variant.Name}}</h5><span v-html="variant.Description"></span></div>
+        <div v-for="variant in selectedVariants(selectedApp)" :key="variant.FQID">
+          <div class="mt-3 mb-1">
+            <h5 class="p-2 mb-0 d-inline">{{variant.Name}}</h5><span v-html="variant.Description"></span>
+          </div>
           <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-            <div v-for="artifact in variant.Artifacts" :key="selectedApp.ID + '/' + variant.ID + '/' + artifact.ID"
-              class="col">
+            <div v-for="artifact in variant.Artifacts" :key="artifact.FQID" class="col">
               <div class="card shadow-sm">
-                <img class="bd-placeholder-img card-img-top" v-bind:src="artifact.QRCode">
                 <div class="card-body">
-                  <h5 class="card-title position-relative">{{artifact.Name}} <sup
-                      v-if="artifact.Date">({{artifact.Date}})</sup>
-                  </h5>                  
-                  <div v-html="artifact.Description"></div>
+                  <h5 class="card-title position-relative">
+                    <img v-if="artifact.Icon != selectedApp.Icon" v-bind:src="artifact.Icon" width="32" height="32" />
+                    {{artifact.Name}}
+                    <sup v-if="artifact.Date">({{artifact.Date}})</sup>
+                  </h5>
                   <div>
                     <span v-for="source in artifact.Sources" class="me-1">
                       <span v-bind:class="badgeClasses(source)" data-bs-toggle="tooltip"
                         v-bind:title="source.Tooltip">{{source.Site.Name}}</span>
                     </span>
                   </div>
-                  <div class="input-group mb-3">
-                    <textarea rows="3" class="form-control" onfocus="this.select();"
-                      readonly>{{artifact.URL}}</textarea>
-                  </div>
+                  <div v-html="artifact.Description"></div>
                   <div class="d-flex justify-content-between align-items-center">
-                    <div class="btn-group">
-                      <a class="btn btn-sm btn-outline-secondary"
-                        v-bind:href="artifact.URL">{{artifact.URL.startsWith('http') ? '下載' : '安裝'}}</a>
+                    <div class="btn-group mt-1">
+                      <a class="btn btn-sm btn-outline-secondary" v-bind:href="artifact.URL">
+                        {{artifact.URL.startsWith('http') ? '下載' : '安裝'}}
+                      </a>
+                      <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                        v-bind:data-bs-target="'#'+artifact.URLCollapseID" v-bind:aria-expanded="artifact.URLExpanded" v-bind:aria-controls="artifact.URLCollapseID" @click="artifact.URLExpanded = !artifact.URLExpanded">
+                        {{artifact.URLExpanded?'隱藏':'顯示'}}連結
+                      </button>
+                      <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                        v-bind:data-bs-target="'#'+artifact.QRCodeCollapseID" v-bind:aria-expanded="artifact.QRCodeExpanded" v-bind:aria-controls="artifact.QRCodeCollapseID" @click="artifact.QRCodeExpanded = !artifact.QRCodeExpanded">
+                        {{artifact.QRCodeExpanded?'隱藏':'顯示'}}二維碼
+                      </button>
                     </div>
                     <small class="text-muted">{{readableFileSize(artifact.Size)}}</small>
                   </div>
+                  <div class="input-group mt-2 collapse" v-bind:id="artifact.URLCollapseID">
+                    <textarea rows="3" class="form-control" onfocus="this.select();"
+                      readonly>{{artifact.URL}}</textarea>
+                  </div>
+                </div>
+                <div class="collapse" v-bind:id="artifact.QRCodeCollapseID">
+                  <img class="card-img-bottom" v-bind:src="artifact.QRCode">
                 </div>
               </div>
             </div>
@@ -165,7 +184,7 @@
           this.appAlertDismissed = state.appAlertDismissed;
         },
         saveCookies() {
-          let state = {appAlertDismissed: this.appAlertDismissed};
+          let state = { appAlertDismissed: this.appAlertDismissed };
           this.$cookies.set('state', state);
         },
         getVersion() {
@@ -191,28 +210,33 @@
               alert(xhr.responseText);
               return;
             }
-            self.apps = JSON.parse(xhr.responseText);
-            self.populateApps();
+            self.apps = self.populateApps(JSON.parse(xhr.responseText));
             self.loadLocation();
           };
           xhr.send();
         },
-        populateApps() {
-          for (let i = 0; i < this.apps.length; i++) {
-            let app = this.apps[i];
+        populateApps(apps) {
+          for (let i = 0; i < apps.length; i++) {
+            let app = apps[i];
             if (app.Icon.startsWith('/')) {
               app.Icon = window.location.origin + app.Icon;
             }
             for (let i = 0; i < app.Variants.length; i++) {
               let variant = app.Variants[i];
+              variant.FQID = app.ID + '_' + variant.ID
               for (let i = 0; i < variant.Artifacts.length; i++) {
                 let artifact = variant.Artifacts[i];
+                artifact.FQID = variant.FQID + '_' + artifact.ID
                 if (!artifact.Icon) {
                   artifact.Icon = app.Icon;
                 } else if (artifact.Icon.startsWith('/')) {
                   artifact.Icon = window.location.origin + artifact.Icon;
                 }
                 artifact.QRCode = '/v1/qrcode?text=' + encodeURIComponent(artifact.URL) + '&icon=' + encodeURIComponent(artifact.Icon);
+                artifact.QRCodeExpanded = false;
+                artifact.QRCodeCollapseID = 'collapse'+artifact.FQID+'_qrcode';
+                artifact.URLExpanded = false;
+                artifact.URLCollapseID = 'collapse'+artifact.FQID+'_url';
                 if (!artifact.Sources) continue;
                 let newest = 0;
                 for (let i = 0; i < artifact.Sources.length; i++) {
@@ -230,6 +254,7 @@
               }
             }
           }
+          return apps;
         },
         loadLocation() {
           let paths = window.location.pathname.split('/');
