@@ -70,7 +70,7 @@
     <main class="container">
       <div v-if="!selectedApp && !appAlertDismissed" class="alert alert-warning alert-dismissible fade show mt-2"
         role="alert">
-        如果您還沒有安裝以下任何應用程式，可以請朋友或山友建議，您不需要安裝全部。而除了以下列表之外，還有很多應用程式直接內建魯地圖喔！
+        如果您還沒有安裝以下任何應用程式，可以請朋友或山友建議，您不需要全部安裝喔！
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"
           @click="appAlertDismissed = true"></button>
       </div>
@@ -221,6 +221,7 @@
             if (app.Icon.startsWith('/')) {
               app.Icon = window.location.origin + app.Icon;
             }
+            if (!app.Variants) continue;
             for (let i = 0; i < app.Variants.length; i++) {
               let variant = app.Variants[i];
               variant.FQID = app.ID + '_' + variant.ID
