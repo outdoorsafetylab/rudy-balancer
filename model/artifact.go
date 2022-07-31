@@ -11,7 +11,6 @@ type Artifact struct {
 	Description string `json:",omitempty"`
 	Scheme      string `json:"-"`
 	File        string `json:",omitempty"`
-	Size        int64  `json:",omitempty"`
 	URL         string
 	Sources     []*Source `json:",omitempty"`
 }

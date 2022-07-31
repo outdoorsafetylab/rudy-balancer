@@ -2,11 +2,13 @@ package controller
 
 import (
 	"bytes"
+	"errors"
 	"image"
 	"image/draw"
+	"image/jpeg"
 	"image/png"
+	"io/ioutil"
 	"net/http"
-	"service/cache"
 
 	"github.com/nfnt/resize"
 	log "github.com/sirupsen/logrus"
@@ -35,7 +37,7 @@ func (c *QRCodeController) Generate(w http.ResponseWriter, r *http.Request) {
 		}
 		img := code.Image(int(size))
 		if icon != "" {
-			iconImage, err := cache.GetImage(icon)
+			iconImage, err := c.getIcon(icon)
 			if err != nil {
 				log.Errorf("Failed to get icon: %s: %s", icon, err.Error())
 				http.Error(w, err.Error(), 500)
@@ -70,4 +72,27 @@ func (c *QRCodeController) overlayLogo(srcImage, logoImage image.Image) image.Im
 	draw.Draw(outout, bounds, srcImage, image.Point{}, draw.Src)
 	draw.Draw(outout, logoImage.Bounds().Add(offset), logoImage, image.Point{}, draw.Over)
 	return outout
+}
+
+func (c *QRCodeController) getIcon(url string) (image.Image, error) {
+	res, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		return nil, errors.New(res.Status)
+	}
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	img, _, err := image.Decode(bytes.NewBuffer(data))
+	if err != nil {
+		img, err = jpeg.Decode(bytes.NewBuffer(data))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return img, nil
 }

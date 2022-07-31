@@ -104,14 +104,15 @@
           <div class="mt-3 mb-1">
             <h5 class="p-2 mb-0 d-inline">{{variant.Name}}</h5><span v-html="variant.Description"></span>
           </div>
-          <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+          <div class="row row-cols-1 row-cols-lg-2 row-cols-xl-3">
             <div v-for="artifact in variant.Artifacts" :key="artifact.FQID" class="col">
-              <div class="card shadow-sm">
+              <div class="card shadow-sm mb-2">
                 <div class="card-body">
                   <h5 class="card-title position-relative">
                     <img v-if="artifact.Icon != selectedApp.Icon" v-bind:src="artifact.Icon" width="32" height="32" />
                     {{artifact.Name}}
-                    <sup v-if="artifact.Date">({{artifact.Date}})</sup>
+                    <sup v-if="artifact.Date">{{artifact.Date}}</sup>
+                    <sup v-if="artifact.Size">{{artifact.Size}}</sup>
                   </h5>
                   <div>
                     <span v-for="source in artifact.Sources" class="me-1">
@@ -122,7 +123,7 @@
                   <div v-html="artifact.Description"></div>
                   <div class="d-flex justify-content-between align-items-center">
                     <div class="btn-group mt-1">
-                      <a class="btn btn-sm btn-outline-secondary" v-bind:href="artifact.URL">
+                      <a class="btn btn-sm btn-outline-primary" v-bind:href="artifact.URL">
                         {{artifact.URL.startsWith('http') ? '下載' : '安裝'}}
                       </a>
                       <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
@@ -131,10 +132,9 @@
                       </button>
                       <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
                         v-bind:data-bs-target="'#'+artifact.QRCodeCollapseID" v-bind:aria-expanded="artifact.QRCodeExpanded" v-bind:aria-controls="artifact.QRCodeCollapseID" @click="artifact.QRCodeExpanded = !artifact.QRCodeExpanded">
-                        {{artifact.QRCodeExpanded?'隱藏':'顯示'}}二維碼
+                        二維碼
                       </button>
                     </div>
-                    <small class="text-muted">{{readableFileSize(artifact.Size)}}</small>
                   </div>
                   <div class="input-group mt-2 collapse" v-bind:id="artifact.URLCollapseID">
                     <textarea rows="3" class="form-control" onfocus="this.select();"
@@ -243,7 +243,10 @@
                   let source = artifact.Sources[i];
                   source.Tooltip = this.sourceTooltip(source);
                   if (source.Status == 0) {
-                    newest = Math.max(source.LastModified)
+                    if (source.LastModified > newest) {
+                      newest = source.LastModified;
+                      artifact.Size = source.Size;
+                    }
                   }
                 }
                 if (newest > 0) {
@@ -251,6 +254,7 @@
                 } else {
                   artifact.Date = '日期不明';
                 }
+                artifact.Size = this.readableFileSize(artifact.Size)
               }
             }
           }
@@ -341,10 +345,10 @@
           return tooltip;
         },
         readableFileSize(bytes, si = true, dp = 0) {
-          if (!bytes) return '';
+          if (!bytes) return null;
           const thresh = si ? 1000 : 1024;
           if (Math.abs(bytes) < thresh) {
-            return bytes + ' B';
+            return bytes + 'B';
           }
           const units = si
             ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
@@ -355,7 +359,7 @@
             bytes /= thresh;
             ++u;
           } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
-          return bytes.toFixed(dp) + ' ' + units[u];
+          return bytes.toFixed(dp) + units[u];
         },
         readableElapsedTime(seconds) {
           if (seconds <= 60) {

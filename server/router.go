@@ -11,6 +11,8 @@ import (
 	"service/mirror"
 	"time"
 
+	_ "net/http/pprof"
+
 	"github.com/gorilla/mux"
 )
 
@@ -18,6 +20,7 @@ func newRouter(webroot string) (*mux.Router, error) {
 	cfg := config.Get()
 
 	r := mux.NewRouter()
+	r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 	r.PathPrefix("/app").Handler(&webrootHandler{
 		path: webroot,
 	})

@@ -73,24 +73,6 @@ func (dao *SiteDao) load() (*mirror.Mirror, error) {
 			}
 		}
 	}
-	for _, app := range mirror.Apps {
-		for _, v := range app.Variants {
-			for _, a := range v.Artifacts {
-				if len(a.Sources) <= 0 {
-					continue
-				}
-				size := int64(0)
-				count := 0
-				for _, s := range a.Sources {
-					if s.Status == model.GOOD {
-						size += s.Size
-						count++
-					}
-				}
-				a.Size = size / int64(count)
-			}
-		}
-	}
 	return mirror, nil
 }
 
