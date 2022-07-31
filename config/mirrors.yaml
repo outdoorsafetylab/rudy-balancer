@@ -98,18 +98,22 @@ apps:
     artifacts:
     - id: all
       name: 三合一
+      description: <p>同時安裝地圖、風格及高程。</p>
       scheme: 'gts-all:'
       file: MOI_OSM_Taiwan_TOPO_Rudy.zip
     - id: map
       name: 離線地圖
+      description: <p>單獨安裝地圖。</p>
       scheme: 'gts-map:'
       file: MOI_OSM_Taiwan_TOPO_Rudy.map.zip
     - id: style
       name: 風格主題
+      description: <p>單獨安裝風格主題。</p>
       scheme: 'gts-mapthemes:'
       file: MOI_OSM_Taiwan_TOPO_Rudy_hs_style.zip
     - id: hgt
       name: 高程檔
+      description: <p>單獨安裝高程檔。</p>
       scheme: 'gts-hgt:'
       file: hgtmix.zip
   - id: lite
@@ -118,18 +122,22 @@ apps:
     artifacts:
     - id: all
       name: 三合一
+      description: <p>同時安裝輕量版地圖、風格及高程。</p>
       scheme: 'gts-all:'
       file: MOI_OSM_Taiwan_TOPO_Lite.zip
     - id: map
       name: 離線地圖
+      description: <p>單獨輕量版安裝地圖。</p>
       scheme: 'gts-map:'
       file: MOI_OSM_Taiwan_TOPO_Lite.map.zip
     - id: style
       name: 風格主題
+      description: <p>單獨安裝輕量版風格主題。</p>
       scheme: 'gts-mapthemes:'
       file: MOI_OSM_Taiwan_TOPO_Lite_style.zip
     - id: hgt
       name: 高程檔
+      description: <p>單獨安裝輕量版高程檔。</p>
       scheme: 'gts-hgt:'
       file: hgt90.zip
 - id: oruxmaps
@@ -208,16 +216,19 @@ apps:
     artifacts:
     - id: map
       name: 離線地圖
+      description: <p>單獨安裝地圖。</p>
       icon: /images/Locus_map.jpeg
       url: locus-actions://https/rudy.outdoors.tw/locus_map-cedric.xml
       file: MOI_OSM_Taiwan_TOPO_Rudy_locus.zip
     - id: style
       name: 風格主題
+      description: <p>單獨安裝風格主題。</p>
       icon: /images/Locus_style.jpeg
       url: locus-actions://https/rudy.outdoors.tw/locus_style-cedric.xml
       file: MOI_OSM_Taiwan_TOPO_Rudy_locus_style.zip
     - id: hgt
       name: 高程檔
+      description: <p>單獨安裝高程檔。</p>
       icon: /images/Locus_dem.jpeg
       url: locus-actions://https/rudy.outdoors.tw/locus_dem-cedric.xml
       file: hgtmix.zip
@@ -249,16 +260,19 @@ apps:
     artifacts:
     - id: map
       name: 離線地圖
+      description: <p>單獨安裝地圖。</p>
       icon: /images/Cartograph_map.png
       scheme: "cartograph-map:"
       file: carto_map.cpkg
     - id: style
       name: 風格主題
+      description: <p>單獨安裝風格主題。</p>
       icon: /images/Cartograph_style.png
       scheme: "cartograph-map:"
       file: carto_style.cpkg
     - id: hgt
       name: 高程檔
+      description: <p>單獨安裝高程檔。</p>
       icon: /images/Cartograph_dem.png
       scheme: "cartograph-map:"
       file: carto_dem.cpkg
