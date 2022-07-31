@@ -194,7 +194,7 @@ apps:
   android: true
   icon: /images/Locus.jpeg
   description: |
-    <p>Locus 支援 Android 平台。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=menion.android.locus.pro">Google Play</a> 安裝。</p>
+    <p>Locus 支援 Android 平台。若您還沒在手機上安裝，請到至 <a href="https://play.google.com/store/apps/details?id=menion.android.locus">Google Play</a> 安裝。</p>
   variants:
   - id: together
     name: 圖資合併安裝
