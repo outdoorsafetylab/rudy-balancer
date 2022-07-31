@@ -126,17 +126,22 @@ func (dao *SiteDao) Update(sites []*model.Site) error {
 	}
 	for _, s := range sites {
 		log.Debugf("Updating site: %s", s.Name)
+		site := &site{
+			Sources: make(map[string]*model.Source),
+		}
 		doc, err := firestore.Collection().Doc(s.Firestore).Get(dao.Context)
 		if err != nil {
 			if status.Code(err) != codes.NotFound {
 				log.Errorf("Failed to get document %s: %s", s.Firestore, err.Error())
 				return err
 			}
+		} else {
+			err = doc.DataTo(&site)
+			if err != nil {
+				return err
+			}
 		}
-		site := &site{
-			LastCheck: time.Now(),
-			Sources:   make(map[string]*model.Source),
-		}
+		site.LastCheck = time.Now()
 		goods := make([]*model.Source, 0)
 		var latency time.Duration
 		bads := make([]*model.Source, 0)

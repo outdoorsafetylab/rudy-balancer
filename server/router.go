@@ -56,8 +56,10 @@ func newRouter(webroot string) (*mux.Router, error) {
 	endpoint.HandleFunc("/files", file.List).Methods("GET")
 	stats := &controller.StatsController{}
 	endpoint.HandleFunc("/stats/total", stats.Total).Methods("GET")
+	timeout := 3 * time.Second
 	reverseProxy := &proxyHandler{
-		ProbeClient: http.Client{Timeout: time.Second},
+		Timeout:     timeout,
+		ProbeClient: &http.Client{Timeout: timeout},
 		Redirects:   make(map[string]bool),
 	}
 	for _, files := range mirror.Files {
@@ -70,12 +72,10 @@ func newRouter(webroot string) (*mux.Router, error) {
 		if err != nil {
 			return nil, err
 		}
-		for i := 0; i < site.Weight; i++ {
-			reverseProxy.Targets = append(reverseProxy.Targets, &proxyTarget{
-				Site:  site,
-				Proxy: httputil.NewSingleHostReverseProxy(url),
-			})
-		}
+		reverseProxy.Targets = append(reverseProxy.Targets, &proxyTarget{
+			Site:  site,
+			Proxy: httputil.NewSingleHostReverseProxy(url),
+		})
 	}
 	r.NotFoundHandler = reverseProxy
 	return r, nil

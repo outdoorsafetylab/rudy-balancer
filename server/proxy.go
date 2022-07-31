@@ -1,7 +1,8 @@
 package server
 
 import (
-	"math/rand"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"service/model"
@@ -15,41 +16,67 @@ type proxyTarget struct {
 	Proxy *httputil.ReverseProxy
 }
 
+func (t *proxyTarget) Probe(client *http.Client) error {
+	probeURL := t.Site.GetURL(t.Site.Landing)
+	res, err := client.Head(probeURL)
+	if err != nil {
+		return err
+	}
+	res.Body.Close()
+	if res.StatusCode >= 400 {
+		return errors.New(res.Status)
+	}
+	return nil
+}
+
+type proxyTargets []*proxyTarget
+
+func (targets proxyTargets) Probe(client *http.Client, timeout time.Duration) *proxyTarget {
+	racer := make(chan *proxyTarget, 1)
+	for _, t := range targets {
+		go func(t *proxyTarget) {
+			err := t.Probe(client)
+			if err == nil {
+				select {
+				case racer <- t:
+				default:
+				}
+			}
+		}(t)
+	}
+	select {
+	case t := <-racer:
+		return t
+	case <-time.After(timeout):
+		return nil
+	}
+}
+
 type proxyHandler struct {
-	ProbeClient http.Client
-	Targets     []*proxyTarget
+	Timeout     time.Duration
+	ProbeClient *http.Client
+	Targets     proxyTargets
 	Redirects   map[string]bool
 }
 
 func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(h.Targets), func(i, j int) { h.Targets[i], h.Targets[j] = h.Targets[j], h.Targets[i] })
-	for _, target := range h.Targets {
-		probeURL := target.Site.GetURL(target.Site.Landing)
-		log.Debugf("Probing: %s", probeURL)
-		res, err := h.ProbeClient.Head(probeURL)
-		if err != nil {
-			log.Debugf("Bad luck for %s: %s", target.Site.Name, err.Error())
-			continue
-		}
-		res.Body.Close()
-		if res.StatusCode < 400 {
-			if h.Redirects[req.RequestURI] {
-				url := target.Site.GetURL(req.RequestURI)
-				log.Debugf("Redirecting %s for %s", url, req.RequestURI)
-				http.Redirect(w, req, url, 302)
-				return
-			}
-			if req.RequestURI == "/" && target.Site.Landing != "" {
-				req.URL.Path = target.Site.Landing
-			}
-			log.Debugf("Serving %s for %s", target.Site.GetURL(req.URL.Path), req.RequestURI)
-			req.Host = target.Site.Host // Some sites will reject without it
-			target.Proxy.ServeHTTP(w, req)
-			return
-		}
+	target := h.Targets.Probe(h.ProbeClient, h.Timeout)
+	if target == nil {
+		msg := fmt.Sprintf("All mirrors failed to response in %v", h.Timeout)
+		log.Errorf(msg)
+		http.Error(w, msg, 504)
+		return
 	}
-	msg := "All targets are down"
-	log.Errorf(msg)
-	http.Error(w, msg, 502)
+	if h.Redirects[req.RequestURI] {
+		url := target.Site.GetURL(req.RequestURI)
+		log.Debugf("Redirecting %s for %s", url, req.RequestURI)
+		http.Redirect(w, req, url, 302)
+		return
+	}
+	if req.RequestURI == "/" && target.Site.Landing != "" {
+		req.URL.Path = target.Site.Landing
+	}
+	log.Debugf("Serving %s for %s", target.Site.GetURL(req.URL.Path), req.RequestURI)
+	req.Host = target.Site.Host // Some sites will reject without it
+	target.Proxy.ServeHTTP(w, req)
 }

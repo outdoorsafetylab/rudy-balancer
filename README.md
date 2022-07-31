@@ -2,7 +2,7 @@
 
 魯地圖分流器
 
-1. [魯地圖主頁](https://rudy.outdoors.tw/)
+1. [魯地圖說明網頁](https://rudy.outdoors.tw/)
 1. [App 更新主頁](https://rudy.outdoors.tw/app)
    1. [OruxMaps 傳送門](https://rudy.outdoors.tw/app/oruxmaps)
    1. [綠野遊蹤傳送門](https://rudy.outdoors.tw/app/gts)
@@ -11,19 +11,25 @@
 
 ## 運作方式
 
-### 魯地圖主頁
+Mirros 設定檔: [mirrors.yaml](https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/mirrors.yaml)
 
-固定對 [Happyman](https://map.happyman.idv.tw/rudy/) 進行 Reverse Proxy。因不明原因 Golang 內建的 [Reverse Proxy](https://pkg.go.dev/net/http/httputil#ReverseProxy) 無法導向 [KC Wu](https://moi.kcwu.csie.org/taiwan_topo.html)，root cause 待查。
+### 魯地圖說明網頁
 
-### 定時測試
+1. 使用反向代理 ([Reverse Proxy](https://pkg.go.dev/net/http/httputil#ReverseProxy)) 方式提供主頁 HTML 及素材等，亦即流量會經過分流器端點。
+1. 當收到 HTTP 請求時會即使對所有 mirror 站台同步進行 HTTP HEAD 測試，並以最快回應的伺服器作為來源進行反向代理。
+1. 若 HTTP 請求為正面表列的圖資檔，則會改以 HTTP 302 重新導向。
+1. 若所有 mirror 都無法在3秒內回應，則會回覆 HTTP 504 Gateway Timeout 錯誤。
 
-1. 每60分鐘對各 mirror 站台進行 HTTP HEAD 測試, 超過5秒沒有回應則為逾時。
+### 圖資定時測試
+
+1. 每30分鐘對各 mirror 站台進行 HTTP HEAD 測試, 超過5秒沒有回應則為逾時。
+   1. 會對所有正面表列的圖資檔進行測試。
    1. 所有連結都有回應時則判定為 Operational
    1. 部份連結沒有回應時則判定為 Partial outage
    1. 所有連結都無回應時則判定為 Major outage
    1. 每次成功的測試都會紀錄 Latency，並與已儲存的 Latency 值平均後再存回資料庫。
    1. 使用 [Statuspage API](https://developer.statuspage.io/) 來更新狀態。
-1. 由 Operational 轉為其它狀態時會自動建立 Incident，例如：[Rex is not operational](https://outdoorsafetylab1.statuspage.io/incidents/lghlzv7h9ztq)
+1. 由 Operational 轉為其它狀態時會自動建立 Incident，例如：[Rex is not operational](https://rudymap.statuspage.io/incidents/blp2ytvrjg05)
 1. 由其它狀態回覆為 Operational 後即會自動 Resolve Incident。
 
 > **TODO**
@@ -31,7 +37,7 @@
 > 1. 檢查 Last-Modifed，若日期太過老舊則視為 Degraded performance 或 Partial outage。
 > 1. 老舊可依各別檔案定義，例如 Daily Build 可設定為 1 天， Weekly Build 可設定為 7 天，DEM 檔可設定為 1 年。
 
-### 分流方式
+### 圖資分流方式
 
 1. 分流前會排除 HTTP HEAD 測試失敗的連結。
 1. 分流前會使用設定檔內定義的 mirror 站台權重。
