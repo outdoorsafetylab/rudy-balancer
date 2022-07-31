@@ -217,7 +217,7 @@
                 let newest = 0;
                 for (let i = 0; i < artifact.Sources.length; i++) {
                   let source = artifact.Sources[i];
-                  source.Toolip = this.sourceTooltip(source);
+                  source.Tooltip = this.sourceTooltip(source);
                   if (source.Status == 0) {
                     newest = Math.max(source.LastModified)
                   }
