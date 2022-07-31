@@ -52,16 +52,16 @@ files:
   - Taiwan_moi_zh_camp3D.gmap.zip
 sites:
 - name: Rex
-  scheme: http
+  scheme: https
   host: rudy.basecamp.tw
   weight: 6
 - name: KC Wu
-  scheme: http
+  scheme: https
   host: moi.kcwu.csie.org
   landing: taiwan_topo.html
   weight: 4
 - name: Happyman
-  scheme: http
+  scheme: https
   host: map.happyman.idv.tw
   prefix: /rudy
   weight: 1
