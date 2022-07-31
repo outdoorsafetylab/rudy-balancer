@@ -1,4 +1,4 @@
-package firestore
+package db
 
 import (
 	"service/config"

@@ -1,9 +1,10 @@
 package dao
 
 import (
-	"service/firestore"
+	"service/db"
 	"service/model"
 
+	"cloud.google.com/go/firestore"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -98,27 +99,11 @@ const (
 )
 
 func (dao *FileDao) AccumulateRedirect(src *model.Source) error {
-	stats := make(map[string]*FileStat)
-	doc, err := firestore.Collection().Doc(totalStatsDocID).Get(dao.Context)
-	if err != nil {
-		if status.Code(err) != codes.NotFound {
-			log.Errorf("Failed to get document %s: %s", totalStatsDocID, err.Error())
-			return err
-		}
-	} else {
-		err = doc.DataTo(&stats)
-		if err != nil {
-			return err
-		}
-	}
-	st := stats[src.File]
-	if st == nil {
-		st = &FileStat{}
-		stats[src.File] = st
-	}
-	st.Count++
-	st.Size += src.Size
-	_, err = doc.Ref.Set(dao.Context, stats)
+	docRef := db.Collection().Doc(totalStatsDocID)
+	_, err := docRef.Update(dao.Context, []firestore.Update{
+		{FieldPath: []string{src.File, "Count"}, Value: firestore.Increment(1)},
+		{FieldPath: []string{src.File, "Size"}, Value: firestore.Increment(src.Size)},
+	})
 	if err != nil {
 		return err
 	}
@@ -127,7 +112,7 @@ func (dao *FileDao) AccumulateRedirect(src *model.Source) error {
 
 func (dao *FileDao) TotalStats() (map[string]*FileStat, error) {
 	stats := make(map[string]*FileStat)
-	doc, err := firestore.Collection().Doc(totalStatsDocID).Get(dao.Context)
+	doc, err := db.Collection().Doc(totalStatsDocID).Get(dao.Context)
 	if err != nil {
 		if status.Code(err) != codes.NotFound {
 			log.Errorf("Failed to get document %s: %s", totalStatsDocID, err.Error())

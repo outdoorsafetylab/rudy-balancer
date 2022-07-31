@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"service/config"
-	"service/firestore"
+	"service/db"
 	"service/mirror"
 	"service/model"
 	"service/statuspage"
@@ -33,7 +33,7 @@ func (dao *SiteDao) load() (*mirror.Mirror, error) {
 	}
 	for _, s := range mirror.Sites {
 		log.Debugf("Loading site: %s (%s)", s.Name, s.Firestore)
-		doc, err := firestore.Collection().Doc(s.Firestore).Get(dao.Context)
+		doc, err := db.Collection().Doc(s.Firestore).Get(dao.Context)
 		if err != nil {
 			if status.Code(err) != codes.NotFound {
 				log.Errorf("Failed to load document %s: %s", s.Firestore, err.Error())
@@ -111,7 +111,7 @@ func (dao *SiteDao) Update(sites []*model.Site) error {
 		site := &site{
 			Sources: make(map[string]*model.Source),
 		}
-		doc, err := firestore.Collection().Doc(s.Firestore).Get(dao.Context)
+		doc, err := db.Collection().Doc(s.Firestore).Get(dao.Context)
 		if err != nil {
 			if status.Code(err) != codes.NotFound {
 				log.Errorf("Failed to get document %s: %s", s.Firestore, err.Error())

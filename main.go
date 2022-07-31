@@ -4,7 +4,7 @@ import (
 	"flag"
 	"os"
 
-	"service/firestore"
+	"service/db"
 	"service/server"
 
 	"service/config"
@@ -28,11 +28,11 @@ func main() {
 		os.Exit(1)
 	}
 	log.SetLevel(log.TraceLevel)
-	err := firestore.Init()
+	err := db.Init()
 	if err != nil {
 		os.Exit(-1)
 	}
-	defer firestore.Deinit()
+	defer db.Deinit()
 	server := server.New()
 	err = server.Run(arguments.webroot)
 	if err == nil {
