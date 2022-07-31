@@ -18,7 +18,7 @@ type site struct {
 }
 
 func (c *SiteController) List(w http.ResponseWriter, r *http.Request) {
-	dao := &dao.HealthDao{Context: r.Context()}
+	dao := &dao.SiteDao{Context: r.Context()}
 	sites, err := dao.Sites()
 	if err != nil {
 		http.Error(w, err.Error(), 500)

@@ -10,7 +10,7 @@ import (
 type AppController struct{}
 
 func (c *AppController) List(w http.ResponseWriter, r *http.Request) {
-	dao := &dao.HealthDao{Context: r.Context()}
+	dao := &dao.SiteDao{Context: r.Context()}
 	apps, err := dao.Apps()
 	if err != nil {
 		http.Error(w, err.Error(), 500)
