@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
+
 	"service/config"
 	"service/db"
+	"service/log"
 	"service/mirror"
 	"service/model"
 	"service/statuspage"
-	"time"
 
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

@@ -8,11 +8,11 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"service/model"
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"service/log"
+	"service/model"
 )
 
 type Client struct {

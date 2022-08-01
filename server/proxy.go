@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
-	"service/model"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"service/log"
+	"service/model"
 )
 
 type proxyTarget struct {

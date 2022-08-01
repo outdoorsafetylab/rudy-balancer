@@ -7,8 +7,7 @@ import (
 	"os/signal"
 
 	"service/config"
-
-	log "github.com/sirupsen/logrus"
+	"service/log"
 )
 
 type server struct {

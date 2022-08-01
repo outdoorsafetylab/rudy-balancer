@@ -2,11 +2,11 @@ package controller
 
 import (
 	"net/http"
-	"service/config"
-	"service/dao"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"service/config"
+	"service/dao"
+	"service/log"
 )
 
 type HealthController struct{}

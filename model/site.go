@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"service/log"
 )
 
 type Site struct {
