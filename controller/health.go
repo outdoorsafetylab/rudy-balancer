@@ -7,6 +7,7 @@ import (
 	"service/config"
 	"service/dao"
 	"service/log"
+	"service/mirror"
 )
 
 type HealthController struct{}
@@ -22,7 +23,7 @@ func (c *HealthController) Check(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dao := &dao.SiteDao{Context: r.Context()}
-	sites, err := dao.Sites()
+	sites, err := mirror.Sites()
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return

@@ -8,11 +8,13 @@ import (
 
 	"service/config"
 	"service/db"
+	"service/hash"
 	"service/log"
 	"service/mirror"
 	"service/model"
 	"service/statuspage"
 
+	"cloud.google.com/go/firestore"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -27,6 +29,17 @@ type site struct {
 	Latency   time.Duration
 }
 
+type siteStatus struct {
+	status string
+	goods  []*model.Source
+	bads   []*model.Source
+}
+
+type fileSites struct {
+	File  string
+	Sites map[string]int64
+}
+
 func (dao *SiteDao) load() (*mirror.Mirror, error) {
 	mirror, err := mirror.Get()
 	if err != nil {
@@ -34,7 +47,7 @@ func (dao *SiteDao) load() (*mirror.Mirror, error) {
 	}
 	for _, s := range mirror.Sites {
 		log.Debugf("Loading site: %s (%s)", s.Name, s.Firestore)
-		doc, err := db.Collection().Doc(s.Firestore).Get(dao.Context)
+		doc, err := db.Client().Collection(rudyMirrorSites).Doc(s.Firestore).Get(dao.Context)
 		if err != nil {
 			if status.Code(err) != codes.NotFound {
 				log.Errorf("Failed to load document %s: %s", s.Firestore, err.Error())
@@ -94,6 +107,76 @@ func (dao *SiteDao) Sites() ([]*model.Site, error) {
 }
 
 func (dao *SiteDao) Update(sites []*model.Site) error {
+	files := make(map[string]map[string]int64)
+	statuses := make(map[string]*siteStatus)
+	err := db.Client().RunTransaction(dao.Context, func(ctx context.Context, tx *firestore.Transaction) error {
+		for _, s := range sites {
+			log.Debugf("Updating site: %s", s.Name)
+			docRef := db.Client().Collection(rudyMirrorSites).Doc(s.Firestore)
+			site := &site{
+				LastCheck: time.Now(),
+				Sources:   make(map[string]*model.Source),
+			}
+			st := &siteStatus{
+				goods: make([]*model.Source, 0),
+				bads:  make([]*model.Source, 0),
+			}
+			var latency time.Duration
+			for _, src := range s.Sources {
+				site.Sources[src.URL] = src
+				fileSites := files[src.File]
+				if fileSites == nil {
+					fileSites = make(map[string]int64)
+				}
+				switch src.Status {
+				case model.GOOD:
+					st.goods = append(st.goods, src)
+					fileSites[s.Name] = src.Size
+					latency += src.Latency
+				case model.BAD:
+					st.bads = append(st.bads, src)
+				}
+				files[src.File] = fileSites
+			}
+			if len(st.goods) > 0 {
+				site.Latency = latency / time.Duration(len(st.goods))
+			}
+			err := tx.Set(docRef, site)
+			if err != nil {
+				return err
+			}
+			total := len(st.goods) + len(st.bads)
+			if total > 0 {
+				percentage := 100.0 * len(st.goods) / total
+				if percentage >= 100 {
+					st.status = "operational"
+				} else if percentage <= 0 {
+					st.status = "major_outage"
+				} else {
+					st.status = "partial_outage"
+				}
+			}
+			statuses[s.Name] = st
+		}
+		for file, sites := range files {
+			fileID, err := hash.SHA1([]byte(file))
+			if err != nil {
+				return err
+			}
+			docRef := db.Client().Collection(rudyMirrorFiles).Doc(fileID)
+			err = tx.Set(docRef, &fileSites{
+				File:  file,
+				Sites: sites,
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
 	cfg := config.Get()
 	client := &statuspage.Client{Client: http.DefaultClient, APIKey: cfg.GetString("statuspage.key")}
 	pageID := cfg.GetString("statuspage.page")
@@ -108,46 +191,15 @@ func (dao *SiteDao) Update(sites []*model.Site) error {
 		componentsByName[comp.Name] = comp
 	}
 	for _, s := range sites {
-		log.Debugf("Updating site: %s", s.Name)
-		site := &site{
-			Sources: make(map[string]*model.Source),
-		}
-		doc, err := db.Collection().Doc(s.Firestore).Get(dao.Context)
-		if err != nil {
-			if status.Code(err) != codes.NotFound {
-				log.Errorf("Failed to get document %s: %s", s.Firestore, err.Error())
-				return err
-			}
-		} else {
-			err = doc.DataTo(&site)
-			if err != nil {
-				return err
-			}
-		}
-		site.LastCheck = time.Now()
-		goods := make([]*model.Source, 0)
-		var latency time.Duration
-		bads := make([]*model.Source, 0)
-		for _, s := range s.Sources {
-			site.Sources[s.URL] = s
-			switch s.Status {
-			case model.GOOD:
-				goods = append(goods, s)
-				latency += s.Latency
-			case model.BAD:
-				bads = append(bads, s)
-			}
-		}
-		if len(goods) > 0 {
-			site.Latency = latency / time.Duration(len(goods))
-		}
-		_, err = doc.Ref.Set(dao.Context, site)
-		if err != nil {
-			return err
-		}
 		if s.Hidden {
 			continue
 		}
+		st := statuses[s.Name]
+		if st.status == "" {
+			log.Debugf("Unknown status: %s", s.Name)
+			continue
+		}
+		log.Debugf("Updating statuspage: %s", s.Name)
 		comp := componentsByName[s.StatusPage]
 		if comp == nil {
 			log.Warnf("Creating component: %s", s.StatusPage)
@@ -156,27 +208,18 @@ func (dao *SiteDao) Update(sites []*model.Site) error {
 				return err
 			}
 		}
-		var status string
-		percentage := 100.0 * len(goods) / (len(goods) + len(bads))
-		if percentage >= 100 {
-			status = "operational"
-		} else if percentage <= 0 {
-			status = "major_outage"
-		} else {
-			status = "partial_outage"
-		}
-		log.Debugf("Updating component status: %s => %s", s.StatusPage, status)
-		err = client.UpdateComponentStatus(comp, status)
+		log.Debugf("Updating component status: %s => %s", s.StatusPage, st.status)
+		err = client.UpdateComponentStatus(comp, st.status)
 		if err != nil {
 			return err
 		}
-		if comp.Status == "operational" && status != comp.Status {
+		if comp.Status == "operational" && st.status != comp.Status {
 			log.Warnf("Creating incident due to site %s is not operational", s.Name)
-			_, err = client.CreateIncident(pageID, comp.ID, fmt.Sprintf("%s is not operational.", s.Name), bads)
+			_, err = client.CreateIncident(pageID, comp.ID, fmt.Sprintf("%s is not operational.", s.Name), st.bads)
 			if err != nil {
 				return err
 			}
-		} else if status == "operational" && status != comp.Status {
+		} else if st.status == "operational" && st.status != comp.Status {
 			log.Warnf("Resolving incident due to site %s is back", s.Name)
 			err = client.ResolveIncidents(pageID, comp.ID)
 			if err != nil {

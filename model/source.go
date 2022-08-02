@@ -7,7 +7,8 @@ import (
 )
 
 type Source struct {
-	Site             *Site     `json:",omitempty" firestore:"-"`
+	Site             *Site     `json:"-" firestore:"-"`
+	SiteName         string    `json:"Site" firestore:"-"`
 	File             string    `json:"-" firestore:"-"`
 	URL              string    `json:",omitempty" firestore:"-"`
 	LastCheck        time.Time `json:"-"`

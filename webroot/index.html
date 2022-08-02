@@ -117,7 +117,7 @@
                   <div>
                     <span v-for="source in artifact.Sources" class="me-1">
                       <span v-bind:class="badgeClasses(source)" data-bs-toggle="tooltip"
-                        v-bind:title="source.Tooltip">{{source.Site.Name}}</span>
+                        v-bind:title="source.Tooltip">{{source.Site}}</span>
                     </span>
                   </div>
                   <div v-html="artifact.Description" class="mt-2"></div>
@@ -317,7 +317,7 @@
             return 'd-none';
           }
           switch (source.Status) {
-            case 0:
+            case 1:
               return 'badge bg-success mb-1';
             default:
               return 'badge bg-danger mb-1';
@@ -326,11 +326,11 @@
         sourceTooltip(source) {
           var tooltip;
           switch (source.Status) {
-            case 0: {
+            case 1: {
               tooltip = '檔案日期: ' + new Date(source.LastModified * 1000).toLocaleDateString() + '\n回應時間: ' + Math.round(source.Latency / 1000000) + '亳秒';
               break;
             }
-            case 1: {
+            case 2: {
               tooltip = '無法使用';
               break;
             }

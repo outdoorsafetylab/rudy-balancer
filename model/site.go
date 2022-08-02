@@ -10,16 +10,17 @@ import (
 )
 
 type Site struct {
-	Name       string
-	StatusPage string    `json:"-" firestore:"-"`
-	Firestore  string    `json:"-" firestore:"-"`
-	Hidden     bool      `json:",omitempty"`
-	Scheme     string    `json:"-"`
-	Host       string    `json:"-"`
-	Prefix     string    `json:"-"`
-	Landing    string    `json:"-"`
-	Sources    []*Source `json:"-"`
-	Weight     int       `json:"-"`
+	Name         string
+	StatusPage   string    `json:"-" firestore:"-"`
+	Firestore    string    `json:"-" firestore:"-"`
+	MonthlyQuota int64     `json:"-" firestore:"-"`
+	Hidden       bool      `json:",omitempty"`
+	Scheme       string    `json:"-"`
+	Host         string    `json:"-"`
+	Prefix       string    `json:"-"`
+	Landing      string    `json:"-"`
+	Sources      []*Source `json:"-"`
+	Weight       int       `json:"-"`
 }
 
 func (s *Site) GetURL(uri string) string {

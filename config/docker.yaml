@@ -6,4 +6,3 @@ mirrors:
   default_scheme: "https:"
 firestore:
   project_id: "*detect-project-id*"
-  collection: RudyMirrors

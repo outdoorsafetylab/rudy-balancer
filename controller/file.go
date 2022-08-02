@@ -30,12 +30,12 @@ func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
 	src := sources[rand.Intn(len(sources))]
 	log.Warningf("Redircting: %s => %s", c.File, src.URL)
 	http.Redirect(w, r, src.URL, 302)
-	if r.Method == "GET" {
-		err = dao.AccumulateRedirect(src)
-		if err != nil {
-			log.Errorf("Failed to accumuate redirect: %s", err.Error())
-		}
+	// if r.Method == "GET" {
+	err = dao.AccumulateRedirect(src)
+	if err != nil {
+		log.Errorf("Failed to accumuate redirect: %s", err.Error())
 	}
+	// }
 }
 
 func (c *FileController) List(w http.ResponseWriter, r *http.Request) {
