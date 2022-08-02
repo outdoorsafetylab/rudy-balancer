@@ -186,27 +186,6 @@ func (dao *FileDao) AccumulateRedirect(src *model.Source) error {
 	return nil
 }
 
-func (dao *FileDao) Stats(site string) (map[string]*FileStat, error) {
-	if site == "" {
-		site = allSites
-	}
-	doc, err := db.Client().Collection(rudyMirrorSiteStats).Doc(site).Get(dao.Context)
-	if err != nil {
-		if status.Code(err) != codes.NotFound {
-			log.Errorf("Failed to get document: %s", err.Error())
-			return nil, err
-		} else {
-			return nil, nil
-		}
-	}
-	stats := make(map[string]*FileStat)
-	err = doc.DataTo(&stats)
-	if err != nil {
-		return nil, err
-	}
-	return stats, nil
-}
-
 func (dao *FileDao) DailyStats(site string, since, until time.Time) ([]*FileStat, error) {
 	if site == "" {
 		site = allSites

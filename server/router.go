@@ -58,8 +58,6 @@ func newRouter(webroot string) (*mux.Router, error) {
 	file := &controller.FileController{}
 	endpoint.HandleFunc("/files", file.List).Methods("GET")
 	stats := &controller.StatsController{}
-	endpoint.HandleFunc("/stats/all", stats.Stats).Methods("GET")
-	endpoint.HandleFunc("/stats/{site}/all", stats.Stats).Methods("GET")
 	endpoint.HandleFunc("/stats/daily", stats.DailyStats).Methods("GET")
 	endpoint.HandleFunc("/stats/{site}/daily", stats.DailyStats).Methods("GET")
 	timeout := 3 * time.Second
