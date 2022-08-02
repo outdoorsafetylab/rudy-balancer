@@ -292,6 +292,7 @@
           if (app == this.selectedApp && variant == this.selectedVariant) return;
           this.selectedApp = app;
           this.selectedVariant = variant;
+          window.scrollTo(0, 0);
           let url = this.prefix;
           if (app) {
             url += '/' + app.ID;
