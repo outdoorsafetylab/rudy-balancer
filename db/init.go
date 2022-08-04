@@ -2,10 +2,11 @@ package db
 
 import (
 	"context"
+
 	"service/config"
+	"service/log"
 
 	"cloud.google.com/go/firestore"
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/api/option"
 )
 
@@ -16,7 +17,7 @@ func Init() error {
 	options := make([]option.ClientOption, 0)
 	credential := cfg.GetString("firestore.credential")
 	if credential != "" {
-		log.Warningf("Connecting to firestore with service account file: %s", credential)
+		log.Warnf("Connecting to firestore with service account file: %s", credential)
 		options = append(options, option.WithCredentialsFile(credential))
 	}
 	var err error

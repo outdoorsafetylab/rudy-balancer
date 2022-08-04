@@ -67,11 +67,12 @@ sites:
   weight: 1
 - name: OSL
   statuspage: Outdoor Safety Lab
-  firestore: Map Manager
+  firestore: Outdoor Safety Lab
   scheme: https
   host: d3r5lsn28erp7o.cloudfront.net
   weight: 2
   hidden: false
+  monthlyQuota: 900000000000 # 1TB*0.9
 apps:
 - id: hikinglogger
   name: 山林日誌

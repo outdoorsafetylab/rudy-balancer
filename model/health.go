@@ -3,9 +3,9 @@ package model
 type Status int
 
 const (
-	GOOD = iota
+	UNKNWON = iota
+	GOOD
 	BAD
-	UNKNWON
 )
 
 func (s Status) String() string {

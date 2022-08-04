@@ -9,7 +9,7 @@ import (
 	"runtime/debug"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"service/log"
 )
 
 type responseDumper struct {
@@ -113,6 +113,6 @@ func dump(r *http.Request, data []byte, d *responseDumper) error {
 		log.Errorf("Failed to marshal dump: %s", err.Error())
 		return err
 	}
-	log.Debugf("%s", data)
+	log.Debugf("%s", string(data))
 	return nil
 }

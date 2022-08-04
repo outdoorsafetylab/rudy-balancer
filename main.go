@@ -4,12 +4,10 @@ import (
 	"flag"
 	"os"
 
-	"service/db"
-	"service/server"
-
 	"service/config"
-
-	log "github.com/sirupsen/logrus"
+	"service/db"
+	"service/log"
+	"service/server"
 )
 
 var arguments = &struct {
@@ -24,11 +22,15 @@ func main() {
 	flag.StringVar(&arguments.environment, "e", arguments.environment, "Environemnt")
 	flag.StringVar(&arguments.webroot, "w", arguments.webroot, "Web root")
 	flag.Parse()
-	if err := config.Init(arguments.environment); err != nil {
+	err := config.Init(arguments.environment)
+	if err != nil {
 		os.Exit(1)
 	}
-	log.SetLevel(log.TraceLevel)
-	err := db.Init()
+	err = log.Init()
+	if err != nil {
+		os.Exit(-1)
+	}
+	err = db.Init()
 	if err != nil {
 		os.Exit(-1)
 	}

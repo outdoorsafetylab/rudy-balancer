@@ -49,9 +49,10 @@ func load() (*Mirror, error) {
 		}
 		for filename := range files {
 			source := &model.Source{
-				Site: site,
-				URL:  site.GetURL(filename),
-				File: filename,
+				Site:     site,
+				SiteName: site.Name,
+				URL:      site.GetURL(filename),
+				File:     filename,
 			}
 			site.Sources = append(site.Sources, source)
 			sources[source.URL] = source

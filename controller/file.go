@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"service/dao"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"service/dao"
+	"service/log"
 )
 
 type FileController struct {

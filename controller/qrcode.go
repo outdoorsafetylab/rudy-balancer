@@ -10,8 +10,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"service/log"
+
 	"github.com/nfnt/resize"
-	log "github.com/sirupsen/logrus"
 	"github.com/skip2/go-qrcode"
 )
 

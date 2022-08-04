@@ -1,11 +1,16 @@
 package dao
 
 import (
+	"context"
 	"service/db"
+	"service/hash"
+	"service/log"
+	"service/mirror"
 	"service/model"
+	"time"
 
 	"cloud.google.com/go/firestore"
-	log "github.com/sirupsen/logrus"
+	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -43,14 +48,59 @@ func (dao *FileDao) Files() (map[string][]*model.Source, error) {
 }
 
 func (dao *FileDao) GetSources(file string) ([]*model.Source, error) {
-	mirror, err := dao.load()
+	fileID, err := hash.SHA1([]byte(file))
 	if err != nil {
 		return nil, err
 	}
+	fileSites := &fileSites{}
+	doc, err := db.Client().Collection(rudyMirrorFiles).Doc(fileID).Get(dao.Context)
+	if err != nil {
+		return nil, err
+	}
+	err = doc.DataTo(fileSites)
+	if err != nil {
+		return nil, err
+	}
+	sites, err := mirror.Sites()
+	if err != nil {
+		return nil, err
+	}
+	oneMonthAgo := time.Now().Add(-time.Hour * 24 * 31)
+	log.Debugf("%v", oneMonthAgo)
 	sources := make([]*model.Source, 0)
-	for _, site := range mirror.Sites {
+	for _, site := range sites {
+		size := fileSites.Sites[site.Name]
+		if size <= 0 {
+			continue
+		}
+		if site.MonthlyQuota > 0 {
+			usage := int64(0)
+			q := db.Client().Collection(rudyMirrorSiteStats).Doc(site.Name).Collection(dailyStats).Where("Time", ">=", oneMonthAgo)
+			iter := q.Documents(dao.Context)
+			defer iter.Stop()
+			for {
+				doc, err := iter.Next()
+				if err == iterator.Done {
+					break
+				}
+				if err != nil {
+					return nil, err
+				}
+				st := &FileStat{}
+				err = doc.DataTo(st)
+				if err != nil {
+					return nil, err
+				}
+				usage += st.Size
+			}
+			if usage > site.MonthlyQuota {
+				log.Infof("Over quota: %s: quata=%d, usage=%d", site.Name, site.MonthlyQuota, usage)
+				continue
+			}
+		}
 		for _, src := range site.Sources {
 			if src.File == file {
+				src.Size = size
 				sources = append(sources, src)
 			}
 		}
@@ -79,51 +129,85 @@ func (dao *FileDao) GetSources(file string) ([]*model.Source, error) {
 	weightedSources := make([]*model.Source, 0)
 	for _, src := range sources {
 		weight := weights[src.URL]
-		switch src.Status {
-		case model.GOOD:
-			for i := 0; i < weight; i++ {
-				weightedSources = append(weightedSources, src)
-			}
+		for i := 0; i < weight; i++ {
+			weightedSources = append(weightedSources, src)
 		}
 	}
 	return weightedSources, nil
 }
 
 type FileStat struct {
-	Count int64
+	Time  *time.Time `json:",omitempty" firestore:",omitempty"`
+	Count int64      `json:",omitempty" firestore:",omitempty"`
 	Size  int64
 }
 
-const (
-	totalStatsDocID = "StatsTotal"
-)
-
 func (dao *FileDao) AccumulateRedirect(src *model.Source) error {
-	docRef := db.Collection().Doc(totalStatsDocID)
-	_, err := docRef.Update(dao.Context, []firestore.Update{
-		{FieldPath: []string{src.File, "Count"}, Value: firestore.Increment(1)},
-		{FieldPath: []string{src.File, "Size"}, Value: firestore.Increment(src.Size)},
-	})
-	if err != nil {
-		return err
+	today := time.Unix(time.Now().Unix()/86400*86400, 0).UTC()
+	dayID := today.Format("2006-01-02")
+	docs := []*firestore.DocumentRef{
+		db.Client().Collection(rudyMirrorSiteStats).Doc(allSites).Collection(dailyStats).Doc(dayID),
+		db.Client().Collection(rudyMirrorSiteStats).Doc(src.Site.Name).Collection(dailyStats).Doc(dayID),
+	}
+	for _, docRef := range docs {
+		err := db.Client().RunTransaction(dao.Context, func(ctx context.Context, tx *firestore.Transaction) error {
+			_, err := tx.Get(docRef)
+			if err != nil {
+				if status.Code(err) != codes.NotFound {
+					log.Errorf("Failed to get document: %s", err.Error())
+					return err
+				} else {
+					stats := FileStat{
+						Time:  &today,
+						Count: 1,
+						Size:  src.Size,
+					}
+					err = tx.Set(docRef, &stats)
+					if err != nil {
+						return err
+					}
+				}
+			} else {
+				err = tx.Update(docRef, []firestore.Update{
+					{FieldPath: []string{"Time"}, Value: today},
+					{FieldPath: []string{"Count"}, Value: firestore.Increment(1)},
+					{FieldPath: []string{"Size"}, Value: firestore.Increment(src.Size)},
+				})
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (dao *FileDao) TotalStats() (map[string]*FileStat, error) {
-	stats := make(map[string]*FileStat)
-	doc, err := db.Collection().Doc(totalStatsDocID).Get(dao.Context)
-	if err != nil {
-		if status.Code(err) != codes.NotFound {
-			log.Errorf("Failed to get document %s: %s", totalStatsDocID, err.Error())
-			return nil, err
-		} else {
-			return stats, nil
+func (dao *FileDao) DailyStats(site string, since, until time.Time) ([]*FileStat, error) {
+	if site == "" {
+		site = allSites
+	}
+	res := make([]*FileStat, 0)
+	q := db.Client().Collection(rudyMirrorSiteStats).Doc(site).Collection(dailyStats).Where("Time", ">=", since).Where("Time", "<=", until)
+	iter := q.Documents(dao.Context)
+	defer iter.Stop()
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
 		}
+		if err != nil {
+			return nil, err
+		}
+		stats := &FileStat{}
+		err = doc.DataTo(&stats)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, stats)
 	}
-	err = doc.DataTo(&stats)
-	if err != nil {
-		return nil, err
-	}
-	return stats, nil
+	return res, nil
 }
