@@ -17,7 +17,7 @@ Mirros 設定檔: [mirrors.yaml](https://github.com/outdoorsafetylab/rudy-balanc
 
 1. 使用反向代理 ([Reverse Proxy](https://pkg.go.dev/net/http/httputil#ReverseProxy)) 方式提供主頁 HTML 及素材等，亦即流量會經過分流器端點。
 1. 當收到 HTTP 請求時會即使對所有 mirror 站台同步進行 HTTP HEAD 測試，並以最快回應的伺服器作為來源進行反向代理。
-1. 若 HTTP 請求為正面表列的圖資檔，則會改以 HTTP 302 重新導向。
+1. 若 HTTP 請求為[正面表列的圖資檔](https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/mirrors.yaml)，則會改以 HTTP 302 重新導向，流量不會經過分流器端點。
 1. 若所有 mirror 都無法在3秒內回應，則會回覆 HTTP 504 Gateway Timeout 錯誤。
 
 ### 圖資定時測試
@@ -31,6 +31,7 @@ Mirros 設定檔: [mirrors.yaml](https://github.com/outdoorsafetylab/rudy-balanc
    1. 使用 [Statuspage API](https://developer.statuspage.io/) 來更新狀態。
 1. 由 Operational 轉為其它狀態時會自動建立 Incident，例如：[Rex is not operational](https://rudymap.statuspage.io/incidents/blp2ytvrjg05)
 1. 由其它狀態回覆為 Operational 後即會自動 Resolve Incident。
+1. 定期測試的端點部署於 Google Cloud Platform `asia-east1` (彰化)
 
 > **TODO**
 >
@@ -39,10 +40,10 @@ Mirros 設定檔: [mirrors.yaml](https://github.com/outdoorsafetylab/rudy-balanc
 
 ### 圖資分流方式
 
-1. 分流前會排除 HTTP HEAD 測試失敗的連結。
-1. 分流前會使用設定檔內定義的 mirror 站台權重。
+1. 分流前會排除定期測試後失敗的連結。
+1. 分流前會使用設定檔內定義的站台權重。
 1. 最後會以亂數選擇要使用的連結，權重較高的連結獲選率也較高。
-1. 選定連結後會以 HTTP 302 重新導向。
+1. 選定連結後會以 HTTP 302 重新導向，流量不會經過分流器端點。
 
 測試方式：
 
