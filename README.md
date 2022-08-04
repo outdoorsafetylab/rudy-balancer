@@ -11,7 +11,8 @@
 
 ## 運作方式
 
-Mirros 設定檔: [mirrors.yaml](https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/mirrors.yaml)
+- 站台健康狀態: [Statuspage](https://rudymap.statuspage.io/)
+- 站台設定檔: [mirrors.yaml](https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/mirrors.yaml)
 
 ### 魯地圖說明網頁
 
