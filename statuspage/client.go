@@ -20,6 +20,16 @@ type Client struct {
 	APIKey string
 }
 
+type DataPoint struct {
+	Time  time.Time
+	Value float64
+}
+
+type dataPoint struct {
+	Timestamp int64   `json:"timestamp"`
+	Value     float64 `json:"value"`
+}
+
 func (c *Client) request(method, uri string, reqData, resData interface{}) error {
 	var data io.Reader = nil
 	if reqData != nil {
@@ -148,6 +158,17 @@ func (c *Client) ResolveIncidents(pageID, componentID string) error {
 		}
 	}
 	return nil
+}
+
+func (c *Client) AddDataPoint(pageID, metricID string, data *DataPoint) error {
+	return c.request("POST", fmt.Sprintf("/v1/pages/%s/metrics/%s/data", pageID, metricID), &struct {
+		Data dataPoint `json:"data"`
+	}{
+		dataPoint{
+			Timestamp: data.Time.Unix(),
+			Value:     data.Value,
+		},
+	}, nil)
 }
 
 func (c *Client) listUnresolvedIncidents(pageID string) ([]*Incident, error) {
