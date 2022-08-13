@@ -54,6 +54,7 @@ func (targets proxyTargets) Probe(client *http.Client, timeout time.Duration) *p
 }
 
 type proxyHandler struct {
+	Redirects   map[string]string
 	Timeout     time.Duration
 	ProbeClient *http.Client
 	Targets     proxyTargets
@@ -61,6 +62,12 @@ type proxyHandler struct {
 }
 
 func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	redirect := h.Redirects[req.URL.Path]
+	if redirect != "" {
+		log.Debugf("Redirecting %s for %s", redirect, req.RequestURI)
+		http.Redirect(w, req, redirect, 302)
+		return
+	}
 	target := h.Targets.Probe(h.ProbeClient, h.Timeout)
 	if target == nil {
 		msg := fmt.Sprintf("All mirrors failed to response in %v", h.Timeout)

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"path/filepath"
 	"service/config"
 	"service/controller"
 	"service/middleware"
@@ -62,11 +63,17 @@ func newRouter(webroot string) (*mux.Router, error) {
 	endpoint.HandleFunc("/stats/{site}/daily", stats.DailyStats).Methods("GET")
 	timeout := 3 * time.Second
 	reverseProxy := &proxyHandler{
+		Redirects:   make(map[string]string),
 		Timeout:     timeout,
 		ProbeClient: &http.Client{Timeout: timeout},
 		Suffixes: map[string]bool{
 			".html": true,
 		},
+	}
+	for _, files := range mirror.Files {
+		for _, file := range files {
+			reverseProxy.Redirects["/"+file] = filepath.Join(prefix, file)
+		}
 	}
 	for _, site := range mirror.Sites {
 		if site.ProxyScheme == "" || site.MonthlyQuota > 0 {
