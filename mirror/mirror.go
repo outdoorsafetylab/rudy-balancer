@@ -51,7 +51,7 @@ func load() (*Mirror, error) {
 			source := &model.Source{
 				Site:     site,
 				SiteName: site.Name,
-				URL:      site.GetURL(filename),
+				URL:      site.GetRedirectURL(filename),
 				File:     filename,
 			}
 			site.Sources = append(site.Sources, source)
@@ -70,7 +70,7 @@ func load() (*Mirror, error) {
 					return nil, fmt.Errorf("undefined file: %s > %s > %s: %s", app.Name, v.Name, a.Name, a.File)
 				}
 				for _, site := range meta.Sites {
-					a.Sources = append(a.Sources, sources[site.GetURL(a.File)])
+					a.Sources = append(a.Sources, sources[site.GetRedirectURL(a.File)])
 				}
 			}
 		}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
+	"path/filepath"
 	"time"
 
 	"service/log"
@@ -17,7 +18,7 @@ type proxyTarget struct {
 }
 
 func (t *proxyTarget) Probe(client *http.Client) error {
-	probeURL := t.Site.GetURL(t.Site.Landing)
+	probeURL := t.Site.GetProxyURL(t.Site.Landing)
 	res, err := client.Head(probeURL)
 	if err != nil {
 		return err
@@ -56,7 +57,7 @@ type proxyHandler struct {
 	Timeout     time.Duration
 	ProbeClient *http.Client
 	Targets     proxyTargets
-	Redirects   map[string]bool
+	Suffixes    map[string]bool
 }
 
 func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -67,16 +68,20 @@ func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, msg, 504)
 		return
 	}
-	if h.Redirects[req.RequestURI] {
-		url := target.Site.GetURL(req.RequestURI)
-		log.Debugf("Redirecting %s for %s", url, req.RequestURI)
-		http.Redirect(w, req, url, 302)
-		return
+	if req.RequestURI == "/" {
+		if target.Site.Landing != "" {
+			req.URL.Path = target.Site.Landing
+		}
+	} else {
+		ext := filepath.Ext(req.URL.Path)
+		if !h.Suffixes[ext] {
+			url := target.Site.GetRedirectURL(req.RequestURI)
+			log.Debugf("Redirecting %s for %s", url, req.RequestURI)
+			http.Redirect(w, req, url, 302)
+			return
+		}
 	}
-	if req.RequestURI == "/" && target.Site.Landing != "" {
-		req.URL.Path = target.Site.Landing
-	}
-	log.Debugf("Serving %s for %s", target.Site.GetURL(req.URL.Path), req.RequestURI)
+	log.Debugf("Serving %s for %s", target.Site.GetProxyURL(req.URL.Path), req.RequestURI)
 	req.Host = target.Site.Host // Some sites will reject without it
 	target.Proxy.ServeHTTP(w, req)
 }

@@ -64,15 +64,15 @@ func newRouter(webroot string) (*mux.Router, error) {
 	reverseProxy := &proxyHandler{
 		Timeout:     timeout,
 		ProbeClient: &http.Client{Timeout: timeout},
-		Redirects:   make(map[string]bool),
-	}
-	for _, files := range mirror.Files {
-		for _, file := range files {
-			reverseProxy.Redirects["/"+file] = true
-		}
+		Suffixes: map[string]bool{
+			".html": true,
+		},
 	}
 	for _, site := range mirror.Sites {
-		url, err := url.Parse(site.GetURL(""))
+		if site.ProxyScheme == "" || site.MonthlyQuota > 0 {
+			continue
+		}
+		url, err := url.Parse(site.GetProxyURL(""))
 		if err != nil {
 			return nil, err
 		}

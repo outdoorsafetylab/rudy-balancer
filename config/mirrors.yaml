@@ -16,6 +16,7 @@ files:
   - drops/MOI_OSM_dn_style.zip
   - drops/Install_MOI_Taiwan_TOPO_camp3D.exe
   - drops/Taiwan_moi_zh_camp3D.gmap.zip
+  - drops/hgtmix.zip
   weekly:
   - carto_all.cpkg
   - carto_upgrade.cpkg
@@ -53,27 +54,29 @@ files:
   - Taiwan_moi_zh_camp3D.gmap.zip
 sites:
 - name: Rex
-  scheme: https
   host: rudy.basecamp.tw
+  redirectscheme: https
   weight: 6
 - name: KC Wu
-  scheme: https
   host: moi.kcwu.csie.org
-  landing: taiwan_topo.html
+  redirectscheme: https
   weight: 4
+  proxyscheme: http
+  landing: taiwan_topo.html
 - name: Happyman
-  scheme: https
   host: map.happyman.idv.tw
   prefix: /rudy
+  redirectscheme: https
   weight: 1
+  proxyscheme: http
 - name: OSL
   statuspage: Outdoor Safety Lab
   firestore: Outdoor Safety Lab
-  scheme: https
   host: d3r5lsn28erp7o.cloudfront.net
+  redirectscheme: https
   weight: 2
-  hidden: false
   monthlyQuota: 900000000000 # 1TB*0.9
+  proxyscheme: https
 apps:
 - id: hikinglogger
   name: 山林日誌
