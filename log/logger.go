@@ -21,6 +21,7 @@ func Init() error {
 	} else {
 		config = zapdriver.NewProductionConfig()
 	}
+	config.DisableCaller = true
 	config.DisableStacktrace = true
 	config.Level.SetLevel(zap.DebugLevel)
 	var err error
@@ -67,7 +68,7 @@ func Errorf(fmtstr string, args ...interface{}) {
 
 func Write(lv Level, msg string, fields ...zap.Field) {
 	var writer func(string, ...zap.Field)
-	logger := logger.WithOptions(zap.AddCallerSkip(2))
+	// logger := logger.WithOptions(zap.AddCallerSkip(1))
 	switch lv {
 	case Debug:
 		writer = logger.Debug
