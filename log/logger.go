@@ -65,7 +65,7 @@ func Errorf(fmtstr string, args ...interface{}) {
 	Write(Error, fmt.Sprintf(fmtstr, args...))
 }
 
-func Write(lv Level, payload interface{}) {
+func Write(lv Level, msg string, fields ...zap.Field) {
 	var writer func(string, ...zap.Field)
 	logger := logger.WithOptions(zap.AddCallerSkip(2))
 	switch lv {
@@ -80,14 +80,5 @@ func Write(lv Level, payload interface{}) {
 	case Fatal:
 		writer = logger.Fatal
 	}
-	switch v := payload.(type) {
-	case string:
-		writer(v)
-	case zap.Field:
-		writer("", v)
-	case []zap.Field:
-		writer("", v...)
-	default:
-		writer(fmt.Sprintf("%v", payload))
-	}
+	writer(msg, fields...)
 }

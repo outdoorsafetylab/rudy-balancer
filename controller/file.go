@@ -11,6 +11,8 @@ import (
 	"service/dao"
 	"service/log"
 	"service/statuspage"
+
+	"go.uber.org/zap"
 )
 
 type FileController struct {
@@ -32,12 +34,16 @@ func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
 	}
 	rand.Seed(time.Now().UnixNano())
 	src := sources[rand.Intn(len(sources))]
-	log.Warningf("Redircting: %s => %s", c.File, src.URL)
 	http.Redirect(w, r, src.URL, 302)
 	stop := time.Now()
 	if r.Method != "GET" {
 		return
 	}
+	log.Write(log.Info, fmt.Sprintf("Redircting: %s => %s", c.File, src.URL),
+		zap.String("UserAgent", r.UserAgent()),
+		zap.String("SiteName", src.SiteName),
+		zap.String("File", src.File),
+		zap.Int64("Size", src.Size))
 	go func() {
 		dao.Context = context.Background()
 		err = dao.AccumulateRedirect(src)
