@@ -40,7 +40,6 @@ func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Write(log.Info, fmt.Sprintf("Redirecting: %s => %s", c.File, src.URL),
-		zap.String("Redirect", "Managed"),
 		zap.String("UserAgent", r.UserAgent()),
 		zap.String("SiteName", src.SiteName),
 		zap.String("File", src.File),
