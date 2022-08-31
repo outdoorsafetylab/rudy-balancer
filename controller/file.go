@@ -51,6 +51,8 @@ func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
 		country, err := geoip.Country(r)
 		if err == nil {
 			fields = append(fields, zap.String("Country", country.Country.IsoCode))
+		} else {
+			log.Warningf("Failed to determine country: %s", err.Error())
 		}
 		log.Write(log.Info, fmt.Sprintf("Redirecting: %s => %s", c.File, src.URL), fields...)
 		dao.Context = context.Background()

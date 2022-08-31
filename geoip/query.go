@@ -48,7 +48,7 @@ func Country(req *http.Request) (*geoip2.Country, error) {
 	if err != nil {
 		return nil, err
 	}
-	var q url.Values
+	q := make(url.Values)
 	q.Set("ip", ip.String())
 	res, err := client.Get(fmt.Sprintf("%s/country?%s", endpoint, q.Encode()))
 	if err != nil {
@@ -61,6 +61,9 @@ func Country(req *http.Request) (*geoip2.Country, error) {
 	err = json.NewDecoder(res.Body).Decode(c)
 	if err != nil {
 		return nil, err
+	}
+	if c.Country.Country.GeoNameID == 0 {
+		return nil, fmt.Errorf("country is unknown: %s", ip.String())
 	}
 	return c.Country, nil
 }
