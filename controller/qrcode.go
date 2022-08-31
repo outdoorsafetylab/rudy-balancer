@@ -9,6 +9,7 @@ import (
 	"image/png"
 	"io/ioutil"
 	"net/http"
+	"sync"
 
 	"service/log"
 
@@ -17,12 +18,15 @@ import (
 )
 
 type QRCodeController struct {
-	Cache map[string][]byte
+	Cache sync.Map
 }
 
 func (c *QRCodeController) Generate(w http.ResponseWriter, r *http.Request) {
-	data := c.Cache[r.RequestURI]
-	if data == nil {
+	var data []byte
+	val, _ := c.Cache.Load(r.RequestURI)
+	if val != nil {
+		data = val.([]byte)
+	} else {
 		text := stringVar(r, "text", "")
 		if text == "" {
 			http.Error(w, "Missing 'text'", 500)
@@ -56,7 +60,7 @@ func (c *QRCodeController) Generate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		data = buf.Bytes()
-		c.Cache[r.RequestURI] = data
+		c.Cache.Store(r.RequestURI, data)
 	}
 	_, err := w.Write(data)
 	if err != nil {
