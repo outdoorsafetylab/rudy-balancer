@@ -9,10 +9,12 @@ import (
 
 	"service/config"
 	"service/dao"
+	"service/geoip"
 	"service/log"
 	"service/statuspage"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type FileController struct {
@@ -39,12 +41,18 @@ func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		return
 	}
-	log.Write(log.Info, fmt.Sprintf("Redirecting: %s => %s", c.File, src.URL),
-		zap.String("UserAgent", r.UserAgent()),
-		zap.String("SiteName", src.SiteName),
-		zap.String("File", src.File),
-		zap.Int64("Size", src.Size))
 	go func() {
+		fields := []zapcore.Field{
+			zap.String("UserAgent", r.UserAgent()),
+			zap.String("SiteName", src.SiteName),
+			zap.String("File", src.File),
+			zap.Int64("Size", src.Size),
+		}
+		country, err := geoip.Country(r)
+		if err == nil {
+			fields = append(fields, zap.String("Country", country.Country.IsoCode))
+		}
+		log.Write(log.Info, fmt.Sprintf("Redirecting: %s => %s", c.File, src.URL), fields...)
 		dao.Context = context.Background()
 		err = dao.AccumulateRedirect(src)
 		if err != nil {
