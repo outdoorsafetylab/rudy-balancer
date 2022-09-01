@@ -22,6 +22,9 @@ type FileController struct {
 }
 
 func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
+	if r.UserAgent() == "okhttp/4.7.2" {
+		return
+	}
 	start := time.Now()
 	dao := &dao.FileDao{SiteDao: dao.SiteDao{Context: r.Context()}}
 	sources, err := dao.GetSources(c.File)
