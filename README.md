@@ -17,7 +17,7 @@
 ### 魯地圖說明網頁
 
 1. 使用反向代理 ([Reverse Proxy](https://pkg.go.dev/net/http/httputil#ReverseProxy)) 方式提供主頁 HTML 及素材等，亦即流量會經過分流器端點。
-1. 當收到 HTTP 請求時會即使對所有 mirror 站台同步進行 HTTP HEAD 測試，並以最快回應的伺服器作為來源進行反向代理。
+1. 當收到 HTTP 請求時會即時對所有 mirror 站台同步進行 HTTP HEAD 測試，並以最快回應的伺服器作為來源進行反向代理。
 1. 若 HTTP 請求為[正面表列的圖資檔](https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/mirrors.yaml)，則會改以 HTTP 302 重新導向，流量不會經過分流器端點。
 1. 若所有 mirror 都無法在3秒內回應，則會回覆 HTTP 504 Gateway Timeout 錯誤。
 
