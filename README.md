@@ -7,7 +7,7 @@
    1. [OruxMaps 傳送門](https://rudy.outdoors.tw/app/oruxmaps)
    1. [綠野遊蹤傳送門](https://rudy.outdoors.tw/app/gts)
    1. [Cartograph Pro 2 傳送門](https://rudy.outdoors.tw/app/carto)
-1. [監控主頁](https://outdoorsafetylab1.statuspage.io/)
+1. [監控主頁](https://rudymap.statuspage.io/)
 
 ## 運作方式
 
