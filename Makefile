@@ -15,11 +15,13 @@ LDFLAGS := $(addprefix -X service/version.,$(VARS))
 all: $(EXEC)
 
 include .make/golangci-lint.mk
-include .make/watcher.mk
 include .make/docker.mk
 
-watch: $(WEBINDEX) $(WATCHER) tidy
-	$(realpath $(WATCHER)) serve
+serve:
+	go run . serve
+
+watch: # To install 'nodemon': npm install -g nodemon
+	nodemon -e go --signal SIGTERM --exec 'make serve'
 
 healthcheck:
 	curl -H "Authorization: test" http://localhost:8080/v1/healthcheck
