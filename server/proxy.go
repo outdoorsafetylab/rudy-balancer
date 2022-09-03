@@ -75,14 +75,14 @@ func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, msg, 504)
 		return
 	}
-	if req.RequestURI == "/" {
+	if req.URL.Path == "/" {
 		if target.Site.Landing != "" {
 			req.URL.Path = target.Site.Landing
 		}
 	} else {
 		ext := filepath.Ext(req.URL.Path)
 		if !h.Suffixes[ext] {
-			url := target.Site.GetRedirectURL(req.RequestURI)
+			url := target.Site.GetRedirectURL(req.URL.Path)
 			log.Debugf("Redirecting %s for %s", url, req.RequestURI)
 			http.Redirect(w, req, url, 302)
 			return
