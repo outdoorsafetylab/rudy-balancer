@@ -9,6 +9,7 @@ require (
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/oschwald/geoip2-golang v1.8.0
 	github.com/skip2/go-qrcode v0.0.0-20191027152451-9434209cb086
+	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.10.1
 	go.uber.org/zap v1.21.0
 	google.golang.org/api v0.63.0
@@ -29,6 +30,7 @@ require (
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/oschwald/maxminddb-golang v1.10.0 // indirect

@@ -17,13 +17,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func newRouter(webroot string) (*mux.Router, error) {
+func newRouter() (*mux.Router, error) {
 	cfg := config.Get()
 
 	r := mux.NewRouter()
 	r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 	r.PathPrefix("/app").Handler(&webrootHandler{
-		path: webroot,
+		path: cfg.GetString("webroot"),
 	})
 
 	prefix := cfg.GetString("endpoint")

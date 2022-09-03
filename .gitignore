@@ -1,5 +1,5 @@
 /.vscode/
 /.tool
 /go.sum
-/serviced
+/rudy-balancer
 secret.yaml
