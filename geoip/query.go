@@ -6,14 +6,11 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"service/config"
 	"strings"
 	"time"
 
 	"github.com/oschwald/geoip2-golang"
-)
-
-const (
-	endpoint = "https://geoipd-mgl7xqygta-de.a.run.app/v1"
 )
 
 var (
@@ -44,6 +41,10 @@ func ipAddress(req *http.Request) (net.IP, error) {
 }
 
 func Country(req *http.Request) (*geoip2.Country, error) {
+	endpoint := config.Get().GetString("geoip.endpoint")
+	if endpoint == "" {
+		return nil, fmt.Errorf("no config for 'geoip.endpoint'")
+	}
 	ip, err := ipAddress(req)
 	if err != nil {
 		return nil, err

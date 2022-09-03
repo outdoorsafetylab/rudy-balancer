@@ -1,6 +1,6 @@
 GOSRCS := go.mod $(wildcard *.go) $(wildcard */*.go) $(wildcard */*/*.go)
 
-EXEC := serviced
+EXEC := rudy-balancer
 
 BUILD_TIME ?= $(shell date +'%s')
 GIT_HASH ?= $(shell git rev-parse --short HEAD)
@@ -19,7 +19,7 @@ include .make/watcher.mk
 include .make/docker.mk
 
 watch: $(WEBINDEX) $(WATCHER) tidy
-	$(realpath $(WATCHER))
+	$(realpath $(WATCHER)) serve
 
 healthcheck:
 	curl -H "Authorization: test" http://localhost:8080/v1/healthcheck
