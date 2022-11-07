@@ -56,25 +56,25 @@ sites:
 - name: Rex
   host: rudy.basecamp.tw
   redirectscheme: https
-  weight: 6
+  weight: 0
 - name: KC Wu
   host: moi.kcwu.csie.org
-  redirectscheme: https
-  weight: 4
+  redirectscheme: http
+  weight: 1
   proxyscheme: http
   landing: taiwan_topo.html
 - name: Happyman
   host: map.happyman.idv.tw
   prefix: /rudy
   redirectscheme: https
-  weight: 1
+  weight: 0
   proxyscheme: http
 - name: OSL
   statuspage: Outdoor Safety Lab
   firestore: Outdoor Safety Lab
   host: d3r5lsn28erp7o.cloudfront.net
   redirectscheme: https
-  weight: 2
+  weight: 0
   monthlyQuota: 900000000000 # 1TB*0.9
   proxyscheme: https
 apps:
