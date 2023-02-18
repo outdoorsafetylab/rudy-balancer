@@ -13,7 +13,8 @@ import (
 type HealthController struct{}
 
 func (c *HealthController) Check(w http.ResponseWriter, r *http.Request) {
-	auth := config.Get().GetString("healthcheck.auth")
+	cfg := config.Get()
+	auth := cfg.GetString("healthcheck.auth")
 	if auth == "" {
 		http.Error(w, "Missing health check authorization", 401)
 		return
@@ -29,7 +30,7 @@ func (c *HealthController) Check(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	client := &http.Client{
-		Timeout: 1 * time.Second,
+		Timeout: time.Duration(cfg.GetInt("healthcheck.timeout_sec")) * time.Second,
 	}
 	for _, site := range sites {
 		for _, s := range site.Sources {
