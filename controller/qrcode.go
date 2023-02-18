@@ -7,7 +7,7 @@ import (
 	"image/draw"
 	"image/jpeg"
 	"image/png"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync"
 
@@ -88,7 +88,7 @@ func (c *QRCodeController) getIcon(url string) (image.Image, error) {
 	if res.StatusCode != 200 {
 		return nil, errors.New(res.Status)
 	}
-	data, err := ioutil.ReadAll(res.Body)
+	data, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}

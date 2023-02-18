@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -53,7 +52,7 @@ func (c *Client) request(method, uri string, reqData, resData interface{}) error
 	}
 	defer res.Body.Close()
 	if res.StatusCode >= 300 {
-		str, err := ioutil.ReadAll(res.Body)
+		str, err := io.ReadAll(res.Body)
 		if err == nil {
 			log.Debugf("%s", str)
 		}
