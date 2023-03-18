@@ -238,12 +238,12 @@ apps:
       url: locus-actions://https/rudy.outdoors.tw/locus_dem-cedric.xml
       file: hgtmix.zip
 - id: carto
-  name: Cartograph Pro 2
+  name: Cartograph Maps
   android: true
   iOS: true
   icon: /images/Cartograph.png
   description: |
-    <p>Cartograph 支援 iPhone (iOS) 及 Android 雙平台。若您還沒在手機上安裝，請至 <a href="https://play.google.com/store/apps/details?id=eu.cartograph.pro">Google Play 安裝 Android 版</a>，或至 <a href="https://apps.apple.com/tw/app/cartograph-2-maps/id1082995961">App Store 安裝 iOS 版</a>。</p>
+    <p>Cartograph 支援 iPhone (iOS) 及 Android 雙平台。若您還沒在手機上安裝 Cartograph Maps 3，請至 <a href="https://play.google.com/store/apps/details?id=eu.cartograph3">Google Play 安裝 Android 版</a>，或至 <a href="https://apps.apple.com/us/app/cartograph-maps-3/id1588186796">App Store 安裝 iOS 版</a>。</p><p>若您想使用舊版的 Cartograph 2 Maps，請至 <a href="https://play.google.com/store/apps/details?id=eu.cartograph.pro">Google Play 安裝 Android 版</a>，或至 <a href="https://apps.apple.com/tw/app/cartograph-2-maps/id1082995961">App Store 安裝 iOS 版</a>。</p>
   variants:
   - id: together
     name: 圖資合併安裝
