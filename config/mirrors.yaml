@@ -167,7 +167,7 @@ apps:
       description: <p>安裝後請切換地圖風格為 MOI_OSM。</p>
       icon: /images/OruxMaps_style.jpeg
       scheme: "orux-mf-theme:"
-      file: MOI_OSM_Taiwan_TOPO_Rudy_style.zip
+      file: MOI_OSM_Taiwan_TOPO_Rudy_hs_style.zip
     - id: hgt
       name: 高程檔
       description: <p>OruxMaps 不支援自動安裝，下載後需要自行解壓縮至正確位置。</p>
