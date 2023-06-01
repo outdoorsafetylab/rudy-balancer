@@ -57,7 +57,9 @@ sites:
   host: rudy.basecamp.tw
   redirectscheme: https
   weight: 6
-- name: KC Wu
+- name: kcwu
+  statuspage: KC Wu
+  firestore: KC Wu
   host: moi.kcwu.csie.org
   redirectscheme: https
   weight: 4
