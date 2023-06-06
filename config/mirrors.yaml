@@ -91,7 +91,56 @@ apps:
   android: true
   icon: /images/wadi.png
   description: |
-    <p>蛙弟支援 Android 平台，直接在應用程式內下載或更新魯地圖即可。若您還沒在手機上安裝，請至 <a href="https://play.google.com/store/apps/details?id=tw.div.balawu.wadi">Google Play</a> 進行安裝。</p>
+    <p>蛙弟支援 Android 平台，可直接在應用程式內下載或更新魯地圖，也支援透過外部更新。若您還沒在手機上安裝，請至 <a href="https://play.google.com/store/apps/details?id=tw.div.balawu.wadi">Google Play</a> 進行安裝。</p>
+  variants:
+  - id: standard
+    name: 傳統版 (10公尺等高線)
+    description: 檔案較大，適合較常走高山、中級山或經常使用離線地圖的山友。
+    artifacts:
+    - id: all
+      name: 三合一
+      description: <p>同時安裝地圖、風格及高程。</p>
+      scheme: 'wadi-all:'
+      file: MOI_OSM_Taiwan_TOPO_Rudy.zip
+    - id: map
+      name: 離線地圖
+      description: <p>單獨安裝地圖。</p>
+      scheme: 'wadi-map:'
+      file: MOI_OSM_Taiwan_TOPO_Rudy.map.zip
+    - id: style
+      name: 風格主題
+      description: <p>單獨安裝風格主題。</p>
+      scheme: 'wadi-mapthemes:'
+      file: MOI_OSM_Taiwan_TOPO_Rudy_hs_style.zip
+    - id: hgt
+      name: 高程檔
+      description: <p>單獨安裝高程檔。</p>
+      scheme: 'wadi-hgt:'
+      file: hgtmix.zip
+  - id: lite
+    name: 輕量版 (20公尺等高線)
+    description: 檔案較小，適合較常走郊山路線或不常使用離線地圖的山友。
+    artifacts:
+    - id: all
+      name: 三合一
+      description: <p>同時安裝輕量版地圖、風格及高程。</p>
+      scheme: 'wadi-all:'
+      file: MOI_OSM_Taiwan_TOPO_Lite.zip
+    - id: map
+      name: 離線地圖
+      description: <p>單獨輕量版安裝地圖。</p>
+      scheme: 'wadi-map:'
+      file: MOI_OSM_Taiwan_TOPO_Lite.map.zip
+    - id: style
+      name: 風格主題
+      description: <p>單獨安裝輕量版風格主題。</p>
+      scheme: 'wadi-mapthemes:'
+      file: MOI_OSM_Taiwan_TOPO_Lite_style.zip
+    - id: hgt
+      name: 高程檔
+      description: <p>單獨安裝輕量版高程檔。</p>
+      scheme: 'wadi-hgt:'
+      file: hgt90.zip
 - id: gts
   name: 綠野遊蹤
   android: true
