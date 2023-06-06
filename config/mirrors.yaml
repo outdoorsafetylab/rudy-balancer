@@ -110,7 +110,7 @@ apps:
     - id: style
       name: 風格主題
       description: <p>單獨安裝風格主題。</p>
-      scheme: 'wadi-mapthemes:'
+      scheme: 'wadi-theme:'
       file: MOI_OSM_Taiwan_TOPO_Rudy_hs_style.zip
     - id: hgt
       name: 高程檔
@@ -134,7 +134,7 @@ apps:
     - id: style
       name: 風格主題
       description: <p>單獨安裝輕量版風格主題。</p>
-      scheme: 'wadi-mapthemes:'
+      scheme: 'wadi-theme:'
       file: MOI_OSM_Taiwan_TOPO_Lite_style.zip
     - id: hgt
       name: 高程檔
