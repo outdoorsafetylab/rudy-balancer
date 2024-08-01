@@ -260,12 +260,12 @@ apps:
       name: 三合一
       description: <p>首次安裝時使用，含地圖、風格及高程。</p>
       icon: /images/Locus.jpeg
-      url: locus-actions://https/rudy.outdoors.tw/locus_all-cedric.xml
+      url: locus-actions://https/rudymap.tw/locus_all-cedric.xml
     - id: upgrade
       name: 地圖及風格
       description: <p>後續更新時使用，高程較少變動故不需太常更新。</p>
       icon: /images/Locus.jpeg
-      url: locus-actions://https/rudy.outdoors.tw/locus_upgrade-cedric.xml
+      url: locus-actions://https/rudymap.tw/locus_upgrade-cedric.xml
   - id: separate
     name: 圖資個別安裝
     description: 個別安裝地圖、風格及高程。
@@ -274,19 +274,19 @@ apps:
       name: 離線地圖
       description: <p>單獨安裝地圖。</p>
       icon: /images/Locus_map.jpeg
-      url: locus-actions://https/rudy.outdoors.tw/locus_map-cedric.xml
+      url: locus-actions://https/rudymap.tw/locus_map-cedric.xml
       file: MOI_OSM_Taiwan_TOPO_Rudy_locus.zip
     - id: style
       name: 風格主題
       description: <p>單獨安裝風格主題。</p>
       icon: /images/Locus_style.jpeg
-      url: locus-actions://https/rudy.outdoors.tw/locus_style-cedric.xml
+      url: locus-actions://https/rudymap.tw/locus_style-cedric.xml
       file: MOI_OSM_Taiwan_TOPO_Rudy_locus_style.zip
     - id: hgt
       name: 高程檔
       description: <p>單獨安裝高程檔。</p>
       icon: /images/Locus_dem.jpeg
-      url: locus-actions://https/rudy.outdoors.tw/locus_dem-cedric.xml
+      url: locus-actions://https/rudymap.tw/locus_dem-cedric.xml
       file: hgtmix.zip
 - id: carto
   name: Cartograph Maps

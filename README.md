@@ -2,16 +2,15 @@
 
 魯地圖分流器
 
-1. [魯地圖說明網頁](https://rudy.outdoors.tw/)
-1. [App 更新主頁](https://rudy.outdoors.tw/app)
-   1. [OruxMaps 傳送門](https://rudy.outdoors.tw/app/oruxmaps)
-   1. [綠野遊蹤傳送門](https://rudy.outdoors.tw/app/gts)
-   1. [Cartograph Pro 2 傳送門](https://rudy.outdoors.tw/app/carto)
+1. [魯地圖說明網頁](https://rudymap.tw/)
+1. [App 更新主頁](https://rudymap.tw/app)
+   1. [OruxMaps 傳送門](https://rudymap.tw/app/oruxmaps)
+   1. [綠野遊蹤傳送門](https://rudymap.tw/app/gts)
+   1. [Cartograph Pro 2 傳送門](https://rudymap.tw/app/carto)
 1. [監控主頁](https://rudymap.statuspage.io/)
 
 ## 運作方式
 
-- 站台健康狀態: [Statuspage](https://rudymap.statuspage.io/)
 - 站台設定檔: [mirrors.yaml](https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/mirrors.yaml)
 
 ### 魯地圖說明網頁
@@ -49,7 +48,7 @@
 測試方式：
 
 ```shell
-$ curl -I https://rudy.outdoors.tw/v1/MOI_OSM_Taiwan_TOPO_Rudy.zip
+$ curl -I https://rudymap.tw/v1/MOI_OSM_Taiwan_TOPO_Rudy.zip
 HTTP/2 302 
 content-type: text/html; charset=utf-8
 location: https://moi.kcwu.csie.org/MOI_OSM_Taiwan_TOPO_Rudy.zip
@@ -57,7 +56,7 @@ x-cloud-trace-context: 70b67fd60f7f9fe2c9ed2b726465de28
 date: Sun, 24 Jul 2022 09:38:23 GMT
 server: Google Frontend
 
-$ curl -I https://rudy.outdoors.tw/v1/MOI_OSM_Taiwan_TOPO_Rudy.zip
+$ curl -I https://rudymap.tw/v1/MOI_OSM_Taiwan_TOPO_Rudy.zip
 
 HTTP/2 302 
 content-type: text/html; charset=utf-8
@@ -67,13 +66,13 @@ date: Sun, 24 Jul 2022 09:38:25 GMT
 server: Google Frontend
 ```
 
-### 自動部署 (Continuous Deplayment)
+### 自動部署 (Continuous Deployment)
 
 當 git 有以下變動時會觸發自動部署：
 
-* `master` 分支: 部署至 https://alpha-rudy.outdoors.tw/
+* `master` 分支: 部署至 https://ruby-balancer-alpha-mgl7xqygta-de.a.run.app/
   * 背後服務: [Google Cloud Run](https://cloud.google.com/run)
   * 部署地區: `asia-east1` (彰化)
-* 建立 tag 時: 部署至 https://rudy.outdoors.tw/
+* 建立 tag 時: 部署至 https://rudymap.tw/
   * 背後服務: [Google Cloud Run](https://cloud.google.com/run)
   * 部署地區: `asia-east1` (彰化)
