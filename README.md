@@ -70,9 +70,9 @@ server: Google Frontend
 
 當 git 有以下變動時會觸發自動部署：
 
-* `master` 分支: 部署至 https://ruby-balancer-alpha-mgl7xqygta-de.a.run.app/
-  * 背後服務: [Google Cloud Run](https://cloud.google.com/run)
-  * 部署地區: `asia-east1` (彰化)
-* 建立 tag 時: 部署至 https://rudymap.tw/
-  * 背後服務: [Google Cloud Run](https://cloud.google.com/run)
-  * 部署地區: `asia-east1` (彰化)
+- `master` 分支: 部署至 https://ruby-balancer-alpha-mgl7xqygta-de.a.run.app/
+  - 背後服務: [Google Cloud Run](https://cloud.google.com/run)
+  - 部署地區: `asia-east1` (彰化)
+- 建立 tag 時: 部署至 https://rudymap.tw/
+  - 背後服務: [Google Cloud Run](https://cloud.google.com/run)
+  - 部署地區: `asia-east1` (彰化)
