@@ -32,7 +32,7 @@ func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if sources == nil || len(sources) <= 0 {
+	if len(sources) <= 0 {
 		log.Warningf("No available sources: %s", c.File)
 		http.Error(w, fmt.Sprintf("No available sources: %s", c.File), http.StatusBadGateway)
 		return

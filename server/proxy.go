@@ -65,14 +65,14 @@ func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	redirect := h.Redirects[req.URL.Path]
 	if redirect != "" {
 		log.Debugf("Redirecting %s for %s", redirect, req.RequestURI)
-		http.Redirect(w, req, redirect, 302)
+		http.Redirect(w, req, redirect, http.StatusFound)
 		return
 	}
 	target := h.Targets.Probe(h.ProbeClient, h.Timeout)
 	if target == nil {
 		msg := fmt.Sprintf("All mirrors failed to response in %v", h.Timeout)
-		log.Errorf(msg)
-		http.Error(w, msg, 504)
+		log.Errorf("%s", msg)
+		http.Error(w, msg, http.StatusGatewayTimeout)
 		return
 	}
 	if req.URL.Path == "/" {
@@ -84,7 +84,7 @@ func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		if !h.Suffixes[ext] {
 			url := target.Site.GetRedirectURL(req.URL.Path)
 			log.Debugf("Redirecting %s for %s", url, req.RequestURI)
-			http.Redirect(w, req, url, 302)
+			http.Redirect(w, req, url, http.StatusFound)
 			return
 		}
 	}

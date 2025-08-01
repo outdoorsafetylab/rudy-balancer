@@ -1,6 +1,6 @@
 module service
 
-go 1.18
+go 1.24
 
 require (
 	cloud.google.com/go/firestore v1.6.1
