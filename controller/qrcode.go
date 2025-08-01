@@ -29,7 +29,7 @@ func (c *QRCodeController) Generate(w http.ResponseWriter, r *http.Request) {
 	} else {
 		text := stringVar(r, "text", "")
 		if text == "" {
-			http.Error(w, "Missing 'text'", 500)
+			http.Error(w, "Missing 'text'", http.StatusBadRequest)
 			return
 		}
 		icon := stringVar(r, "icon", "")

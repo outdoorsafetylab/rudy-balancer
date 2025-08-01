@@ -18,10 +18,10 @@ include .make/golangci-lint.mk
 include .make/docker.mk
 
 serve:
-	go run . serve
+	go run . serve -c local
 
 watch: # To install 'nodemon': npm install -g nodemon
-	nodemon -e go --signal SIGTERM --exec 'make serve'
+	nodemon --signal SIGTERM
 
 healthcheck:
 	curl -H "Authorization: test" http://localhost:8080/v1/healthcheck

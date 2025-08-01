@@ -1,0 +1,16 @@
+{
+  "watch": [
+    "*.go",
+    "**/*.go",
+    "config/*.yaml",
+    "config/*.yml",
+    "config/*.json"
+  ],
+  "ext": "go,yaml,yml,json",
+  "ignore": [
+    "*.test.go",
+    "vendor/**/*",
+    "node_modules/**/*"
+  ],
+  "exec": "make serve"
+}

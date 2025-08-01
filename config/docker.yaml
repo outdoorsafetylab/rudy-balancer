@@ -8,3 +8,25 @@ firestore:
   project_id: "*detect-project-id*"
 healthcheck:
   timeout_sec: 3
+statuspage:
+  page: zr0y8d22ylm9
+  group: jzw0y1vx1mx4
+  metrics:
+    redirect_time: 1d4zt4gmzd4m
+  portals:
+    group: f8b7slqqq9v3
+    sites:
+      - name: 主站台 (https://rudymap.tw)
+        url: https://rudymap.tw
+        assets:
+          - /
+          - /app
+          - /v1/apps
+          - /v1/qrcode?text=test
+      - name: 備援站台 (https://rudy.oslab.tw)
+        url: https://rudy.oslab.tw
+        assets:
+          - /
+          - /app
+          - /v1/apps
+          - /v1/qrcode?text=test
