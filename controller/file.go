@@ -66,12 +66,16 @@ func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
 		}
 		cfg := config.Get()
 		metricID := cfg.GetString("statuspage.metrics.redirect_time")
-		if metricID == "" {
-			log.Warnf("Missing metric ID for redirect time")
+		apiKey := cfg.GetString("statuspage.key")
+		pageID := cfg.GetString("statuspage.page")
+
+		// Skip statuspage metrics if not configured
+		if metricID == "" || apiKey == "" || pageID == "" {
+			log.Debugf("StatusPage metrics not configured, skipping")
 			return
 		}
-		client := &statuspage.Client{Client: http.DefaultClient, APIKey: cfg.GetString("statuspage.key")}
-		pageID := cfg.GetString("statuspage.page")
+
+		client := &statuspage.Client{Client: http.DefaultClient, APIKey: apiKey}
 		err = client.AddDataPoint(pageID, metricID, &statuspage.DataPoint{
 			Time:  start,
 			Value: float64(stop.Sub(start).Milliseconds()),

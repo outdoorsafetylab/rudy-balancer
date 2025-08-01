@@ -15,11 +15,7 @@ type HealthController struct{}
 func (c *HealthController) Check(w http.ResponseWriter, r *http.Request) {
 	cfg := config.Get()
 	auth := cfg.GetString("healthcheck.auth")
-	if auth == "" {
-		http.Error(w, "Missing health check authorization", http.StatusUnauthorized)
-		return
-	}
-	if auth != r.Header.Get("Authorization") {
+	if auth != "" && auth != r.Header.Get("Authorization") {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}

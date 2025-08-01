@@ -178,13 +178,22 @@ func (dao *SiteDao) Update(sites []*model.Site) error {
 		return err
 	}
 	cfg := config.Get()
-	client := &statuspage.Client{Client: http.DefaultClient, APIKey: cfg.GetString("statuspage.key")}
 	pageID := cfg.GetString("statuspage.page")
+	apiKey := cfg.GetString("statuspage.key")
+
+	// Skip statuspage integration if not configured
+	if pageID == "" || apiKey == "" {
+		log.Debugf("StatusPage not configured, skipping integration")
+		return nil
+	}
+
+	client := &statuspage.Client{Client: http.DefaultClient, APIKey: apiKey}
 	groupID := cfg.GetString("statuspage.group")
 	components, err := client.ListComponents(pageID)
 	if err != nil {
 		log.Errorf("Failed to list components: %s", err.Error())
-		return err
+		log.Warnf("StatusPage integration failed, but continuing with site updates")
+		return nil // Don't fail the entire update process
 	}
 	componentsByName := make(map[string]*statuspage.Component)
 	for _, comp := range components {
@@ -205,25 +214,29 @@ func (dao *SiteDao) Update(sites []*model.Site) error {
 			log.Warnf("Creating component: %s", s.StatusPage)
 			comp, err = client.CreateComponent(pageID, groupID, s.StatusPage)
 			if err != nil {
-				return err
+				log.Errorf("Failed to create component %s: %s", s.StatusPage, err.Error())
+				continue // Skip this site but continue with others
 			}
 		}
 		log.Debugf("Updating component status: %s => %s", s.StatusPage, st.status)
 		err = client.UpdateComponentStatus(comp, st.status)
 		if err != nil {
-			return err
+			log.Errorf("Failed to update component status for %s: %s", s.StatusPage, err.Error())
+			continue // Skip this site but continue with others
 		}
 		if comp.Status == "operational" && st.status != comp.Status {
 			log.Warnf("Creating incident due to site %s is not operational", s.Name)
 			_, err = client.CreateIncident(pageID, comp.ID, fmt.Sprintf("%s is not operational.", s.Name), st.bads)
 			if err != nil {
-				return err
+				log.Errorf("Failed to create incident for %s: %s", s.Name, err.Error())
+				continue // Skip this site but continue with others
 			}
 		} else if st.status == "operational" && st.status != comp.Status {
 			log.Warnf("Resolving incident due to site %s is back", s.Name)
 			err = client.ResolveIncidents(pageID, comp.ID)
 			if err != nil {
-				return err
+				log.Errorf("Failed to resolve incidents for %s: %s", s.Name, err.Error())
+				continue // Skip this site but continue with others
 			}
 		}
 	}

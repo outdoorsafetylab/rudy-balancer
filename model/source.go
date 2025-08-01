@@ -1,7 +1,7 @@
 package model
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -34,7 +34,7 @@ func (s *Source) Check(client *http.Client) error {
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
 		s.Status = BAD
-		s.Error = errors.New(res.Status)
+		s.Error = fmt.Errorf("%d %s", res.StatusCode, http.StatusText(res.StatusCode))
 		return s.Error
 	}
 	s.Status = GOOD

@@ -45,6 +45,7 @@ func (c *Client) request(method, uri string, reqData, resData interface{}) error
 		return err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("OAuth %s", c.APIKey))
+	req.Header.Set("Content-Type", "application/json")
 	log.Debugf("Making request: %s %s", method, url)
 	res, err := c.Client.Do(req)
 	if err != nil {
