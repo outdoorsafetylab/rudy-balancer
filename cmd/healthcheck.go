@@ -1,0 +1,64 @@
+/*
+Copyright © 2022 NAME HERE <EMAIL ADDRESS>
+*/
+package cmd
+
+import (
+	"context"
+	"service/config"
+	"service/db"
+	"service/healthcheck"
+	"service/log"
+
+	"github.com/spf13/cobra"
+)
+
+var healthcheckOptions = &struct {
+	config string
+}{
+	config: "local",
+}
+
+// healthcheckCmd represents the healthcheck command
+var healthcheckCmd = &cobra.Command{
+	Use:   "healthcheck",
+	Short: "Run the healthcheck",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		err := config.Init(healthcheckOptions.config)
+		if err != nil {
+			return err
+		}
+		err = log.Init()
+		if err != nil {
+			return err
+		}
+		err = db.Init()
+		if err != nil {
+			return err
+		}
+		defer db.Deinit()
+		cfg := config.Get()
+		ctx := context.Background()
+		// Part 1: Portal Sites Health Check
+		log.Debugf("Starting portal sites health check")
+		err = healthcheck.CheckPortalSites(cfg)
+		if err != nil {
+			log.Errorf("Portal sites health check failed: %s", err.Error())
+			return err
+		}
+
+		// Part 2: Mirror Sites Health Check
+		log.Debugf("Starting mirror sites health check")
+		err = healthcheck.CheckMirrorSites(cfg, ctx)
+		if err != nil {
+			log.Errorf("Mirror sites health check failed: %s", err.Error())
+			return err
+		}
+		return nil
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(healthcheckCmd)
+	healthcheckCmd.Flags().StringVarP(&healthcheckOptions.config, "config", "c", healthcheckOptions.config, "Config name")
+}

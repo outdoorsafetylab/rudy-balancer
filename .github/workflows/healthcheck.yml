@@ -1,0 +1,52 @@
+name: Scheduled Healthcheck
+
+on:
+  schedule:
+    - cron: "*/30 * * * *" # every 30 minutes
+  workflow_dispatch: {}
+
+concurrency:
+  group: healthcheck
+  cancel-in-progress: true
+
+jobs:
+  run-healthcheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FIRESTORE_PROJECT_ID: ${{ secrets.FIRESTORE_PROJECT_ID }}
+      MIRRORS_FILE: config/mirrors.yaml
+      STATUSPAGE_KEY: ${{ secrets.STATUSPAGE_API_KEY }}
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-sa.json
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+          check-latest: true
+
+      - name: Prepare GCP credentials file
+        shell: bash
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          if [ -n "$FIRESTORE_PROJECT_ID" ] && [ -n "$GCP_SA_KEY" ]; then
+            echo "$GCP_SA_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
+            # Basic sanity check to ensure file contains JSON
+            head -c 1 "$GOOGLE_APPLICATION_CREDENTIALS" | grep -q '{'
+          else
+            echo "Skipping GCP credentials setup (missing FIRESTORE_PROJECT_ID or GCP_SA_KEY)"
+          fi
+
+      - name: Download deps
+        run: go mod download
+
+      - name: Run healthcheck (docker config)
+        shell: bash
+        run: |
+          go run . healthcheck -c docker
+
+
