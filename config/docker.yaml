@@ -23,6 +23,18 @@ statuspage:
           - /app
           - /v1/apps
           - /v1/qrcode?text=test
+      - name: KC Wu (https://moi.kcwu.csie.org/taiwan_topo.html)
+        url: https://moi.kcwu.csie.org
+        assets:
+          - /taiwan_topo.html
+      - name: Happyman (https://map.happyman.idv.tw/rudy/taiwan_topo.html)
+        url: https://map.happyman.idv.tw
+        assets:
+          - /rudy/taiwan_topo.html
+      - name: Rex (https://rudy.basecamp.tw)
+        url: https://rudy.basecamp.tw
+        assets:
+          - /
       - name: 備援站台 (https://rudy.oslab.tw)
         url: https://rudy.oslab.tw
         assets:
