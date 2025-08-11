@@ -132,7 +132,7 @@ func (c *HealthController) checkPortalSites(cfg *viper.Viper) error {
 		}
 
 		// Check each asset URL
-		allOperational := true
+		var goodSources []string
 		var badSources []string
 
 		for _, asset := range site.Assets {
@@ -142,7 +142,6 @@ func (c *HealthController) checkPortalSites(cfg *viper.Viper) error {
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
 				log.Errorf("Failed to create request for %s: %s", url, err.Error())
-				allOperational = false
 				badSources = append(badSources, fmt.Sprintf("%s => %s", url, err.Error()))
 				continue
 			}
@@ -150,7 +149,6 @@ func (c *HealthController) checkPortalSites(cfg *viper.Viper) error {
 			resp, err := client.Do(req)
 			if err != nil {
 				log.Errorf("Failed to check %s: %s", url, err.Error())
-				allOperational = false
 				badSources = append(badSources, fmt.Sprintf("%s => %s", url, err.Error()))
 				continue
 			}
@@ -158,19 +156,29 @@ func (c *HealthController) checkPortalSites(cfg *viper.Viper) error {
 
 			if resp.StatusCode != http.StatusOK {
 				log.Errorf("Bad status for %s: %d", url, resp.StatusCode)
-				allOperational = false
 				badSources = append(badSources, fmt.Sprintf("%s => %d %s", url, resp.StatusCode, http.StatusText(resp.StatusCode)))
 			} else {
 				log.Debugf("Asset %s is operational", url)
+				goodSources = append(goodSources, url)
 			}
 		}
 
-		// Determine status
+		// Determine status based on percentage of operational assets
 		var newStatus string
-		if allOperational {
-			newStatus = "operational"
+		total := len(goodSources) + len(badSources)
+		if total > 0 {
+			percentage := 100.0 * len(goodSources) / total
+			log.Debugf("Portal %s: %d/%d assets operational (%.1f%%)", site.Name, len(goodSources), total, percentage)
+			if percentage >= 100 {
+				newStatus = "operational"
+			} else if percentage <= 0 {
+				newStatus = "major_outage"
+			} else {
+				newStatus = "partial_outage"
+			}
 		} else {
-			newStatus = "major_outage"
+			// No assets to check, default to operational
+			newStatus = "operational"
 		}
 
 		// Update component status
@@ -183,8 +191,14 @@ func (c *HealthController) checkPortalSites(cfg *viper.Viper) error {
 
 		// Handle incidents
 		if comp.Status == "operational" && newStatus != comp.Status {
-			log.Warnf("Creating incident due to portal %s is not operational", site.Name)
-			_, err = statusClient.CreateIncident(pageID, comp.ID, fmt.Sprintf("%s is not operational.", site.Name), nil)
+			var incidentMessage string
+			if newStatus == "partial_outage" {
+				incidentMessage = fmt.Sprintf("%s is experiencing partial outage. %d/%d assets are operational.", site.Name, len(goodSources), total)
+			} else {
+				incidentMessage = fmt.Sprintf("%s is not operational.", site.Name)
+			}
+			log.Warnf("Creating incident due to portal %s status change: %s", site.Name, newStatus)
+			_, err = statusClient.CreateIncident(pageID, comp.ID, incidentMessage, nil)
 			if err != nil {
 				log.Errorf("Failed to create incident for %s: %s", site.Name, err.Error())
 				continue
