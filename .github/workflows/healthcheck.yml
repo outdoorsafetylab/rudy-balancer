@@ -42,7 +42,9 @@ jobs:
           fi
 
       - name: Download deps
-        run: go mod download
+        run: |
+          go mod download
+          go mod tidy
 
       - name: Run healthcheck (docker config)
         shell: bash
