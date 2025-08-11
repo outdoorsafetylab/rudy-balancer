@@ -1,5 +1,6 @@
 /.vscode/
 /.tool
-/go.sum
+ # Track go.sum for reproducible builds in CI
+ #/go.sum
 /rudy-balancer
 secret.yaml
