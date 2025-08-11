@@ -14,9 +14,13 @@ import (
 )
 
 var healthcheckOptions = &struct {
-	config string
+	config  string
+	portals bool
+	mirrors bool
 }{
-	config: "local",
+	config:  "local",
+	portals: false,
+	mirrors: false,
 }
 
 // healthcheckCmd represents the healthcheck command
@@ -39,20 +43,34 @@ var healthcheckCmd = &cobra.Command{
 		defer db.Deinit()
 		cfg := config.Get()
 		ctx := context.Background()
+
+		// Determine which health checks to run
+		// If no specific flags are set, run both
+		runPortals := !healthcheckOptions.portals && !healthcheckOptions.mirrors || healthcheckOptions.portals
+		runMirrors := !healthcheckOptions.portals && !healthcheckOptions.mirrors || healthcheckOptions.mirrors
+
 		// Part 1: Portal Sites Health Check
-		log.Debugf("Starting portal sites health check")
-		err = healthcheck.CheckPortalSites(cfg)
-		if err != nil {
-			log.Errorf("Portal sites health check failed: %s", err.Error())
-			return err
+		if runPortals {
+			log.Debugf("Starting portal sites health check")
+			err = healthcheck.CheckPortalSites(cfg)
+			if err != nil {
+				log.Errorf("Portal sites health check failed: %s", err.Error())
+				return err
+			}
+		} else {
+			log.Debugf("Skipping portal sites health check")
 		}
 
 		// Part 2: Mirror Sites Health Check
-		log.Debugf("Starting mirror sites health check")
-		err = healthcheck.CheckMirrorSites(cfg, ctx)
-		if err != nil {
-			log.Errorf("Mirror sites health check failed: %s", err.Error())
-			return err
+		if runMirrors {
+			log.Debugf("Starting mirror sites health check")
+			err = healthcheck.CheckMirrorSites(cfg, ctx)
+			if err != nil {
+				log.Errorf("Mirror sites health check failed: %s", err.Error())
+				return err
+			}
+		} else {
+			log.Debugf("Skipping mirror sites health check")
 		}
 		return nil
 	},
@@ -61,4 +79,6 @@ var healthcheckCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(healthcheckCmd)
 	healthcheckCmd.Flags().StringVarP(&healthcheckOptions.config, "config", "c", healthcheckOptions.config, "Config name")
+	healthcheckCmd.Flags().BoolVar(&healthcheckOptions.portals, "portals", false, "Run only portal sites health check")
+	healthcheckCmd.Flags().BoolVar(&healthcheckOptions.mirrors, "mirrors", false, "Run only mirror sites health check")
 }
