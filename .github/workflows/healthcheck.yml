@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      FIRESTORE_PROJECT_ID: ${{ secrets.FIRESTORE_PROJECT_ID }}
       MIRRORS_FILE: config/mirrors.yaml
       STATUSPAGE_KEY: ${{ secrets.STATUSPAGE_API_KEY }}
       GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-sa.json
@@ -33,12 +32,12 @@ jobs:
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
-          if [ -n "$FIRESTORE_PROJECT_ID" ] && [ -n "$GCP_SA_KEY" ]; then
+          if [ -n "$GCP_SA_KEY" ]; then
             echo "$GCP_SA_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
             # Basic sanity check to ensure file contains JSON
             head -c 1 "$GOOGLE_APPLICATION_CREDENTIALS" | grep -q '{'
           else
-            echo "Skipping GCP credentials setup (missing FIRESTORE_PROJECT_ID or GCP_SA_KEY)"
+            echo "Skipping GCP credentials setup (missing GCP_SA_KEY)"
           fi
 
       - name: Download deps
