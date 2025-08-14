@@ -34,9 +34,6 @@ func newRouter() (*mux.Router, error) {
 	config := &controller.ConfigController{}
 	endpoint.HandleFunc("/version", config.GetVersion).Methods("GET")
 
-	health := &controller.HealthController{}
-	endpoint.HandleFunc("/healthcheck", health.Check).Methods("GET")
-
 	qrcode := &controller.QRCodeController{}
 	endpoint.HandleFunc("/qrcode", qrcode.Generate).Methods("GET", "HEAD")
 
