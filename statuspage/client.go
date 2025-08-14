@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"service/log"
-	"service/model"
 )
 
 type Client struct {
@@ -116,10 +115,10 @@ func (c *Client) UpdateComponentStatus(comp *Component, status string) error {
 	return nil
 }
 
-func (c *Client) CreateIncident(pageID, componentID, name string, affectedSources []*model.Source) (*Incident, error) {
-	urlAndErrors := make([]string, len(affectedSources))
-	for i, s := range affectedSources {
-		urlAndErrors[i] = fmt.Sprintf("%s => %s", s.URL, s.Error)
+func (c *Client) CreateIncident(pageID, componentID, name string, affectedSources map[string]error) (*Incident, error) {
+	urlAndErrors := make([]string, 0)
+	for url, err := range affectedSources {
+		urlAndErrors = append(urlAndErrors, fmt.Sprintf("%s => %s", url, err.Error()))
 	}
 	data := &struct {
 		Name         string   `json:"name"`

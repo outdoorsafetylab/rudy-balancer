@@ -59,8 +59,8 @@ func CheckPortalSites(cfg *viper.Viper) error {
 		}
 
 		// Check each asset URL
-		var goodSources []string
-		var badSources []string
+		goodResources := make([]string, 0)
+		badResources := make(map[string]error)
 
 		for _, asset := range site.Assets {
 			url := fmt.Sprintf("%s%s", site.URL, asset)
@@ -69,33 +69,33 @@ func CheckPortalSites(cfg *viper.Viper) error {
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
 				log.Errorf("Failed to create request for %s: %s", url, err.Error())
-				badSources = append(badSources, fmt.Sprintf("%s => %s", url, err.Error()))
+				badResources[url] = err
 				continue
 			}
 
 			resp, err := client.Do(req)
 			if err != nil {
 				log.Errorf("Failed to check %s: %s", url, err.Error())
-				badSources = append(badSources, fmt.Sprintf("%s => %s", url, err.Error()))
+				badResources[url] = err
 				continue
 			}
 			defer resp.Body.Close()
 
 			if resp.StatusCode != http.StatusOK {
 				log.Errorf("Bad status for %s: %d", url, resp.StatusCode)
-				badSources = append(badSources, fmt.Sprintf("%s => %d %s", url, resp.StatusCode, http.StatusText(resp.StatusCode)))
+				badResources[url] = fmt.Errorf("%s", resp.Status)
 			} else {
 				log.Debugf("Asset %s is operational", url)
-				goodSources = append(goodSources, url)
+				goodResources = append(goodResources, url)
 			}
 		}
 
 		// Determine status based on percentage of operational assets
 		var newStatus string
-		total := len(goodSources) + len(badSources)
+		total := len(goodResources) + len(badResources)
 		if total > 0 {
-			percentage := 100.0 * len(goodSources) / total
-			log.Debugf("Portal %s: %d/%d assets operational (%d%%)", site.Name, len(goodSources), total, percentage)
+			percentage := 100.0 * len(goodResources) / total
+			log.Debugf("Portal %s: %d/%d assets operational (%d%%)", site.Name, len(goodResources), total, percentage)
 			if percentage >= 100 {
 				newStatus = "operational"
 			} else if percentage <= 0 {
@@ -120,12 +120,12 @@ func CheckPortalSites(cfg *viper.Viper) error {
 		if comp.Status == "operational" && newStatus != comp.Status {
 			var incidentMessage string
 			if newStatus == "partial_outage" {
-				incidentMessage = fmt.Sprintf("%s is experiencing partial outage. %d/%d assets are operational.", site.Name, len(goodSources), total)
+				incidentMessage = fmt.Sprintf("%s is experiencing partial outage. %d/%d assets are operational.", site.Name, len(goodResources), total)
 			} else {
 				incidentMessage = fmt.Sprintf("%s is not operational.", site.Name)
 			}
 			log.Warnf("Creating incident due to portal %s status change: %s", site.Name, newStatus)
-			_, err = statusClient.CreateIncident(pageID, comp.ID, incidentMessage, nil)
+			_, err = statusClient.CreateIncident(pageID, comp.ID, incidentMessage, badResources)
 			if err != nil {
 				log.Errorf("Failed to create incident for %s: %s", site.Name, err.Error())
 				continue

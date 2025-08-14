@@ -226,7 +226,11 @@ func (dao *SiteDao) Update(sites []*model.Site) error {
 		}
 		if comp.Status == "operational" && st.status != comp.Status {
 			log.Warnf("Creating incident due to site %s is not operational", s.Name)
-			_, err = client.CreateIncident(pageID, comp.ID, fmt.Sprintf("%s is not operational.", s.Name), st.bads)
+			badResources := make(map[string]error)
+			for _, src := range st.bads {
+				badResources[src.URL] = src.Error
+			}
+			_, err = client.CreateIncident(pageID, comp.ID, fmt.Sprintf("%s is not operational.", s.Name), badResources)
 			if err != nil {
 				log.Errorf("Failed to create incident for %s: %s", s.Name, err.Error())
 				continue // Skip this site but continue with others
