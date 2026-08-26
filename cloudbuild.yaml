@@ -1,3 +1,15 @@
+# Images live in asia-northeast1, not asia-east1 and not gcr.io.
+#
+# Both `asia.gcr.io` and the asia-east1 Artifact Registry location stopped
+# accepting writes (503) and blob reads (500) for this project in August 2026,
+# after the project was deleted and restored. Metadata still reads fine, so a
+# tag listing looks healthy while nothing can actually be pushed or pulled.
+# asia-northeast1 is unaffected. See outdoorsafetylab/outdoorsafetylab#47.
+#
+# The Cloud Run services stay in asia-east1 ($_REGION); only the registry
+# moved, so they pull cross-region. `gcr.io/cloud-builders/*` below is Google's
+# own public builder image and is unrelated to the broken repositories.
+#
 steps:
 - name: 'gcr.io/cloud-builders/docker'
   args:
@@ -7,19 +19,19 @@ steps:
   - '--build-arg'
   - 'GIT_TAG=$TAG_NAME'
   - '-t'
-  - 'asia.gcr.io/$PROJECT_ID/rudy-balancer'
+  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/rudy-balancer/rudy-balancer'
   - '-f'
   - 'Dockerfile'
   - '.'
 - name: 'gcr.io/cloud-builders/docker'
   args: 
   - push
-  - asia.gcr.io/$PROJECT_ID/rudy-balancer
+  - asia-northeast1-docker.pkg.dev/$PROJECT_ID/rudy-balancer/rudy-balancer
 - name: 'gcr.io/cloud-builders/gcloud'
   args:
   - run
   - deploy
   - $_SERVICE_NAME
-  - --image=asia.gcr.io/$PROJECT_ID/rudy-balancer
+  - --image=asia-northeast1-docker.pkg.dev/$PROJECT_ID/rudy-balancer/rudy-balancer
   - --region=$_REGION
   - --platform=managed
