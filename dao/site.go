@@ -36,8 +36,9 @@ type siteStatus struct {
 }
 
 type fileSites struct {
-	File  string
-	Sites map[string]int64
+	File     string
+	Sites    map[string]int64
+	Modified map[string]time.Time `firestore:",omitempty"`
 }
 
 func (dao *SiteDao) load() (*mirror.Mirror, error) {
@@ -108,6 +109,7 @@ func (dao *SiteDao) Sites() ([]*model.Site, error) {
 
 func (dao *SiteDao) Update(sites []*model.Site) error {
 	files := make(map[string]map[string]int64)
+	modified := make(map[string]map[string]time.Time)
 	statuses := make(map[string]*siteStatus)
 	err := db.Client().RunTransaction(dao.Context, func(ctx context.Context, tx *firestore.Transaction) error {
 		for _, s := range sites {
@@ -133,6 +135,12 @@ func (dao *SiteDao) Update(sites []*model.Site) error {
 					st.goods = append(st.goods, src)
 					fileSites[s.Name] = src.Size
 					latency += src.Latency
+					if !src.LastModified.IsZero() {
+						if modified[src.File] == nil {
+							modified[src.File] = make(map[string]time.Time)
+						}
+						modified[src.File][s.Name] = src.LastModified
+					}
 				case model.BAD:
 					st.bads = append(st.bads, src)
 				}
@@ -165,8 +173,9 @@ func (dao *SiteDao) Update(sites []*model.Site) error {
 			}
 			docRef := db.Client().Collection(rudyMirrorFiles).Doc(fileID)
 			err = tx.Set(docRef, &fileSites{
-				File:  file,
-				Sites: sites,
+				File:     file,
+				Sites:    sites,
+				Modified: modified[file],
 			})
 			if err != nil {
 				return err
