@@ -142,7 +142,7 @@ func (dao *FileDao) GetSources(file string) ([]*model.Source, error) {
 }
 
 // excludeLagging drops sources whose copy of the file is older than the newest
-// copy among the redirectable (non-hidden) sources. While a new release is
+// copy among the redirectable (non-hidden, positive weight) sources. While a new release is
 // still syncing, this keeps companion files (e.g. map + style) from being
 // served by mirrors on different versions. Sources with unknown Last-Modified
 // are kept and don't count toward the newest. The source holding the newest
@@ -150,7 +150,7 @@ func (dao *FileDao) GetSources(file string) ([]*model.Source, error) {
 func excludeLagging(sources []*model.Source, modified map[string]time.Time) (kept, lagging []*model.Source) {
 	var newest time.Time
 	for _, src := range sources {
-		if src.Site.Hidden {
+		if src.Site.Hidden || src.Site.Weight <= 0 {
 			continue
 		}
 		if t := modified[src.SiteName]; t.After(newest) {

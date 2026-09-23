@@ -8,10 +8,14 @@ import (
 	"service/model"
 )
 
-func testSources(hidden map[string]bool, names ...string) []*model.Source {
+func testSources(hidden map[string]bool, weight map[string]int, names ...string) []*model.Source {
 	sources := make([]*model.Source, 0, len(names))
 	for _, name := range names {
-		site := &model.Site{Name: name, Hidden: hidden[name]}
+		w, ok := weight[name]
+		if !ok {
+			w = 1
+		}
+		site := &model.Site{Name: name, Hidden: hidden[name], Weight: w}
 		sources = append(sources, &model.Source{Site: site, SiteName: name, URL: "https://" + name + "/f.zip"})
 	}
 	return sources
@@ -31,8 +35,10 @@ func TestExcludeLagging(t *testing.T) {
 	tests := []struct {
 		name     string
 		hidden   map[string]bool
+		weight   map[string]int
 		modified map[string]time.Time
 		want     []string
+		lagging  []string
 	}{
 		{
 			name: "no modified data keeps all",
@@ -47,11 +53,13 @@ func TestExcludeLagging(t *testing.T) {
 			name:     "lagging site is excluded",
 			modified: map[string]time.Time{"a": cur, "b": old, "c": cur},
 			want:     []string{"a", "c"},
+			lagging:  []string{"b"},
 		},
 		{
 			name:     "unknown modified is kept",
 			modified: map[string]time.Time{"a": cur, "b": old},
 			want:     []string{"a", "c"},
+			lagging:  []string{"b"},
 		},
 		{
 			name:     "hidden site does not set newest",
@@ -63,14 +71,23 @@ func TestExcludeLagging(t *testing.T) {
 			name:     "only one site synced keeps just that site",
 			modified: map[string]time.Time{"a": old, "b": cur, "c": old},
 			want:     []string{"b"},
+			lagging:  []string{"a", "c"},
+		},
+		{
+			name:     "zero weight site does not set newest",
+			weight:   map[string]int{"c": 0},
+			modified: map[string]time.Time{"a": old, "b": old, "c": cur},
+			want:     []string{"a", "b", "c"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kept, _ := excludeLagging(testSources(tt.hidden, "a", "b", "c"), tt.modified)
-			got := siteNames(kept)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("got %v, want %v", got, tt.want)
+			kept, lagging := excludeLagging(testSources(tt.hidden, tt.weight, "a", "b", "c"), tt.modified)
+			if got := siteNames(kept); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("kept = %v, want %v", got, tt.want)
+			}
+			if got, want := siteNames(lagging), tt.lagging; len(got)+len(want) > 0 && !reflect.DeepEqual(got, want) {
+				t.Errorf("lagging = %v, want %v", got, want)
 			}
 		})
 	}
