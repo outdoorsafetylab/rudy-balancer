@@ -106,6 +106,10 @@ func (dao *FileDao) GetSources(file string) ([]*model.Source, error) {
 			}
 		}
 	}
+	sources, lagging := excludeLagging(sources, fileSites.Modified)
+	for _, src := range lagging {
+		log.Infof("Excluding lagging source: %s: modified=%v", src.URL, fileSites.Modified[src.SiteName])
+	}
 	// var maxLatency time.Duration
 	// for _, src := range sources {
 	// 	if src.Site.Hidden {
@@ -135,6 +139,36 @@ func (dao *FileDao) GetSources(file string) ([]*model.Source, error) {
 		}
 	}
 	return weightedSources, nil
+}
+
+// excludeLagging drops sources whose copy of the file is older than the newest
+// copy among the redirectable (non-hidden) sources. While a new release is
+// still syncing, this keeps companion files (e.g. map + style) from being
+// served by mirrors on different versions. Sources with unknown Last-Modified
+// are kept and don't count toward the newest. The source holding the newest
+// copy is always kept, so at least one redirectable source remains.
+func excludeLagging(sources []*model.Source, modified map[string]time.Time) (kept, lagging []*model.Source) {
+	var newest time.Time
+	for _, src := range sources {
+		if src.Site.Hidden {
+			continue
+		}
+		if t := modified[src.SiteName]; t.After(newest) {
+			newest = t
+		}
+	}
+	if newest.IsZero() {
+		return sources, nil
+	}
+	kept = make([]*model.Source, 0, len(sources))
+	for _, src := range sources {
+		if t := modified[src.SiteName]; !t.IsZero() && t.Before(newest) {
+			lagging = append(lagging, src)
+			continue
+		}
+		kept = append(kept, src)
+	}
+	return kept, lagging
 }
 
 type FileStat struct {
