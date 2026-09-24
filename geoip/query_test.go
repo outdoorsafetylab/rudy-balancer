@@ -1,9 +1,12 @@
 package geoip
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"service/config"
 )
 
 func TestIPAddress(t *testing.T) {
@@ -34,5 +37,27 @@ func TestIPAddress(t *testing.T) {
 	r.Header.Set("X-Forwarded-For", "203.0.113.7, not-an-ip-203.0.113.8")
 	if _, err := IPAddress(r); err == nil || strings.Contains(err.Error(), "203.0.113") {
 		t.Errorf("want an error without the address, got %v", err)
+	}
+}
+
+func TestCountryErrorHidesAddress(t *testing.T) {
+	if err := config.Init("docker"); err != nil {
+		t.Fatal(err)
+	}
+	// A GeoIP endpoint that refuses connections: the transport error must
+	// not repeat the query URL with the client's address in it.
+	srv := httptest.NewServer(http.NotFoundHandler())
+	endpoint := srv.URL
+	srv.Close()
+	t.Setenv("GEOIP_ENDPOINT", endpoint)
+
+	r := httptest.NewRequest("GET", "/v1/x.zip", nil)
+	r.Header.Set("X-Forwarded-For", "203.0.113.7")
+	_, err := Country(r)
+	if err == nil {
+		t.Fatal("want an error from a closed endpoint")
+	}
+	if strings.Contains(err.Error(), "203.0.113") {
+		t.Errorf("error leaks the client address: %v", err)
 	}
 }

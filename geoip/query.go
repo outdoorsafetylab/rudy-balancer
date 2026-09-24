@@ -2,6 +2,7 @@ package geoip
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -57,8 +58,15 @@ func Country(req *http.Request) (*geoip2.Country, error) {
 	q.Set("ip", ip.String())
 	res, err := client.Get(fmt.Sprintf("%s/country?%s", endpoint, q.Encode()))
 	if err != nil {
-		return nil, err
+		// url.Error repeats the request URL, which carries the client's
+		// address; keep only what went wrong.
+		var ue *url.Error
+		if errors.As(err, &ue) {
+			return nil, fmt.Errorf("geoip request failed: %w", ue.Err)
+		}
+		return nil, fmt.Errorf("geoip request failed")
 	}
+	defer res.Body.Close()
 	if res.StatusCode != 200 {
 		return nil, fmt.Errorf("%s", res.Status)
 	}
