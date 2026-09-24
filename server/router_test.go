@@ -71,6 +71,7 @@ func TestViaRoutes(t *testing.T) {
 		"/v1/via/oruxmaps/nope.zip",                        // unknown file
 		"/v1/via/locus/MOI_OSM_Taiwan_TOPO_Rudy_locus.zip", // Locus links are hard-coded URLs
 		"/v1/via/",
+		"/v1/via",
 	} {
 		rec := httptest.NewRecorder()
 		r.ServeHTTP(rec, httptest.NewRequest("GET", path, nil))
