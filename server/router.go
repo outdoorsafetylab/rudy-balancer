@@ -53,6 +53,9 @@ func newRouter() (*mux.Router, error) {
 		c := &controller.FileController{File: link.File, Via: link.App}
 		endpoint.HandleFunc(link.Path(), c.Download).Methods("GET", "HEAD")
 	}
+	// Anything else under /via/ is a 404. Without this it would fall through
+	// to the reverse proxy, which redirects unknown paths to a mirror.
+	endpoint.PathPrefix("/via/").HandlerFunc(http.NotFound)
 	app := &controller.AppController{}
 	endpoint.HandleFunc("/apps", app.List).Methods("GET")
 	site := &controller.SiteController{}

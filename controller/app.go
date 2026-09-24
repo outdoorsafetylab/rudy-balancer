@@ -22,7 +22,7 @@ func (c *AppController) List(w http.ResponseWriter, r *http.Request) {
 	for _, app := range apps {
 		for _, v := range app.Variants {
 			for _, a := range v.Artifacts {
-				if a.URL == "" {
+				if mirror.HasViaLink(a) {
 					if a.Scheme == "" {
 						a.Scheme = cfg.GetString("mirrors.default_scheme")
 					}
