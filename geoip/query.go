@@ -19,7 +19,8 @@ var (
 	}
 )
 
-func ipAddress(req *http.Request) (net.IP, error) {
+// IPAddress is the client's address as the redirect handlers see it.
+func IPAddress(req *http.Request) (net.IP, error) {
 	var host string
 	var err error
 	fwd := req.Header.Get("X-Forwarded-For")
@@ -45,7 +46,7 @@ func Country(req *http.Request) (*geoip2.Country, error) {
 	if endpoint == "" {
 		return nil, fmt.Errorf("no config for 'geoip.endpoint'")
 	}
-	ip, err := ipAddress(req)
+	ip, err := IPAddress(req)
 	if err != nil {
 		return nil, err
 	}

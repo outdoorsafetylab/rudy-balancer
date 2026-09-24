@@ -59,6 +59,12 @@ func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
 		if c.Via != "" {
 			fields = append(fields, zap.String("Via", c.Via))
 		}
+		id, err := clientID(context.Background(), r, start)
+		if err == nil {
+			fields = append(fields, zap.String("Client", id))
+		} else {
+			log.Warningf("Failed to derive client id: %s", err.Error())
+		}
 		country, err := geoip.Country(r)
 		if err == nil {
 			fields = append(fields, zap.String("Country", country.Country.IsoCode))
