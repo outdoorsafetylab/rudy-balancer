@@ -54,6 +54,21 @@ func TestViaRoutes(t *testing.T) {
 		}
 	}
 
+	// The three files alpha-rudy/taiwan-topo's Taiwan *-cedric.xml download
+	// must be routed before those XML files switch to via paths.
+	for _, file := range []string{"MOI_OSM_Taiwan_TOPO_Rudy_locus.zip", "MOI_OSM_Taiwan_TOPO_Rudy_locus_style.zip", "hgtmix.zip"} {
+		want := "/v1/via/locus/" + file
+		var match mux.RouteMatch
+		r.Match(httptest.NewRequest("GET", want, nil), &match)
+		if match.Route == nil {
+			t.Errorf("%s: no route", want)
+			continue
+		}
+		if got, _ := match.Route.GetPathTemplate(); got != want {
+			t.Errorf("%s: matched %q, want its own route", want, got)
+		}
+	}
+
 	// The plain route is untouched.
 	var plain mux.RouteMatch
 	r.Match(httptest.NewRequest("GET", "/v1/MOI_OSM_Taiwan_TOPO_Rudy.zip", nil), &plain)
@@ -66,10 +81,9 @@ func TestViaRoutes(t *testing.T) {
 	// Pairs the portal never generates get a 404, not the reverse proxy's
 	// redirect to a mirror.
 	for _, path := range []string{
-		"/v1/via/oruxmaps/MOI_OSM_Taiwan_TOPO_Rudy.zip",    // OruxMaps has no bundle link
-		"/v1/via/bogus/MOI_OSM_Taiwan_TOPO_Rudy.map.zip",   // unknown app
-		"/v1/via/oruxmaps/nope.zip",                        // unknown file
-		"/v1/via/locus/MOI_OSM_Taiwan_TOPO_Rudy_locus.zip", // Locus links are hard-coded URLs
+		"/v1/via/oruxmaps/MOI_OSM_Taiwan_TOPO_Rudy.zip",  // OruxMaps has no bundle link
+		"/v1/via/bogus/MOI_OSM_Taiwan_TOPO_Rudy.map.zip", // unknown app
+		"/v1/via/oruxmaps/nope.zip",                      // unknown file
 		"/v1/via/",
 		"/v1/via",
 	} {

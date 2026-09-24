@@ -47,8 +47,8 @@ func newRouter() (*mux.Router, error) {
 			endpoint.HandleFunc(fmt.Sprintf("/%s", file), c.Download).Methods("GET", "HEAD")
 		}
 	}
-	// One explicit route per link rudymap.tw/app generates, so an unknown app
-	// or file under /via/ is a plain 404 and never lands in the report (#19).
+	// One explicit route per (app, file) in mirrors.yaml, so an unknown app or
+	// file under /via/ is a plain 404 and never lands in the report (#19).
 	for _, link := range mirror.ViaLinks() {
 		c := &controller.FileController{File: link.File, Via: link.App}
 		endpoint.HandleFunc(link.Path(), c.Download).Methods("GET", "HEAD")

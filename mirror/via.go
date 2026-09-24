@@ -13,11 +13,11 @@ type ViaLink struct {
 	File string
 }
 
-// ViaLinks lists the (app, file) pairs that get a /via/<app>/<file> route.
-// Only artifacts whose link the balancer builds itself (File set, URL empty)
-// qualify; an artifact with a hard-coded URL (Locus's locus-actions://) never
-// points at a via path, so registering one would only accept strings no page
-// ever produces.
+// ViaLinks lists the (app, file) pairs that get a /via/<app>/<file> route:
+// every artifact that names a file. That is a superset of what HasViaLink
+// generates on rudymap.tw/app, because Locus's links are hard-coded
+// locus-actions:// URLs to XML files kept in alpha-rudy/taiwan-topo, and those
+// XML files point at /v1/via/locus/<file> themselves.
 // HasViaLink reports whether the balancer builds a via link for an artifact:
 // it names a file and has no hard-coded URL. controller/app.go and ViaLinks
 // both use it, so a generated link always has a route.
@@ -31,7 +31,7 @@ func (m *Mirror) ViaLinks() []ViaLink {
 	for _, app := range m.Apps {
 		for _, v := range app.Variants {
 			for _, a := range v.Artifacts {
-				if !HasViaLink(a) {
+				if a.File == "" {
 					continue
 				}
 				link := ViaLink{App: app.ID, File: a.File}
