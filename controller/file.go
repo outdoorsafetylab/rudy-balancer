@@ -19,6 +19,10 @@ import (
 
 type FileController struct {
 	File string
+	// Via is the app whose rudymap.tw/app link led here (#19), empty for the
+	// plain /v1/<file> route. Many apps download with a library-default
+	// User-Agent, so this is the only way to tell them apart.
+	Via string
 }
 
 func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
@@ -51,6 +55,9 @@ func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
 			zap.String("SiteName", src.SiteName),
 			zap.String("File", src.File),
 			zap.Int64("Size", src.Size),
+		}
+		if c.Via != "" {
+			fields = append(fields, zap.String("Via", c.Via))
 		}
 		country, err := geoip.Country(r)
 		if err == nil {

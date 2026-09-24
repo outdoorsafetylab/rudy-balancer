@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"service/config"
 	"service/dao"
+	"service/mirror"
 )
 
 type AppController struct{}
@@ -25,7 +26,10 @@ func (c *AppController) List(w http.ResponseWriter, r *http.Request) {
 					if a.Scheme == "" {
 						a.Scheme = cfg.GetString("mirrors.default_scheme")
 					}
-					a.URL = fmt.Sprintf("%s//%s%s/%s", a.Scheme, r.Host, prefix, a.File)
+					// The via path tells the redirect log which app's link this
+					// was (#19); server/router.go registers the same paths.
+					via := mirror.ViaLink{App: app.ID, File: a.File}
+					a.URL = fmt.Sprintf("%s//%s%s%s", a.Scheme, r.Host, prefix, via.Path())
 				}
 				for _, s := range a.Sources {
 					s.URL = ""
