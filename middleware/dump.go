@@ -81,7 +81,7 @@ func dump(r *http.Request, data []byte, d *responseDumper) error {
 			Method:  r.Method,
 			URI:     r.RequestURI,
 			Proto:   r.Proto,
-			Headers: r.Header,
+			Headers: redact(r.Header),
 		},
 		Response: &response{
 			Code: d.s,
@@ -115,4 +115,14 @@ func dump(r *http.Request, data []byte, d *responseDumper) error {
 	}
 	log.Debugf("%s", string(data))
 	return nil
+}
+
+// redact drops the headers that carry the client's address, which the
+// privacy policy says is not written to logs.
+func redact(h http.Header) http.Header {
+	out := h.Clone()
+	for _, k := range []string{"X-Forwarded-For", "Forwarded", "X-Real-Ip", "X-Envoy-External-Address"} {
+		out.Del(k)
+	}
+	return out
 }

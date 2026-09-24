@@ -6,4 +6,6 @@ const (
 	rudyMirrorFiles     = "RudyMirrorFiles"
 	allSites            = "AllSites"
 	dailyStats          = "DailyStats"
+	rudyClientSalt      = "RudyClientSalt"
+	currentSalt         = "Current"
 )

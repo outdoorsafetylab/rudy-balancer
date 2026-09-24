@@ -2,6 +2,7 @@ package geoip
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -19,13 +20,17 @@ var (
 	}
 )
 
-func ipAddress(req *http.Request) (net.IP, error) {
+// IPAddress is the client's address as the redirect handlers see it. Cloud
+// Run appends the address it received the request from to X-Forwarded-For,
+// so only the last entry is trustworthy; anything before it is whatever the
+// client chose to send. Errors never carry the address.
+func IPAddress(req *http.Request) (net.IP, error) {
 	var host string
 	var err error
 	fwd := req.Header.Get("X-Forwarded-For")
 	if fwd != "" {
 		splits := strings.Split(fwd, ",")
-		host = splits[0]
+		host = strings.TrimSpace(splits[len(splits)-1])
 	} else {
 		addr := req.RemoteAddr
 		host, _, err = net.SplitHostPort(addr)
@@ -35,7 +40,7 @@ func ipAddress(req *http.Request) (net.IP, error) {
 	}
 	ip := net.ParseIP(host)
 	if ip == nil {
-		return nil, fmt.Errorf("invalid IP address: %s", host)
+		return nil, fmt.Errorf("invalid client IP address")
 	}
 	return ip, nil
 }
@@ -45,7 +50,7 @@ func Country(req *http.Request) (*geoip2.Country, error) {
 	if endpoint == "" {
 		return nil, fmt.Errorf("no config for 'geoip.endpoint'")
 	}
-	ip, err := ipAddress(req)
+	ip, err := IPAddress(req)
 	if err != nil {
 		return nil, err
 	}
@@ -53,8 +58,15 @@ func Country(req *http.Request) (*geoip2.Country, error) {
 	q.Set("ip", ip.String())
 	res, err := client.Get(fmt.Sprintf("%s/country?%s", endpoint, q.Encode()))
 	if err != nil {
-		return nil, err
+		// url.Error repeats the request URL, which carries the client's
+		// address; keep only what went wrong.
+		var ue *url.Error
+		if errors.As(err, &ue) {
+			return nil, fmt.Errorf("geoip request failed: %w", ue.Err)
+		}
+		return nil, fmt.Errorf("geoip request failed")
 	}
+	defer res.Body.Close()
 	if res.StatusCode != 200 {
 		return nil, fmt.Errorf("%s", res.Status)
 	}
@@ -64,7 +76,7 @@ func Country(req *http.Request) (*geoip2.Country, error) {
 		return nil, err
 	}
 	if c.Country.Country.GeoNameID == 0 {
-		return nil, fmt.Errorf("country is unknown: %s", ip.String())
+		return nil, fmt.Errorf("country is unknown")
 	}
 	return c.Country, nil
 }
