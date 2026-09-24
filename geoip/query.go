@@ -19,14 +19,17 @@ var (
 	}
 )
 
-// IPAddress is the client's address as the redirect handlers see it.
+// IPAddress is the client's address as the redirect handlers see it. Cloud
+// Run appends the address it received the request from to X-Forwarded-For,
+// so only the last entry is trustworthy; anything before it is whatever the
+// client chose to send. Errors never carry the address.
 func IPAddress(req *http.Request) (net.IP, error) {
 	var host string
 	var err error
 	fwd := req.Header.Get("X-Forwarded-For")
 	if fwd != "" {
 		splits := strings.Split(fwd, ",")
-		host = splits[0]
+		host = strings.TrimSpace(splits[len(splits)-1])
 	} else {
 		addr := req.RemoteAddr
 		host, _, err = net.SplitHostPort(addr)
@@ -36,7 +39,7 @@ func IPAddress(req *http.Request) (net.IP, error) {
 	}
 	ip := net.ParseIP(host)
 	if ip == nil {
-		return nil, fmt.Errorf("invalid IP address: %s", host)
+		return nil, fmt.Errorf("invalid client IP address")
 	}
 	return ip, nil
 }
@@ -65,7 +68,7 @@ func Country(req *http.Request) (*geoip2.Country, error) {
 		return nil, err
 	}
 	if c.Country.Country.GeoNameID == 0 {
-		return nil, fmt.Errorf("country is unknown: %s", ip.String())
+		return nil, fmt.Errorf("country is unknown")
 	}
 	return c.Country, nil
 }

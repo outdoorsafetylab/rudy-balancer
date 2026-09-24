@@ -32,11 +32,28 @@ type clientSalt struct {
 	Salt    []byte
 }
 
-var saltCache struct {
-	sync.Mutex
-	quarter string
-	salt    []byte
-}
+const (
+	// saltTimeout bounds a Firestore round trip made while holding the cache
+	// lock, so a stuck Firestore cannot pile up every logging goroutine.
+	saltTimeout = 5 * time.Second
+	// saltRetry is how long a failed quarter is not retried; its downloads
+	// are logged without Client meanwhile.
+	saltRetry = 30 * time.Second
+)
+
+var (
+	saltCache struct {
+		sync.Mutex
+		quarter string
+		salt    []byte
+		failed  string
+		retryAt time.Time
+		err     error
+	}
+	// load and now are replaced in tests.
+	load = loadSalt
+	now  = time.Now
+)
 
 // ClientSalt returns the salt for quarter q, cached per instance. The salt
 // never goes into a log.
@@ -46,44 +63,65 @@ func ClientSalt(ctx context.Context, q string) ([]byte, error) {
 	if saltCache.quarter == q {
 		return saltCache.salt, nil
 	}
-	salt, err := loadSalt(ctx, q)
+	if saltCache.failed == q && now().Before(saltCache.retryAt) {
+		return nil, saltCache.err
+	}
+	ctx, cancel := context.WithTimeout(ctx, saltTimeout)
+	defer cancel()
+	salt, err := load(ctx, q)
 	if err != nil {
+		saltCache.failed, saltCache.retryAt, saltCache.err = q, now().Add(saltRetry), err
 		return nil, err
 	}
-	saltCache.quarter, saltCache.salt = q, salt
-	return salt, nil
+	saltCache.quarter, saltCache.salt = q, append([]byte(nil), salt...)
+	saltCache.failed = ""
+	return saltCache.salt, nil
 }
 
-// loadSalt reads the stored salt, creating one in the same transaction when it
-// is missing or from an earlier quarter, so concurrent instances agree on one.
+// serverTime is Firestore's clock as seen in a read; tests shift it.
+var serverTime = func(readTime time.Time) time.Time { return readTime }
+
+// loadSalt returns the salt for quarter q. Only Firestore's clock decides
+// which quarter is current, so an instance whose clock runs ahead cannot
+// destroy the salt early, nor one running behind roll it back; a request
+// whose quarter is not the current one gets an error and no Client. The
+// salt is created in the same transaction that finds it missing or stale,
+// so concurrent instances agree on one.
 func loadSalt(ctx context.Context, q string) ([]byte, error) {
 	ref := db.Client().Collection(rudyClientSalt).Doc(currentSalt)
 	var salt []byte
 	err := db.Client().RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		salt = nil
 		doc, err := tx.Get(ref)
 		if err != nil && status.Code(err) != codes.NotFound {
 			return err
 		}
-		if err == nil {
+		if doc == nil || doc.ReadTime.IsZero() {
+			return fmt.Errorf("no read time for client salt")
+		}
+		current := Quarter(serverTime(doc.ReadTime))
+		if q != current {
+			return fmt.Errorf("quarter %s is not the current quarter %s", q, current)
+		}
+		if doc.Exists() {
 			stored := &clientSalt{}
 			if err := doc.DataTo(stored); err != nil {
 				return err
 			}
-			if stored.Quarter == q && len(stored.Salt) > 0 {
+			if stored.Quarter == current && len(stored.Salt) > 0 {
 				salt = stored.Salt
 				return nil
 			}
-			// A clock running behind must not roll the salt back and
-			// destroy the current quarter's.
-			if stored.Quarter > q {
-				return fmt.Errorf("stored client salt is for %s, after %s", stored.Quarter, q)
-			}
 		}
-		salt = make([]byte, 32)
-		if _, err := rand.Read(salt); err != nil {
+		fresh := make([]byte, 32)
+		if _, err := rand.Read(fresh); err != nil {
 			return err
 		}
-		return tx.Set(ref, &clientSalt{Quarter: q, Salt: salt})
+		if err := tx.Set(ref, &clientSalt{Quarter: current, Salt: fresh}); err != nil {
+			return err
+		}
+		salt = fresh
+		return nil
 	})
 	if err != nil {
 		return nil, err

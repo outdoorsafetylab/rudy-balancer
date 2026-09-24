@@ -3,6 +3,7 @@ package dao
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"sync"
 	"testing"
@@ -13,6 +14,9 @@ import (
 )
 
 func TestQuarter(t *testing.T) {
+	// Quarter must not depend on the machine's zone.
+	defer func(l *time.Location) { time.Local = l }(time.Local)
+	time.Local = time.FixedZone("PDT", -7*60*60)
 	tests := []struct {
 		t    time.Time
 		want string
@@ -27,6 +31,59 @@ func TestQuarter(t *testing.T) {
 		if got := Quarter(tt.t); got != tt.want {
 			t.Errorf("Quarter(%s) = %s, want %s", tt.t, got, tt.want)
 		}
+	}
+}
+
+func resetSaltCache() {
+	saltCache.quarter, saltCache.salt, saltCache.failed, saltCache.err = "", nil, "", nil
+}
+
+func TestClientSalt(t *testing.T) {
+	defer func(l func(context.Context, string) ([]byte, error), n func() time.Time) { load, now = l, n }(load, now)
+	resetSaltCache()
+	defer resetSaltCache()
+	clock := time.Date(2026, 9, 30, 12, 0, 0, 0, time.UTC)
+	now = func() time.Time { return clock }
+	calls := 0
+	fail := false
+	load = func(ctx context.Context, q string) ([]byte, error) {
+		calls++
+		if _, ok := ctx.Deadline(); !ok {
+			t.Error("Firestore call made without a deadline")
+		}
+		if fail {
+			return nil, errors.New("firestore down")
+		}
+		return []byte("salt " + q), nil
+	}
+
+	for i := 0; i < 3; i++ {
+		if s, err := ClientSalt(context.Background(), "2026-Q3"); err != nil || string(s) != "salt 2026-Q3" {
+			t.Fatalf("got %q, %v", s, err)
+		}
+	}
+	if calls != 1 {
+		t.Fatalf("want 1 load for a cached quarter, got %d", calls)
+	}
+	if s, _ := ClientSalt(context.Background(), "2026-Q4"); string(s) != "salt 2026-Q4" || calls != 2 {
+		t.Fatalf("new quarter should load its own salt, got %q after %d loads", s, calls)
+	}
+
+	// A failure is not retried until saltRetry passes, so a stuck Firestore
+	// costs one timeout per retry period, not one per download.
+	fail = true
+	for i := 0; i < 5; i++ {
+		if _, err := ClientSalt(context.Background(), "2027-Q1"); err == nil {
+			t.Fatal("want error")
+		}
+	}
+	if calls != 3 {
+		t.Fatalf("want 1 load while failing, got %d", calls-2)
+	}
+	fail = false
+	clock = clock.Add(saltRetry)
+	if s, err := ClientSalt(context.Background(), "2027-Q1"); err != nil || string(s) != "salt 2027-Q1" {
+		t.Fatalf("retry after saltRetry: got %q, %v", s, err)
 	}
 }
 
@@ -46,13 +103,29 @@ func TestLoadSalt(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Deinit()
+	defer func(f func(time.Time) time.Time) { serverTime = f }(serverTime)
 	ctx := context.Background()
 	ref := db.Client().Collection(rudyClientSalt).Doc(currentSalt)
 	if _, err := ref.Delete(ctx); err != nil {
 		t.Fatal(err)
 	}
+	stored := func() *clientSalt {
+		doc, err := ref.Get(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		s := &clientSalt{}
+		if err := doc.DataTo(s); err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+	cur := Quarter(time.Now())
+	next := Quarter(time.Now().AddDate(0, 3, 0))
+	prev := Quarter(time.Now().AddDate(0, -3, 0))
 
-	// Instances starting together on an empty store end up with one salt.
+	// Instances starting together on an empty store end up with the one
+	// salt that was stored.
 	const n = 8
 	salts := make([][]byte, n)
 	errs := make([]error, n)
@@ -61,7 +134,7 @@ func TestLoadSalt(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			salts[i], errs[i] = loadSalt(ctx, "2026-Q3")
+			salts[i], errs[i] = loadSalt(ctx, cur)
 		}(i)
 	}
 	wg.Wait()
@@ -73,33 +146,38 @@ func TestLoadSalt(t *testing.T) {
 			t.Fatalf("instance %d got a different salt", i)
 		}
 	}
-	q3 := salts[0]
+	if s := stored(); s.Quarter != cur || !bytes.Equal(s.Salt, salts[0]) {
+		t.Fatalf("stored %s salt differs from the one handed out", s.Quarter)
+	}
+	old := salts[0]
 
-	// A new quarter replaces the salt, destroying the old one.
-	q4, err := loadSalt(ctx, "2026-Q4")
+	// Clocks off either way get no salt and change nothing.
+	for _, q := range []string{next, prev} {
+		if _, err := loadSalt(ctx, q); err == nil {
+			t.Errorf("quarter %s accepted while Firestore says %s", q, cur)
+		}
+		if s := stored(); s.Quarter != cur || !bytes.Equal(s.Salt, old) {
+			t.Fatalf("request for %s changed the stored salt", q)
+		}
+	}
+
+	// Once Firestore's clock reaches the next quarter, the salt is replaced
+	// and the old one is gone.
+	serverTime = func(t time.Time) time.Time { return t.AddDate(0, 3, 0) }
+	fresh, err := loadSalt(ctx, next)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Equal(q4, q3) {
+	if bytes.Equal(fresh, old) {
 		t.Fatal("new quarter kept the old salt")
 	}
-	if again, err := loadSalt(ctx, "2026-Q4"); err != nil || !bytes.Equal(again, q4) {
+	if s := stored(); s.Quarter != next || !bytes.Equal(s.Salt, fresh) {
+		t.Fatalf("stored %s after rolling to %s", s.Quarter, next)
+	}
+	if again, err := loadSalt(ctx, next); err != nil || !bytes.Equal(again, fresh) {
 		t.Fatalf("same quarter should reuse the salt, got err %v", err)
 	}
-
-	// A lagging clock cannot roll it back.
-	if _, err := loadSalt(ctx, "2026-Q3"); err == nil {
-		t.Fatal("earlier quarter should be refused")
-	}
-	doc, err := ref.Get(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	stored := &clientSalt{}
-	if err := doc.DataTo(stored); err != nil {
-		t.Fatal(err)
-	}
-	if stored.Quarter != "2026-Q4" || !bytes.Equal(stored.Salt, q4) {
-		t.Fatalf("stored salt changed to %s", stored.Quarter)
+	if _, err := loadSalt(ctx, cur); err == nil {
+		t.Fatal("a request from the previous quarter should get no salt")
 	}
 }

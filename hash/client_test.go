@@ -5,8 +5,10 @@ import "testing"
 func TestClient(t *testing.T) {
 	salt := []byte("0123456789abcdef0123456789abcdef")
 	id := Client(salt, "203.0.113.7", "wadi/7.03")
-	if len(id) != 16 {
-		t.Fatalf("want 16 hex chars, got %q", id)
+	// Known answer from Python: hmac.new(salt, b"203.0.113.7\x00wadi/7.03",
+	// hashlib.sha256).hexdigest()[:16]
+	if id != "3a7f74a91601f8eb" {
+		t.Fatalf("got %q, want HMAC-SHA256 known answer 3a7f74a91601f8eb", id)
 	}
 	if again := Client(salt, "203.0.113.7", "wadi/7.03"); again != id {
 		t.Errorf("same input gave %q then %q", id, again)
