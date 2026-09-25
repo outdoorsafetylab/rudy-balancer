@@ -31,8 +31,8 @@
     </p>
     <ol>
       <li>每次下載，分流器會記錄時間、請求方式、檔案與大小、分派的鏡像站網址、國家（由 IP 判斷）、User-Agent、Referer，以及經由入口頁連結下載時所用的 app，用於維運與公開的<a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>。報告只公開彙總數字。</li>
-      <li>為了估算每季有多少裝置下載魯地圖，分流器以每季更換的隨機金鑰，把 IP 與 User-Agent 雜湊成匿名識別碼一併記錄，IP 本身不寫入下載紀錄。金鑰只存在伺服器端，不寫入任何紀錄，並在下一季開始時被新金鑰覆蓋銷毀；之後無法由識別碼反推 IP，也無法跨季比對同一裝置。</li>
-      <li>雲端平台的存取紀錄包含 IP，保留 30 天後自動刪除，只用於維運與上述統計，不與其他資料串接。</li>
+      <li>為了估算每季有多少裝置下載魯地圖，分流器以每季更換的隨機金鑰，把 IP 與 User-Agent 雜湊成匿名識別碼一併記錄，IP 本身不寫入下載紀錄。金鑰只存在伺服器端的資料庫，不寫入任何紀錄，並在下一季開始時被新金鑰覆蓋銷毀。金鑰銷毀、且下一點的存取紀錄刪除後，就無法由識別碼找回 IP，也無法跨季比對同一裝置。</li>
+      <li>雲端平台的存取紀錄包含 IP，保留 30 天後自動刪除。保留期間，這些紀錄在技術上可以與下載紀錄對照，但我們不做這種對照；存取紀錄只用於維運與上述統計，不與其他資料串接。</li>
       <li>入口頁只用 cookie 記住您是否關閉過頁面上的提示，不用於追蹤。分流器不收集帳號資料，也不讀取序號、廣告 ID 等裝置識別碼。</li>
     </ol>
 
@@ -48,10 +48,12 @@
         Reports only publish aggregates.</li>
       <li>To estimate how many devices download Rudy Map each quarter, the balancer hashes the IP address and User-Agent
         with a random key that changes every quarter and logs the resulting anonymous ID; the IP address itself is not
-        written to the download log. The key stays on the server, is never logged, and is overwritten when the next
-        quarter begins, after which an ID can no longer be traced back to an IP address or matched across quarters.</li>
+        written to the download log. The key is kept only in the server's database, is never logged, and is overwritten
+        when the next quarter begins. Once the key is gone and the access logs below have been deleted, an ID can no
+        longer be traced back to an IP address or matched across quarters.</li>
       <li>Access logs kept by the cloud platform include IP addresses and are deleted automatically after
-        30 days. They are used only for operations and the statistics above, and are not combined with other data.</li>
+        30 days. While they are kept, they could technically be matched with the download log; we do not do so. They
+        are used only for operations and the statistics above, and are not combined with other data.</li>
       <li>The portal page uses a cookie only to remember whether you dismissed its notice, not for tracking. The
         balancer does not collect account information or read device identifiers such as serial numbers or
         advertising IDs.</li>
