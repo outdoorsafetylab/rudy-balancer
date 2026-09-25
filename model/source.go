@@ -3,6 +3,8 @@ package model
 import (
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -40,10 +42,29 @@ func (s *Source) Check(client *http.Client) error {
 	s.Status = GOOD
 	s.Size = res.ContentLength
 	s.Latency = (s.Latency + duration) / 2
-	s.LastModified, _ = http.ParseTime(res.Header.Get("Last-Modified"))
+	s.LastModified = lastModified(res.Header)
 	s.LastModifiedUnix = s.LastModified.Unix()
 	if s.LastModifiedUnix < 0 {
 		s.LastModifiedUnix = 0
 	}
 	return nil
+}
+
+// lastModified is when the release reached this mirror, compared across
+// mirrors to spot lagging ones. A mirror served from S3 reports the upload
+// time as Last-Modified, hours after the release; rclone keeps the source's
+// modification time in x-amz-meta-mtime, the same time the other mirrors
+// (synced with rclone too) report, so that one wins when present. It is cut
+// to whole seconds like Last-Modified, or a fraction would make every other
+// mirror look a second behind.
+func lastModified(h http.Header) time.Time {
+	if v := h.Get("X-Amz-Meta-Mtime"); v != "" {
+		// rclone writes decimal seconds; keep the whole part as text so a
+		// fraction like .999999999 cannot round up through float64.
+		if sec, err := strconv.ParseInt(strings.SplitN(v, ".", 2)[0], 10, 64); err == nil && sec > 0 {
+			return time.Unix(sec, 0).UTC()
+		}
+	}
+	t, _ := http.ParseTime(h.Get("Last-Modified"))
+	return t
 }
