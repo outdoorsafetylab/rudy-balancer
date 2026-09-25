@@ -237,7 +237,9 @@ type usageMeter interface {
 // of the month. The quota is checked against what CloudFront actually served
 // this month (CloudWatch), not against redirect counts: one download can take
 // several redirects, and direct links bypass the balancer altogether. Without
-// a reading (no meter, CloudWatch failing, start of month) the site stays in.
+// a reading for this month (no meter, just started, start of month, or
+// CloudWatch failing before the first reading) the site stays in; once there
+// is one, a failing CloudWatch leaves the last reading in force.
 func overQuota(site *model.Site, meter usageMeter) bool {
 	if site.MonthlyQuota <= 0 {
 		return false

@@ -124,10 +124,60 @@ func TestMeter(t *testing.T) {
 	}
 	api.err = nil
 	clock = clock.Add(refreshEvery)
-	if _, ok := read(m); !ok {
-		t.Fatal("want a reading once CloudWatch answers again")
+	if got, ok := read(m); !ok || got != 1050 {
+		t.Fatalf("want October's 1050 once CloudWatch answers again, got %d, %v", got, ok)
+	}
+
+	// Past the first day, an empty answer (wrong ID, dimension or region;
+	// CloudWatch does not call those errors) keeps the last reading.
+	clock = time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC)
+	api.sums["DIST1"] = []float64{2000}
+	if got, _ := read(m); got != 2050 {
+		t.Fatalf("want 2050, got %d", got)
+	}
+	api.sums["DIST2"] = nil
+	clock = clock.Add(refreshEvery)
+	if got, ok := read(m); !ok || got != 2050 {
+		t.Fatalf("an empty answer must not count as zero bytes: got %d, %v", got, ok)
+	}
+
+	// Month-to-date bytes only grow; a smaller total keeps the larger one.
+	api.sums["DIST2"] = []float64{1}
+	api.sums["DIST1"] = []float64{100}
+	clock = clock.Add(refreshEvery)
+	if got, _ := read(m); got != 2050 {
+		t.Fatalf("a smaller total must not replace a larger one: got %d", got)
+	}
+
+	// In a new month there is nothing to keep, so an empty answer past the
+	// first day leaves the month without a reading instead of a low one.
+	clock = time.Date(2026, 12, 5, 0, 0, 0, 0, time.UTC)
+	api.sums["DIST1"] = []float64{10}
+	api.sums["DIST2"] = nil
+	if got, ok := read(m); ok {
+		t.Fatalf("an empty answer must not become December's reading, got %d", got)
+	}
+
+	// On the first day an empty answer is real: nothing served yet.
+	fresh := newMeter(&fakeAPI{sums: map[string][]float64{}}, &clock)
+	clock = time.Date(2026, 11, 1, 3, 0, 0, 0, time.UTC)
+	if got, ok := read(fresh); !ok || got != 0 {
+		t.Fatalf("want 0 early on the first day, got %d, %v", got, ok)
 	}
 	if want := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC); !aws.ToTime(api.calls[len(api.calls)-1].StartTime).Equal(want) {
 		t.Errorf("new month should start at %s", want)
+	}
+}
+
+func TestDefaultUnconfigured(t *testing.T) {
+	if err := config.Init("docker"); err != nil {
+		t.Fatal(err)
+	}
+	if err := log.Init(); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("CLOUDFRONT_DISTRIBUTIONS", " , ")
+	if m := Default(); m != nil {
+		t.Fatal("no distributions configured must mean no meter, so quotas are not enforced")
 	}
 }

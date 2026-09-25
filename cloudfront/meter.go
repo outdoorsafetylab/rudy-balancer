@@ -6,6 +6,7 @@ package cloudfront
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -86,12 +87,21 @@ func (m *Meter) refresh() {
 		log.Warningf("Failed to read CloudFront usage: %s", err.Error())
 		return
 	}
+	if m.month == month(now) && bytes < m.bytes {
+		// Month-to-date bytes only grow; a smaller total means CloudWatch
+		// answered with less than before, so keep the larger reading.
+		log.Warningf("CloudFront usage went down from %d to %d; keeping %d", m.bytes, bytes, m.bytes)
+		return
+	}
 	m.month, m.bytes = month(now), bytes
 }
 
 func (m *Meter) fetch(ctx context.Context, now time.Time) (int64, error) {
 	now = now.UTC()
 	start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+	if !now.After(start) {
+		return 0, nil
+	}
 	var total float64
 	for _, id := range m.distributions {
 		out, err := m.api.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
@@ -108,6 +118,13 @@ func (m *Meter) fetch(ctx context.Context, now time.Time) (int64, error) {
 		})
 		if err != nil {
 			return 0, err
+		}
+		// A wrong distribution ID, dimension or region is not an error to
+		// CloudWatch, just an empty answer. The configured distributions
+		// serve every day, so past the first day of the month an empty
+		// answer is treated as a failure rather than as zero bytes.
+		if len(out.Datapoints) == 0 && now.Sub(start) > 24*time.Hour {
+			return 0, fmt.Errorf("no BytesDownloaded datapoints for distribution %s", id)
 		}
 		for _, p := range out.Datapoints {
 			if p.Sum != nil {
