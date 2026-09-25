@@ -122,10 +122,12 @@ func TestMeter(t *testing.T) {
 	if _, ok := read(m); ok {
 		t.Fatal("last month's reading reported for the new month")
 	}
+	// October starts below September's 1050; the new month still takes it.
 	api.err = nil
+	api.sums["DIST1"] = []float64{500}
 	clock = clock.Add(refreshEvery)
-	if got, ok := read(m); !ok || got != 1050 {
-		t.Fatalf("want October's 1050 once CloudWatch answers again, got %d, %v", got, ok)
+	if got, ok := read(m); !ok || got != 550 {
+		t.Fatalf("want October's 550 once CloudWatch answers again, got %d, %v", got, ok)
 	}
 	if want := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC); !aws.ToTime(api.calls[len(api.calls)-1].StartTime).Equal(want) {
 		t.Errorf("new month should start at %s", want)
