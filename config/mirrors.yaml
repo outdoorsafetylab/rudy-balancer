@@ -77,7 +77,10 @@ sites:
   host: d3r5lsn28erp7o.cloudfront.net
   redirectscheme: https
   weight: 2
-  monthlyQuota: 900000000000 # 1TB*0.9
+  # Stop sending downloads here once the AWS account's CloudFront has served
+  # this many bytes this UTC month (its always-free tier is 1 TB), as read
+  # from CloudWatch; see cloudfront/meter.go.
+  monthlyQuota: 900000000000
   proxyscheme: https
 apps:
 - id: hikinglogger

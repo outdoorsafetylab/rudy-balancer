@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"service/config"
+	"service/log"
 	"service/model"
 )
 
@@ -90,5 +92,40 @@ func TestExcludeLagging(t *testing.T) {
 				t.Errorf("lagging = %v, want %v", got, want)
 			}
 		})
+	}
+}
+
+type fixedMeter struct {
+	bytes int64
+	ok    bool
+}
+
+func (m fixedMeter) MonthToDate() (int64, bool) { return m.bytes, m.ok }
+
+func TestOverQuota(t *testing.T) {
+	if err := config.Init("docker"); err != nil {
+		t.Fatal(err)
+	}
+	if err := log.Init(); err != nil {
+		t.Fatal(err)
+	}
+	quota := &model.Site{Name: "OSL", MonthlyQuota: 900}
+	tests := []struct {
+		name  string
+		site  *model.Site
+		meter usageMeter
+		want  bool
+	}{
+		{"over", quota, fixedMeter{901, true}, true},
+		{"at the quota", quota, fixedMeter{900, true}, false},
+		{"under", quota, fixedMeter{10, true}, false},
+		{"no reading", quota, fixedMeter{5000, false}, false},
+		{"no meter", quota, nil, false},
+		{"no quota", &model.Site{Name: "kcwu"}, fixedMeter{5000, true}, false},
+	}
+	for _, tt := range tests {
+		if got := overQuota(tt.site, tt.meter); got != tt.want {
+			t.Errorf("%s: got %v, want %v", tt.name, got, tt.want)
+		}
 	}
 }

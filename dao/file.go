@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"service/cloudfront"
 	"service/db"
 	"service/hash"
 	"service/log"
@@ -66,38 +67,18 @@ func (dao *FileDao) GetSources(file string) ([]*model.Source, error) {
 	if err != nil {
 		return nil, err
 	}
-	oneMonthAgo := time.Now().Add(-time.Hour * 24 * 31)
-	log.Debugf("%v", oneMonthAgo)
+	var meter usageMeter
+	if m := cloudfront.Default(); m != nil {
+		meter = m
+	}
 	sources := make([]*model.Source, 0)
 	for _, site := range sites {
 		size := fileSites.Sites[site.Name]
 		if size <= 0 {
 			continue
 		}
-		if site.MonthlyQuota > 0 {
-			usage := int64(0)
-			q := db.Client().Collection(rudyMirrorSiteStats).Doc(site.Name).Collection(dailyStats).Where("Time", ">=", oneMonthAgo)
-			iter := q.Documents(dao.Context)
-			defer iter.Stop()
-			for {
-				doc, err := iter.Next()
-				if err == iterator.Done {
-					break
-				}
-				if err != nil {
-					return nil, err
-				}
-				st := &FileStat{}
-				err = doc.DataTo(st)
-				if err != nil {
-					return nil, err
-				}
-				usage += st.Size
-			}
-			if usage > site.MonthlyQuota {
-				log.Infof("Over quota: %s: quata=%d, usage=%d", site.Name, site.MonthlyQuota, usage)
-				continue
-			}
+		if overQuota(site, meter) {
+			continue
 		}
 		for _, src := range site.Sources {
 			if src.File == file {
@@ -245,4 +226,31 @@ func (dao *FileDao) DailyStats(site string, since, until time.Time) ([]*FileStat
 		res = append(res, stats)
 	}
 	return res, nil
+}
+
+// usageMeter is what overQuota reads; *cloudfront.Meter in production.
+type usageMeter interface {
+	MonthToDate() (int64, bool)
+}
+
+// overQuota reports whether a site with a MonthlyQuota has to sit out the rest
+// of the month. The quota is checked against what CloudFront actually served
+// this month (CloudWatch), not against redirect counts: one download can take
+// several redirects, and direct links bypass the balancer altogether. Without
+// a reading for this month (no meter, just started, start of month, or
+// CloudWatch failing before the first reading) the site stays in; once there
+// is one, a failing CloudWatch leaves the last reading in force.
+func overQuota(site *model.Site, meter usageMeter) bool {
+	if site.MonthlyQuota <= 0 {
+		return false
+	}
+	if meter == nil {
+		return false
+	}
+	usage, ok := meter.MonthToDate()
+	if !ok || usage <= site.MonthlyQuota {
+		return false
+	}
+	log.Infof("Over quota: %s: quota=%d, usage=%d", site.Name, site.MonthlyQuota, usage)
+	return true
 }
