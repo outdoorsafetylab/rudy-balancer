@@ -127,6 +127,9 @@ func TestMeter(t *testing.T) {
 	if got, ok := read(m); !ok || got != 1050 {
 		t.Fatalf("want October's 1050 once CloudWatch answers again, got %d, %v", got, ok)
 	}
+	if want := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC); !aws.ToTime(api.calls[len(api.calls)-1].StartTime).Equal(want) {
+		t.Errorf("new month should start at %s", want)
+	}
 
 	// Past the first day, an empty answer (wrong ID, dimension or region;
 	// CloudWatch does not call those errors) keeps the last reading.
@@ -163,9 +166,6 @@ func TestMeter(t *testing.T) {
 	clock = time.Date(2026, 11, 1, 3, 0, 0, 0, time.UTC)
 	if got, ok := read(fresh); !ok || got != 0 {
 		t.Fatalf("want 0 early on the first day, got %d, %v", got, ok)
-	}
-	if want := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC); !aws.ToTime(api.calls[len(api.calls)-1].StartTime).Equal(want) {
-		t.Errorf("new month should start at %s", want)
 	}
 }
 
