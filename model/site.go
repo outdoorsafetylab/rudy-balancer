@@ -5,6 +5,9 @@ import (
 	"strings"
 )
 
+// Site is one mirror. MonthlyQuota caps the AWS account's CloudFront bytes
+// this UTC month (cloudfront.Meter) while the site stays in rotation; 0 means
+// no cap.
 type Site struct {
 	Name           string
 	StatusPage     string    `json:"-" firestore:"-"`
