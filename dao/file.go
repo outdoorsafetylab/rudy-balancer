@@ -125,8 +125,10 @@ func (dao *FileDao) GetSources(file string) ([]*model.Source, error) {
 // excludeLagging drops sources whose copy of the file is older than the newest
 // copy among the redirectable (non-hidden, positive weight) sources. While a new release is
 // still syncing, this keeps companion files (e.g. map + style) from being
-// served by mirrors on different versions. Sources with unknown Last-Modified
-// are kept and don't count toward the newest. The source holding the newest
+// served by mirrors on different versions. The time compared is what the
+// health check recorded (model.lastModified: Last-Modified, or rclone's
+// x-amz-meta-mtime for S3-backed mirrors); sources without one are kept and
+// don't count toward the newest. The source holding the newest
 // copy is always kept, so at least one redirectable source remains.
 func excludeLagging(sources []*model.Source, modified map[string]time.Time) (kept, lagging []*model.Source) {
 	var newest time.Time

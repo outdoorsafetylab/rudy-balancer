@@ -19,6 +19,7 @@ func TestLastModified(t *testing.T) {
 		// S3 behind CloudFront: Last-Modified is the upload time.
 		{"S3 with rclone mtime", "1762919477", upload, release},
 		{"fraction cut to seconds", "1762919477.987654321", upload, release},
+		{"no rounding up", "1762919477.999999999", upload, release},
 		{"bad mtime falls back", "yesterday", upload, time.Date(2026, 9, 25, 3, 51, 38, 0, time.UTC)},
 		{"nothing", "", "", time.Time{}},
 	}

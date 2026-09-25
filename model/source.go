@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -58,8 +59,10 @@ func (s *Source) Check(client *http.Client) error {
 // mirror look a second behind.
 func lastModified(h http.Header) time.Time {
 	if v := h.Get("X-Amz-Meta-Mtime"); v != "" {
-		if f, err := strconv.ParseFloat(v, 64); err == nil && f > 0 {
-			return time.Unix(int64(f), 0).UTC()
+		// rclone writes decimal seconds; keep the whole part as text so a
+		// fraction like .999999999 cannot round up through float64.
+		if sec, err := strconv.ParseInt(strings.SplitN(v, ".", 2)[0], 10, 64); err == nil && sec > 0 {
+			return time.Unix(sec, 0).UTC()
 		}
 	}
 	t, _ := http.ParseTime(h.Get("Last-Modified"))
