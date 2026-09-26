@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 type webrootHandler struct {
@@ -16,6 +17,11 @@ type webrootHandler struct {
 func (h *webrootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := fmt.Sprintf("%s%s", h.path, r.URL.Path)
 	st, err := os.Stat(path)
+	if err == nil && st.IsDir() {
+		// A page of its own, e.g. /app/privacy.
+		path = filepath.Join(path, "index.html")
+		st, err = os.Stat(path)
+	}
 	if err != nil || st.IsDir() {
 		path = fmt.Sprintf("%s/index.html", h.path)
 	}
