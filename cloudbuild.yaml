@@ -35,3 +35,23 @@ steps:
   - --image=asia-northeast1-docker.pkg.dev/$PROJECT_ID/rudy-balancer/rudy-balancer
   - --region=$_REGION
   - --platform=managed
+# The mirror health check runs as a Cloud Run job from this same image, started
+# by Cloud Scheduler: GitHub's scheduled workflows fire hours late, and a
+# mirror that goes down or falls behind has to be noticed within minutes.
+# Only the trigger that sets _HEALTHCHECK_JOB updates it, so the job always
+# runs the code production serves. The job itself (service account, secrets,
+# `healthcheck -c docker` in place of the image's `serve` entrypoint) is
+# created once outside this file; `update` keeps all of that and swaps only
+# the image.
+- name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: bash
+  args:
+  - -c
+  - |
+    if [ -n "$_HEALTHCHECK_JOB" ]; then
+      gcloud run jobs update "$_HEALTHCHECK_JOB" \
+        --image=asia-northeast1-docker.pkg.dev/$PROJECT_ID/rudy-balancer/rudy-balancer \
+        --region=$_REGION
+    fi
+substitutions:
+  _HEALTHCHECK_JOB: ''
