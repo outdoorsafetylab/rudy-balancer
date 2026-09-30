@@ -4,7 +4,6 @@ files:
   - extra/Compartment.map.zip
   - hgtmix.zip
   - hgt90.zip
-  - legend_V1R1.pdf
   - legend_V1R3.pdf
   daily:
   - drops/MOI_OSM_Taiwan_TOPO_Rudy.map.zip
@@ -82,6 +81,11 @@ sites:
   # from CloudWatch; see cloudfront/meter.go.
   monthlyQuota: 900000000000
   proxyscheme: https
+# Files only, on Cloudflare R2, so no proxyscheme: there is no landing page.
+- name: PeaKit
+  host: rudy.peakitcdn.com
+  redirectscheme: https
+  weight: 1
 apps:
 - id: hikinglogger
   name: 山林日誌
