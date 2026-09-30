@@ -82,6 +82,11 @@ sites:
   # from CloudWatch; see cloudfront/meter.go.
   monthlyQuota: 900000000000
   proxyscheme: https
+# Files only, on Cloudflare R2, so no proxyscheme: there is no landing page.
+- name: PeaKit
+  host: rudy.peakitcdn.com
+  redirectscheme: https
+  weight: 1
 apps:
 - id: hikinglogger
   name: 山林日誌
