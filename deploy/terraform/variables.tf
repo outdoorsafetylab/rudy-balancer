@@ -13,9 +13,9 @@ variable "region" {
 }
 
 variable "healthcheck_job" {
-  description = "false until the StatusPage key has been added as a version of the statuspage-key secret (deploy/terraform/README.md): the job reads that secret, so it is declared, and scheduled, only once there is a value to read."
+  description = "false until the StatusPage key has been added as a version of the statuspage-key secret (deploy/terraform/README.md): the job reads that secret, so it is declared, and scheduled, only once there is a value to read. Turned on 2026-10-18, once version 1 was added."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "healthcheck_schedule" {
