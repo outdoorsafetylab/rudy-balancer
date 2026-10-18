@@ -1,6 +1,7 @@
-# Terraform GitOps, master side: merging a change to deploy/terraform/ applies it. One run at a
+# Terraform GitOps, master side: merging a change to deploy/terraform/ or
+# deploy/terraform-outdoorsafetylab/ applies both modules (one with nothing to do reports 0/0/0). One run at a
 # time, never cancelled (a killed apply leaves a half-applied state), and a Slack message whatever
-# the outcome. Credentials come from Workload Identity Federation (deploy/terraform/gitops.tf): no
+# the outcome. Credentials come from Workload Identity Federation (each module's gitops.tf): no
 # key. The webhook is the repo secret SLACK_WEBHOOK_URL; without it the apply still runs and the
 # notification step only warns, and with one from another Slack workspace the step fails.
 name: terraform-apply
@@ -10,6 +11,7 @@ on:
     branches: [master]
     paths:
       - deploy/terraform/**
+      - deploy/terraform-outdoorsafetylab/**
       - .github/workflows/terraform-apply.yml
 
 permissions:
@@ -22,7 +24,6 @@ concurrency:
 
 env:
   TF_IN_AUTOMATION: "true"
-  TF_DIR: deploy/terraform
 
 defaults:
   run:
@@ -30,29 +31,44 @@ defaults:
 
 jobs:
   apply:
+    name: apply (${{ matrix.dir }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      # Separate states and projects: one failing must not cancel the other's apply midway.
+      fail-fast: false
+      matrix:
+        include:
+          # rudymap: provider and SA fixed by deploy/terraform/gitops.tf; 933372650185 is the
+          # project number.
+          - dir: deploy/terraform
+            workload_identity_provider: projects/933372650185/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
+            service_account: rudy-balancer-terraform@rudymap.iam.gserviceaccount.com
+          # outdoorsafetylab, being retired (#32): fixed by deploy/terraform-outdoorsafetylab/gitops.tf;
+          # 154323041965 is the project number.
+          - dir: deploy/terraform-outdoorsafetylab
+            workload_identity_provider: projects/154323041965/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
+            service_account: rudy-balancer-terraform@outdoorsafetylab.iam.gserviceaccount.com
     steps:
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v2
         with:
-          # Same values as terraform-plan.yml.
-          workload_identity_provider: projects/154323041965/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
-          service_account: rudy-balancer-terraform@outdoorsafetylab.iam.gserviceaccount.com
+          workload_identity_provider: ${{ matrix.workload_identity_provider }}
+          service_account: ${{ matrix.service_account }}
       - uses: hashicorp/setup-terraform@v3
         with:
           # Bump here and in terraform-plan.yml together.
           terraform_version: "1.16.5"
           terraform_wrapper: false
       - name: terraform init
-        run: terraform -chdir="${TF_DIR}" init -input=false
+        run: terraform -chdir="${{ matrix.dir }}" init -input=false
       - name: terraform apply
         id: apply
         run: |
           # The runner's bash is -eo pipefail: a failed apply must still reach the lines below,
           # so the exit code is taken by hand and returned at the end.
           set +e
-          terraform -chdir="${TF_DIR}" apply -input=false -auto-approve -no-color 2>&1 | tee apply.txt
+          terraform -chdir="${{ matrix.dir }}" apply -input=false -auto-approve -no-color 2>&1 | tee apply.txt
           rc=${PIPESTATUS[0]}
           set -e
           echo "rc=${rc}" >> "$GITHUB_OUTPUT"
@@ -75,6 +91,7 @@ jobs:
           COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
           COMMIT_SHA: ${{ github.sha }}
           COMMIT_SUBJECT: ${{ github.event.head_commit.message }}
+          MODULE: ${{ matrix.dir }}
         run: |
           set -euo pipefail
           if [ -z "${SLACK_WEBHOOK_URL}" ]; then
@@ -93,10 +110,10 @@ jobs:
           # An empty rc means the apply step never ran (auth or init failed, or the job was cancelled).
           if [ "${APPLY_RC}" = "0" ]; then
             icon=":white_check_mark:"
-            headline="[rudymap] terraform apply rudy-balancer — ${APPLY_SUMMARY}"
+            headline="[rudymap] terraform apply ${MODULE} — ${APPLY_SUMMARY}"
           else
             icon=":x:"
-            headline="[rudymap] terraform apply rudy-balancer FAILED — ${APPLY_SUMMARY:-the apply step did not run; see the run}"
+            headline="[rudymap] terraform apply ${MODULE} FAILED — ${APPLY_SUMMARY:-the apply step did not run; see the run}"
           fi
           subject="$(printf '%s' "${COMMIT_SUBJECT}" | head -n 1)"
           text="${icon} ${headline}"$'\n'"<${RUN_URL}|run ${GITHUB_RUN_NUMBER}> · <${COMMIT_URL}|${COMMIT_SHA:0:7}> ${subject}"

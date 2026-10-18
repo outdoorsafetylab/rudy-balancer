@@ -4,7 +4,7 @@
 variable "project" {
   description = "The GCP project id."
   type        = string
-  default     = "outdoorsafetylab"
+  default     = "rudymap"
 }
 
 variable "region" {
@@ -12,14 +12,20 @@ variable "region" {
   default = "asia-east1"
 }
 
-variable "healthcheck_job" {
-  description = "false until the StatusPage key has been added as a version of the statuspage-key secret (deploy/terraform/README.md): the job reads that secret, so it is declared, and scheduled, only once there is a value to read. Turned on 2026-10-18, once version 1 was added."
+variable "healthcheck_image" {
+  description = "The image the health check job is created with, by digest. Empty until this project's registry holds an image (plan step 2); the job is declared only once it is set, and production deploys replace it afterwards (cloudbuild.yaml)."
+  type        = string
+  default     = ""
+}
+
+variable "healthcheck_scheduled" {
+  description = "Whether Cloud Scheduler starts the health check. Off until the cutover of rudymap.tw (plan D9): one health check runs at a time, and until then it is the outdoorsafetylab one."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "healthcheck_schedule" {
-  description = "How often Cloud Scheduler starts the health check, as cron in Asia/Taipei. A run takes about five minutes, most of it waiting on mirrors that time out."
+  description = "How often Cloud Scheduler starts the health check, as cron in Asia/Taipei."
   type        = string
   default     = "*/30 * * * *"
 }
