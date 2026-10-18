@@ -30,33 +30,10 @@ func CheckPortalSites(cfg *viper.Viper) error {
 	client := &http.Client{
 		Timeout: time.Duration(cfg.GetInt("healthcheck.timeout_sec")) * time.Second,
 	}
-	statusClient := &statuspage.Client{Client: http.DefaultClient, APIKey: apiKey}
 
-	// Get existing components
-	components, err := statusClient.ListComponents(pageID)
-	if err != nil {
-		return fmt.Errorf("failed to list components: %w", err)
-	}
-
-	componentsByName := make(map[string]*statuspage.Component)
-	for _, comp := range components {
-		componentsByName[comp.Name] = comp
-	}
-
-	// Check each portal site
+	observed := make([]statuspage.Observation, 0, len(portalConfig.Sites))
 	for _, site := range portalConfig.Sites {
 		log.Debugf("Checking portal site: %s", site.URL)
-
-		// Check if component exists, create if not
-		comp := componentsByName[site.Name]
-		if comp == nil {
-			log.Warnf("Creating component: %s", site.Name)
-			comp, err = statusClient.CreateComponent(pageID, portalConfig.Group, site.Name)
-			if err != nil {
-				log.Errorf("Failed to create component %s: %s", site.Name, err.Error())
-				continue
-			}
-		}
 
 		// Check each asset URL
 		goodResources := make([]string, 0)
@@ -108,39 +85,22 @@ func CheckPortalSites(cfg *viper.Viper) error {
 			newStatus = "operational"
 		}
 
-		// Update component status
-		log.Debugf("Updating component status: %s => %s", site.Name, newStatus)
-		err = statusClient.UpdateComponentStatus(comp, newStatus)
-		if err != nil {
-			log.Errorf("Failed to update component status for %s: %s", site.Name, err.Error())
-			continue
+		var incidentMessage string
+		if newStatus == "partial_outage" {
+			incidentMessage = fmt.Sprintf("%s is experiencing partial outage. %d/%d assets are operational.", site.Name, len(goodResources), total)
+		} else {
+			incidentMessage = fmt.Sprintf("%s is not operational.", site.Name)
 		}
-
-		// Handle incidents
-		if comp.Status == "operational" && newStatus != comp.Status {
-			var incidentMessage string
-			if newStatus == "partial_outage" {
-				incidentMessage = fmt.Sprintf("%s is experiencing partial outage. %d/%d assets are operational.", site.Name, len(goodResources), total)
-			} else {
-				incidentMessage = fmt.Sprintf("%s is not operational.", site.Name)
-			}
-			log.Warnf("Creating incident due to portal %s status change: %s", site.Name, newStatus)
-			_, err = statusClient.CreateIncident(pageID, comp.ID, incidentMessage, badResources)
-			if err != nil {
-				log.Errorf("Failed to create incident for %s: %s", site.Name, err.Error())
-				continue
-			}
-		} else if newStatus == "operational" && newStatus != comp.Status {
-			log.Warnf("Resolving incident due to portal %s is back", site.Name)
-			err = statusClient.ResolveIncidents(pageID, comp.ID)
-			if err != nil {
-				log.Errorf("Failed to resolve incidents for %s: %s", site.Name, err.Error())
-				continue
-			}
-		}
+		observed = append(observed, statuspage.Observation{
+			Component: site.Name,
+			Status:    newStatus,
+			Incident:  incidentMessage,
+			Bad:       badResources,
+		})
 	}
 
-	return nil
+	statusClient := &statuspage.Client{Client: http.DefaultClient, APIKey: apiKey}
+	return statusClient.SyncPage(pageID, portalConfig.Group, observed)
 }
 
 type portalSite struct {
