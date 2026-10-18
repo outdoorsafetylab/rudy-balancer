@@ -85,6 +85,7 @@ locals {
     "roles/resourcemanager.projectIamAdmin", # google_project_iam_member; reads the project number
     "roles/secretmanager.admin",             # the statuspage-key container and who may read it
     "roles/run.admin",                       # the health check job and who may start it
+    "roles/artifactregistry.reader",         # deploying the job reads its image; run.admin does not carry that
     "roles/cloudscheduler.admin",            # the job's schedule
   ]
 }
