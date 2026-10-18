@@ -132,8 +132,8 @@ Search Console 擁有者，等於合併 PR 就能動到網域控制權（devops 
 | 1 | D2 改名舊 root、新 root bootstrap（Director 建 state bucket＋本機 apply）：GitOps 身分、Firestore、AR、服務帳號、secret 容器、BigQuery dataset、job（關閉） | 第二次 plan 為空 | destroy 新 root（Firestore 位置除外，見 D3） |
 | 2 | `rudymap` 建 trigger（手動），部署三個服務，不掛網域；**不發下載請求**（D4） | 服務 ready、`/v1/apps` 200 | 刪服務 |
 | 3 | D4 匯入 Firestore；D5 建 sink；手動跑一次新 job | 鹽的文件與舊庫相同；`/v1/stats` 有歷史；run.app 上的下載回 302（判準見測試策略） | 重新匯入 |
-| 4 | 切 `rudy.oslab.tw`（D6） | 轉址判準同第 3 步；記錄實際中斷時間 | 改掛回舊服務；D4 反向補差額 |
-| 5 | 離峰切 `rudymap.tw`；D9 切健康檢查（前置：GitHub workflow 已移除）；穩定 24 小時定案後，D4 補差額、D5 合併歷史 | 轉址判準同上；新專案 log 與 BigQuery 有新列；窗口統計判準見測試策略 | 改掛回舊服務、健康檢查開關改回；D4 反向補差額 |
+| 4 | 切 `rudy.oslab.tw`（D6） | 轉址判準同第 3 步；記錄實際中斷時間 | 改掛回舊服務；新庫增量加回舊庫（D4） |
+| 5 | 離峰切 `rudymap.tw`；D9 切健康檢查（前置：GitHub workflow 已移除）；穩定 24 小時定案後，D4 補差額、D5 合併歷史 | 轉址判準同上；新專案 log 與 BigQuery 有新列；窗口統計判準見測試策略 | 僅限定案前：改掛回舊服務、健康檢查開關改回，新庫增量加回舊庫（D4） |
 | 6 | 季報改讀 `rudymap` | 用 2026-Q3 重算，數字與已發布的季報相同 | revert 季報 PR |
 | 7 | 觀察 7 天後刪舊（D10） | `outdoorsafetylab` 裡找不到分流器的資源 | 無（刪除不可逆，所以要等 7 天） |
 
@@ -166,3 +166,4 @@ Search Console 擁有者，等於合併 PR 就能動到網域控制權（devops 
   - D5：歷史改在最後一次以 `insertId` 去重合併，不再以複製時間切分（延遲送達的 log 會漏）。
   - D4：補差額等切換定案（穩定 24 小時）才做一次。定案前的回滾只把新庫增量加回舊庫，避免重複計算。
   - 第 1 步的步驟表拿掉 sink。
+  - （a2a r3 Low）步驟表的回滾欄標明「僅限定案前」。
