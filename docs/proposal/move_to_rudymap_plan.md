@@ -1,6 +1,6 @@
 # 分流器從 outdoorsafetylab 專案搬到 rudymap
 
-Status: r3
+Status: r4
 Issue: #32
 
 ## 背景
@@ -20,6 +20,8 @@ GSA 也已經搬走，分流器是 `outdoorsafetylab` 裡剩下最大的一塊�
 | 建置 | 三個 Cloud Build trigger、映像在 `outdoorsafetylab` 的 Artifact Registry（asia-northeast1） |
 | 健康檢查 | `deploy/terraform/`（#27、#31）：WIF 身分、`rudy-healthcheck` job 與 Scheduler、`statuspage-key` secret |
 | 其他 | CloudFront 用量計需要 AWS 金鑰；geoipd 在 `outdoorsafetylab`，另有其他 app 在用；Statuspage 與 GCP 無關 |
+
+完整盤點見文末〈附錄：盤點〉（2026-10-19）。
 
 ## 決定
 
@@ -47,12 +49,15 @@ apply 刪掉剩下的資源後移除。
 服務都在 asia-east1，現在的資料庫在大阪（asia-northeast2），每次讀寫都跨區。
 位置建立後不能改，所以這是本計畫最不可逆的一項。
 
-### D4 資料：五個 collection group 全複製，鹽要在第一個下載請求前到位
+### D4 資料：只按路徑複製分流器的資料，鹽要在第一個下載請求前到位
 
-- 用 Firestore 的匯出／匯入搬到新資料庫，指定五個 collection group：`RudyMirrorSites`、
-  `RudyMirrorFiles`、`RudyMirrorSiteStats`、`RudyClientSalt`，以及統計本身所在的子集合
-  `DailyStats`（`RudyMirrorSiteStats/{site}/DailyStats/{day}`）。指定 collection group 的匯出
-  不會帶上子集合，漏掉 `DailyStats` 就等於沒搬歷史。
+- 要搬的是 `RudyMirrorSites`、`RudyMirrorFiles`、`RudyMirrorSiteStats`、`RudyClientSalt`，
+  以及統計本身所在的子集合 `RudyMirrorSiteStats/{site}/DailyStats/{day}`。
+- **用一次性的複製程式，只讀這些路徑，不用 Firestore 的匯出／匯入。** 匯出只能指定 collection
+  group，而舊資料庫裡另一個 app 也有叫 `DailyStats` 的子集合（`Accounts/{id}/DailyStats`）。
+  用匯出會把那個 app 的資料一起帶進 `rudymap`。資料量約一萬筆文件，程式複製幾分鐘就完成，
+  補差額也用同一支程式。
+- `RudyMirrors` 不搬：那是 2022 年的舊資料，現在的程式已經不讀。
 - **匯入完成前，不對新服務發任何下載請求。** 下載會讀 `RudyMirrorFiles`（空庫回 500），也會在
   找不到本季鹽時產生新鹽並快取在 instance 裡；之後再匯入正確的鹽，已在跑的 instance 也不會換。
   缺鹽的後果是同一季的 client id 斷成兩段，季報的不重複用戶數灌水。
@@ -62,7 +67,9 @@ apply 刪掉剩下的資源後移除。
   只需把新庫自匯入以來的增量加回舊庫；舊庫沒被動過，不會重複計算。
 - `RudyMirrorSites`、`RudyMirrorFiles` 下一輪健康檢查就會重寫，照樣複製，免得新服務一開始沒有站台狀態。
 
-被否決：接受搬遷窗口的計數遺失。窗口長度要等 D6 的探測才知道，而且第 3 到 5 步可能分在不同天。
+被否決：
+- 接受搬遷窗口的計數遺失：窗口長度要等 D6 的探測才知道，而且第 3 到 5 步可能分在不同天。
+- 用 Firestore 匯出／匯入：會把另一個 app 的 `DailyStats` 帶過來（見上）。
 
 ### D5 轉址 log：歷史表複製到 `rudymap`，sink 改寫新 dataset
 
@@ -89,6 +96,16 @@ HTTPS 可能中斷幾分鐘到幾小時。各家 app 直接打 `rudymap.tw`，�
 `rudymap.tw` 用中斷較短的做法。`rudy.oslab.tw` 的 DNS 不在 Cloudflare、流量也小，直接重掛，
 並且先切它，當作正式切換的預演。
 
+**探測結果（2026-10-19）與定案：直接重掛，`rudymap.tw` 在台灣時間凌晨 3 點切。**
+
+- (a) 實測：刪除舊 mapping 後，舊站還照常服務約 5 分鐘；之後連續 TLS 失敗約 **11.5 分鐘**，
+  直到新憑證簽發並擴散完成。
+- (b) 沒有實測，理由有二。第一，中斷不會變短：Cloudflare 連到 Google 時，一樣會在新憑證簽發前
+  握手失敗。第二，會讓統計失真：服務把 `X-Forwarded-For` 的最後一跳當成用戶位址，經過代理後會變成
+  Cloudflare 機房的位址，國家統計和 client id 都會錯。
+- 時段：過去 30 天，`rubymap` 在台灣時間 3 點那一小時平均約 7 次轉址，是全天最低；
+  11.5 分鐘的中斷約影響 1 到 2 次下載。
+
 domain mapping 由維護者手動建立，不放 Terraform：Terraform 身分要能建 mapping，得成為網域的
 Search Console 擁有者，等於合併 PR 就能動到網域控制權。
 
@@ -97,6 +114,12 @@ Search Console 擁有者，等於合併 PR 就能動到網域控制權。
 - `ruby-balancer-alpha` 一起搬：它跟 master 走，留在舊專案會讓舊專案永遠清不掉。
 - 服務改用專用服務帳號，只給 Firestore 讀寫和需要的 secret。
 - 服務需要的金鑰都改用 Secret Manager 參照，值由人手動放，不進 state。
+- 服務設定照舊專案的現況重建（2026-10-19 讀回）：
+  - 三個服務：128Mi、1 vCPU、並行 80、關閉 startup CPU boost、TCP 啟動探測、ingress all、公開呼叫。
+  - 各自不同的部分照舊：`rubymap` 最多 10 個 instance、逾時 10 秒；`ruby-balancer` 最多 100 個、逾時 10 秒；
+    alpha 最多 5 個、逾時 300 秒。
+  - 環境設定也照各自現況：只有 `rubymap` 和 alpha 有 CloudFront 用量計，`ruby-balancer` 沒有，照舊不加。
+    alpha 上一個程式已經不讀的舊設定不帶過去。
 
 ### D8 geoipd 不搬
 
@@ -116,8 +139,10 @@ Search Console 擁有者，等於合併 PR 就能動到網域控制權。
 ### D10 舊資源在切換後觀察 7 天才刪
 
 7 天包含一個週末的流量高峰。要刪的清單：
-- `outdoorsafetylab` 的三個服務、三個 trigger、AR 倉庫、sink 與 dataset、四個 collection、
-  `rudymap-aws-*` 兩個 secret。
+- `outdoorsafetylab` 的三個服務、三個 trigger、AR 倉庫、sink 與 dataset、`rudymap-aws-*` 兩個 secret。
+- Firestore 只刪分流器的路徑：`RudyMirrorSites`、`RudyMirrorFiles`、`RudyMirrorSiteStats`（含其下的
+  `DailyStats`）、`RudyClientSalt`，以及停用的 `RudyMirrors`。**不可以用 collection group 刪 `DailyStats`**，
+  那會連另一個 app 的資料一起刪掉。
 - 舊 root 裡的全部資源：WIF pool、服務帳號、`statuspage-key`、job、Scheduler。
 - 舊 state bucket。
 
@@ -127,7 +152,7 @@ Search Console 擁有者，等於合併 PR 就能動到網域控制權。
 
 | 步驟 | 內容 | 驗證 | 回滾 |
 |---|---|---|---|
-| 0 | D6 探測 | 兩種做法各自的中斷秒數 | 刪掉拋棄式子網域 |
+| 0 | D6 探測（2026-10-19 完成，結果見 D6） | 直接重掛的中斷約 11.5 分鐘 | 拋棄式子網域已刪 |
 | 1 | D2 改名舊 root、新 root bootstrap（維護者建 state bucket＋本機 apply）：GitOps 身分、Firestore、AR、服務帳號、secret 容器、BigQuery dataset、job（關閉） | 第二次 plan 為空 | destroy 新 root（Firestore 位置除外，見 D3） |
 | 2 | `rudymap` 建 trigger（手動），部署三個服務，不掛網域；**不發下載請求**（D4） | 服務 ready、`/v1/apps` 200 | 刪服務 |
 | 3 | D4 匯入 Firestore；D5 建 sink；手動跑一次新 job | 鹽的文件與舊庫相同；`/v1/stats` 有歷史；run.app 上的下載回 302（判準見測試策略） | 重新匯入 |
@@ -141,6 +166,9 @@ Search Console 擁有者，等於合併 PR 就能動到網域控制權。
 這次搬的是資源和資料，不是程式碼，所以要抓的是「搬錯了」和「少搬了」：
 
 - **鹽：** 新舊資料庫本季的鹽文件逐位元相同。不同的話，同季的 client id 會斷開，而且單元測試抓不到。
+- **站台與檔案清單：** 切換前，比對新舊服務 `/v1/sites` 與 `/v1/files` 中決定分流的內容：有哪些站台與檔案、
+  每個檔案在哪些站台可用、大小與修改時間、站台狀態。檢查時間、延遲這類每輪重新量的值不比，
+  因為新舊 job 各自量測，本來就會不同。這兩份清單也是 app 下載前讀的資料。
 - **轉址：** 分流是依權重隨機挑鏡像，兩次請求本來就可能去不同地方，所以不比對單次目的地。比的是：
   新舊服務對同一個檔案列出的可用鏡像集合相同，而且對新服務多次下載的每個目的地都在這個集合裡。
 - **歷史統計：** D4、D5 都做完後，用已發布的 2026-Q3 季報當基準在新專案重算一次，只要有不同，就代表歷史漏搬（例如漏了 `DailyStats`）。
@@ -148,6 +176,32 @@ Search Console 擁有者，等於合併 PR 就能動到網域控制權。
   BigQuery 同一天的轉址列數。搬遷前先用前一週確認這兩者本來就相等，當作基準；本來就不相等的話，
   改用兩邊各自的差額互相核對。
 - **Terraform：** 每個 PR 的 plan 留言要跟 PR 描述的預期一致；bootstrap 之後的第二次 plan 必須為空。
+
+## 附錄：盤點
+
+2026-10-19 逐類列出 `outdoorsafetylab` 的資源，並搜尋本機 59 個 repo，看還有誰直接讀分流器的資料。
+
+| 類別 | 屬於分流器、要搬 | 不屬於分流器 |
+|---|---|---|
+| Cloud Run 服務 | `rubymap`、`ruby-balancer`、`ruby-balancer-alpha` | `geoipd`、`geoipd-alpha` 等其他服務 |
+| Cloud Run job／Scheduler | `rudy-healthcheck`（舊 root） | 其他 Scheduler |
+| 網域 | `rudymap.tw`、`rudy.oslab.tw` | 其他 domain mapping |
+| Firestore | 見 D4 的路徑 | `Accounts`、`users`、`ErrorReports` 等；`Accounts/*/DailyStats` 的複合索引 |
+| BigQuery／log | `rudymap_file_redirect` 與其 sink | `_Default`、`_Required` log bucket |
+| 建置 | 三個 trigger、AR `rudy-balancer` | geoipd、moidem 的 trigger；已停用的 `rudy-tiles-taiwan` trigger |
+| Bucket | `rudy-balancer-tfstate-outdoorsafetylab` | `rudymap.tw`（見下）、geoip 資料等 |
+| Secret | `rudymap-aws-*`、舊 root 的 `statuspage-key` | 其他 |
+| 監控 | 無（舊專案沒有分流器的告警或 uptime check） | |
+
+- **直接讀分流器資料的：** 只有季報（第 6 步）。app 與 Locus 等工具都經由網域呼叫，網域不變就不受影響。
+- **`rudymap.tw` bucket：** 7.3 GiB 的公開地圖檔，最後更新於 2022-08，過去 30 天沒有對外流量，
+  也不在鏡像設定裡。它不是分流器的執行依賴，不在本計畫搬遷；要刪或保留另外決定。
+- **用 Cloud Asset Inventory 核對（2026-10-19，1,440 筆資源）：** 沒有找到新的分流器依賴。
+  手動列表沒列到的只有以下幾項，都與分流器無關：
+  - Firebase 的 BigQuery 匯出與 API key（其他 app）。
+  - 一個 2019 年留下、沒有任何端點也沒接上負載平衡器的 NEG `rudymaps`，可在第 7 步一併刪除。
+  - 分流器的網頁沒有用到任何 Google API key。
+- **看不到的：** 如果有 BI 報表直接讀那個 BigQuery dataset，從專案裡看不出來。
 
 ## 變更歷程
 
@@ -166,3 +220,12 @@ Search Console 擁有者，等於合併 PR 就能動到網域控制權。
   - D4：補差額等切換定案（穩定 24 小時）才做一次。定案前的回滾只把新庫增量加回舊庫，避免重複計算。
   - 第 1 步的步驟表拿掉 sink。
   - （a2a r3 Low）步驟表的回滾欄標明「僅限定案前」。
+- r4（2026-10-19）：完整盤點與探測結果。
+  - D4：改用路徑限定的複製程式，因為另一個 app 也有 `DailyStats`；`RudyMirrors` 不搬。
+  - D6：記下探測結果，定案為直接重掛、凌晨 3 點。
+  - D7：列出要重建的服務設定。
+  - D10：Firestore 只按路徑刪除。
+  - 測試策略：新增 `/v1/sites`、`/v1/files` 比對。
+  - 新增〈附錄：盤點〉。
+  - a2a r4（1 Medium）：`/v1/sites`、`/v1/files` 只比對決定分流的內容，排除延遲、檢查時間等每輪量測值。
+  - 附錄加上 Cloud Asset Inventory 的核對結果。
