@@ -1,14 +1,13 @@
-# Images live in asia-northeast1, not asia-east1 and not gcr.io.
+# The registry's region is _AR_REGION. In the outdoorsafetylab project it is
+# asia-northeast1: both `asia.gcr.io` and that project's asia-east1 Artifact
+# Registry location stopped accepting writes (503) and blob reads (500) in
+# August 2026, after the project was deleted and restored. See
+# outdoorsafetylab/outdoorsafetylab#47. The rudymap project's triggers set
+# asia-east1, next to the services (#32). `gcr.io/cloud-builders/*` below is
+# Google's own public builder image and is unrelated to either registry.
 #
-# Both `asia.gcr.io` and the asia-east1 Artifact Registry location stopped
-# accepting writes (503) and blob reads (500) for this project in August 2026,
-# after the project was deleted and restored. Metadata still reads fine, so a
-# tag listing looks healthy while nothing can actually be pushed or pulled.
-# asia-northeast1 is unaffected. See outdoorsafetylab/outdoorsafetylab#47.
-#
-# The Cloud Run services stay in asia-east1 ($_REGION); only the registry
-# moved, so they pull cross-region. `gcr.io/cloud-builders/*` below is Google's
-# own public builder image and is unrelated to the broken repositories.
+# The rudymap triggers run as their own service account (_SERVICE_ACCOUNT is
+# the services' runtime account), which is why logs go to Cloud Logging only.
 #
 steps:
 - name: 'gcr.io/cloud-builders/docker'
@@ -19,22 +18,31 @@ steps:
   - '--build-arg'
   - 'GIT_TAG=$TAG_NAME'
   - '-t'
-  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/rudy-balancer/rudy-balancer'
+  - '${_AR_REGION}-docker.pkg.dev/$PROJECT_ID/rudy-balancer/rudy-balancer'
   - '-f'
   - 'Dockerfile'
   - '.'
 - name: 'gcr.io/cloud-builders/docker'
   args: 
   - push
-  - asia-northeast1-docker.pkg.dev/$PROJECT_ID/rudy-balancer/rudy-balancer
+  - ${_AR_REGION}-docker.pkg.dev/$PROJECT_ID/rudy-balancer/rudy-balancer
+# Only the image changes here; everything else about a service is kept from
+# its current revision. A trigger that sets _SERVICE_ACCOUNT also names the
+# runtime account, so the first deploy of a new service does not run as the
+# project's default compute account.
 - name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: bash
   args:
-  - run
-  - deploy
-  - $_SERVICE_NAME
-  - --image=asia-northeast1-docker.pkg.dev/$PROJECT_ID/rudy-balancer/rudy-balancer
-  - --region=$_REGION
-  - --platform=managed
+  - -c
+  - |
+    set -euo pipefail
+    extra=""
+    if [ -n "$_SERVICE_ACCOUNT" ]; then
+      extra="--service-account=$_SERVICE_ACCOUNT"
+    fi
+    gcloud run deploy $_SERVICE_NAME \
+      --image=${_AR_REGION}-docker.pkg.dev/$PROJECT_ID/rudy-balancer/rudy-balancer \
+      --region=$_REGION --platform=managed $$extra
 # The mirror health check runs as a Cloud Run job from this same image,
 # started by Cloud Scheduler: GitHub's scheduled workflows fire hours late,
 # and a mirror that goes down or falls behind has to be noticed sooner. Only
@@ -59,3 +67,7 @@ steps:
     gcloud run jobs update "$_HEALTHCHECK_JOB" --image="$$image" --region=$_REGION
 substitutions:
   _HEALTHCHECK_JOB: ''
+  _AR_REGION: asia-northeast1
+  _SERVICE_ACCOUNT: ''
+options:
+  logging: CLOUD_LOGGING_ONLY
