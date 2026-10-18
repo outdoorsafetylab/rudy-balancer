@@ -36,6 +36,10 @@ var healthcheckCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		err = healthcheck.RequireStatusPage(config.Get())
+		if err != nil {
+			return err
+		}
 		err = db.Init()
 		if err != nil {
 			return err

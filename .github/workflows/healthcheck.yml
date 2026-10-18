@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 15
     env:
       MIRRORS_FILE: config/mirrors.yaml
-      STATUSPAGE_KEY: ${{ secrets.STATUSPAGE_API_KEY }}
+      STATUSPAGE_KEY: ${{ secrets.STATUSPAGE_KEY }}
       GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-sa.json
     steps:
       - name: Checkout
