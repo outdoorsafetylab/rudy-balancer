@@ -1,0 +1,109 @@
+# Terraform GitOps, master side: merging a change to deploy/terraform/ applies it. One run at a
+# time, never cancelled (a killed apply leaves a half-applied state), and a Slack message whatever
+# the outcome. Credentials come from Workload Identity Federation (deploy/terraform/gitops.tf): no
+# key. The webhook is the repo secret SLACK_WEBHOOK_URL; without it the apply still runs and the
+# notification step only warns, and with one from another Slack workspace the step fails.
+name: terraform-apply
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - deploy/terraform/**
+      - .github/workflows/terraform-apply.yml
+
+permissions:
+  contents: read
+  id-token: write # the OIDC token that WIF exchanges for the service account
+
+concurrency:
+  group: terraform-apply
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_DIR: deploy/terraform
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          # Same values as terraform-plan.yml.
+          workload_identity_provider: projects/154323041965/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
+          service_account: rudy-balancer-terraform@outdoorsafetylab.iam.gserviceaccount.com
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          # Bump here and in terraform-plan.yml together.
+          terraform_version: "1.16.5"
+          terraform_wrapper: false
+      - name: terraform init
+        run: terraform -chdir="${TF_DIR}" init -input=false
+      - name: terraform apply
+        id: apply
+        run: |
+          # The runner's bash is -eo pipefail: a failed apply must still reach the lines below,
+          # so the exit code is taken by hand and returned at the end.
+          set +e
+          terraform -chdir="${TF_DIR}" apply -input=false -auto-approve -no-color 2>&1 | tee apply.txt
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "rc=${rc}" >> "$GITHUB_OUTPUT"
+          summary="$(grep -E '^Apply complete!' apply.txt | tail -1 || true)"
+          if [ "${rc}" != "0" ]; then
+            summary="Apply failed (exit ${rc})."
+          fi
+          echo "summary=${summary}" >> "$GITHUB_OUTPUT"
+          exit "${rc}"
+      - name: notify Slack
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          # The ubiris workspace. A webhook from another workspace posts with a 200 and nobody
+          # sees it, so the URL's workspace is checked (its first path segment is not secret).
+          SLACK_TEAM: T0C9S0YJNQG
+          APPLY_RC: ${{ steps.apply.outputs.rc }}
+          APPLY_SUMMARY: ${{ steps.apply.outputs.summary }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_SUBJECT: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SLACK_WEBHOOK_URL}" ]; then
+            echo "::warning::SLACK_WEBHOOK_URL is not set; the apply ran but nobody was told"
+            exit 0
+          fi
+          re='^https://hooks\.slack\.com/services/(T[A-Z0-9]+)/B[A-Z0-9]+/[A-Za-z0-9]+$'
+          if ! [[ "${SLACK_WEBHOOK_URL}" =~ ${re} ]]; then
+            echo "::error::SLACK_WEBHOOK_URL is not a Slack incoming webhook URL"
+            exit 1
+          fi
+          if [ "${BASH_REMATCH[1]}" != "${SLACK_TEAM}" ]; then
+            echo "::error::SLACK_WEBHOOK_URL posts into workspace ${BASH_REMATCH[1]}, not ${SLACK_TEAM}"
+            exit 1
+          fi
+          # An empty rc means the apply step never ran (auth or init failed, or the job was cancelled).
+          if [ "${APPLY_RC}" = "0" ]; then
+            icon=":white_check_mark:"
+            headline="[rudymap] terraform apply rudy-balancer — ${APPLY_SUMMARY}"
+          else
+            icon=":x:"
+            headline="[rudymap] terraform apply rudy-balancer FAILED — ${APPLY_SUMMARY:-the apply step did not run; see the run}"
+          fi
+          subject="$(printf '%s' "${COMMIT_SUBJECT}" | head -n 1)"
+          text="${icon} ${headline}"$'\n'"<${RUN_URL}|run ${GITHUB_RUN_NUMBER}> · <${COMMIT_URL}|${COMMIT_SHA:0:7}> ${subject}"
+          if [ "${APPLY_RC}" != "0" ] && [ -s apply.txt ]; then
+            # The error is at the end of the output; keep the tail, within Slack's message size.
+            excerpt="$(tail -n 40 apply.txt | tail -c 2500)"
+            text="${text}"$'\n'"\`\`\`"$'\n'"${excerpt}"$'\n'"\`\`\`"
+          fi
+          jq -n --arg text "${text}" '{text: $text}' > payload.json
+          curl -fsS -X POST -H 'Content-type: application/json' --data @payload.json "${SLACK_WEBHOOK_URL}"

@@ -35,3 +35,27 @@ steps:
   - --image=asia-northeast1-docker.pkg.dev/$PROJECT_ID/rudy-balancer/rudy-balancer
   - --region=$_REGION
   - --platform=managed
+# The mirror health check runs as a Cloud Run job from this same image,
+# started by Cloud Scheduler: GitHub's scheduled workflows fire hours late,
+# and a mirror that goes down or falls behind has to be noticed sooner. Only
+# the trigger that sets _HEALTHCHECK_JOB updates it. The job is declared in
+# deploy/terraform/healthcheck.tf, which leaves its image to this step.
+#
+# The image is pinned to the digest the service just deployed, not to the
+# tag: every build, the alpha one on master included, pushes the same untagged
+# image, so the tag can point at code production does not serve.
+- name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: bash
+  args:
+  - -c
+  - |
+    set -euo pipefail
+    if [ -z "$_HEALTHCHECK_JOB" ]; then
+      exit 0
+    fi
+    revision="$$(gcloud run services describe $_SERVICE_NAME --region=$_REGION --format='value(status.latestReadyRevisionName)')"
+    image="$$(gcloud run revisions describe "$$revision" --region=$_REGION --format='value(status.imageDigest)')"
+    echo "Updating job $_HEALTHCHECK_JOB to $$image ($$revision)"
+    gcloud run jobs update "$_HEALTHCHECK_JOB" --image="$$image" --region=$_REGION
+substitutions:
+  _HEALTHCHECK_JOB: ''
