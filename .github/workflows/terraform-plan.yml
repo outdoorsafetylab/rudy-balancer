@@ -1,7 +1,9 @@
-# Terraform GitOps, pull-request side: a PR that touches deploy/terraform/ gets a `terraform plan`
-# posted as one PR comment, rewritten in place on every push. This workflow only plans; the apply
+# Terraform GitOps, pull-request side: a PR that touches deploy/terraform/ or
+# deploy/terraform-outdoorsafetylab/ gets a `terraform plan` of each module posted as one PR comment
+# per module, rewritten in place on every push. Both modules are planned whichever one changed: the
+# other's comment reads "No changes", which is the evidence that the PR leaves it alone. This workflow only plans; the apply
 # is terraform-apply.yml, on master. Credentials come from Workload Identity Federation
-# (deploy/terraform/gitops.tf): no key. A pull request from a fork gets no OIDC token, so it cannot
+# (each module's gitops.tf): no key. A pull request from a fork gets no OIDC token, so it cannot
 # plan; a maintainer pushes its branch here instead.
 name: terraform-plan
 
@@ -9,6 +11,7 @@ on:
   pull_request:
     paths:
       - deploy/terraform/**
+      - deploy/terraform-outdoorsafetylab/**
       - .github/workflows/terraform-plan.yml
 
 permissions:
@@ -22,7 +25,6 @@ concurrency:
 
 env:
   TF_IN_AUTOMATION: "true"
-  TF_DIR: deploy/terraform
 
 defaults:
   run:
@@ -30,8 +32,25 @@ defaults:
 
 jobs:
   plan:
+    name: plan (${{ matrix.dir }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # rudymap: provider and SA fixed by deploy/terraform/gitops.tf; 933372650185 is the
+          # project number.
+          - dir: deploy/terraform
+            marker: "<!-- terraform-plan -->"
+            workload_identity_provider: projects/933372650185/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
+            service_account: rudy-balancer-terraform@rudymap.iam.gserviceaccount.com
+          # outdoorsafetylab, being retired (#32): fixed by deploy/terraform-outdoorsafetylab/gitops.tf;
+          # 154323041965 is the project number.
+          - dir: deploy/terraform-outdoorsafetylab
+            marker: "<!-- terraform-plan deploy/terraform-outdoorsafetylab -->"
+            workload_identity_provider: projects/154323041965/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
+            service_account: rudy-balancer-terraform@outdoorsafetylab.iam.gserviceaccount.com
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
@@ -41,14 +60,13 @@ jobs:
           terraform_version: "1.16.5"
           terraform_wrapper: false
       - name: terraform fmt
-        run: terraform -chdir="${TF_DIR}" fmt -check -diff
+        run: terraform -chdir="${{ matrix.dir }}" fmt -check -diff
       - uses: google-github-actions/auth@v2
         with:
-          # Both fixed by deploy/terraform/gitops.tf; 154323041965 is the project number.
-          workload_identity_provider: projects/154323041965/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
-          service_account: rudy-balancer-terraform@outdoorsafetylab.iam.gserviceaccount.com
+          workload_identity_provider: ${{ matrix.workload_identity_provider }}
+          service_account: ${{ matrix.service_account }}
       - name: terraform init
-        run: terraform -chdir="${TF_DIR}" init -input=false
+        run: terraform -chdir="${{ matrix.dir }}" init -input=false
       - name: terraform plan
         id: plan
         run: |
@@ -56,7 +74,7 @@ jobs:
           # -lock=false: a plan on a PR must never hold the state lock against an apply on master.
           # -detailed-exitcode: 0 no changes, 2 changes, 1 error; the comment step reads all three.
           set +e
-          terraform -chdir="${TF_DIR}" plan -input=false -lock=false -no-color -detailed-exitcode > plan.txt 2>&1
+          terraform -chdir="${{ matrix.dir }}" plan -input=false -lock=false -no-color -detailed-exitcode > plan.txt 2>&1
           rc=$?
           set -e
           echo "rc=${rc}" >> "$GITHUB_OUTPUT"
@@ -71,7 +89,8 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const marker = '<!-- terraform-plan -->';
+            const marker = ${{ toJSON(matrix.marker) }};
+            const dir = ${{ toJSON(matrix.dir) }};
             const rc = '${{ steps.plan.outputs.rc }}';
             const summary = ${{ toJSON(steps.plan.outputs.summary) }};
             const icon = rc === '0' ? '✅' : rc === '2' ? '📝' : '❌';
@@ -84,7 +103,7 @@ jobs:
             const sha = context.payload.pull_request.head.sha.slice(0, 7);
             const body = [
               marker,
-              `### ${icon} terraform plan \`deploy/terraform\` — ${summary}`,
+              `### ${icon} terraform plan \`${dir}\` — ${summary}`,
               '',
               `commit \`${sha}\` · [run](${run})`,
               '',

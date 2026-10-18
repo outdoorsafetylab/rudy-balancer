@@ -1,8 +1,7 @@
 # Terraform GitOps: GitHub Actions plans on pull requests and applies on master, authenticating
 # through Workload Identity Federation, so there is no key file. The pool, the provider, the
 # service account and its roles are themselves declared here: the first apply is run by hand
-# (deploy/terraform/README.md), and from then on the workflow applies everything, this file
-# included.
+# (README.md), and from then on the workflow applies everything, this file included.
 
 locals {
   github_repository = "outdoorsafetylab/rudy-balancer"
@@ -26,11 +25,8 @@ resource "google_project_service" "gitops" {
 
 # .github/workflows/terraform-*.yml carry the provider's resource name and the SA's email as
 # constants:
-#   projects/154323041965/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
-#   rudy-balancer-terraform@outdoorsafetylab.iam.gserviceaccount.com
-#
-# The pool is not called "github": a pool by that name was deleted on 2026-10-18, and a deleted
-# pool's id stays taken for 30 days.
+#   projects/933372650185/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
+#   rudy-balancer-terraform@rudymap.iam.gserviceaccount.com
 resource "google_iam_workload_identity_pool" "github" {
   workload_identity_pool_id = "github-actions"
   display_name              = "GitHub Actions"
@@ -83,9 +79,11 @@ locals {
     "roles/iam.serviceAccountAdmin",         # the service accounts and their IAM
     "roles/iam.workloadIdentityPoolAdmin",   # this file's pool and provider
     "roles/resourcemanager.projectIamAdmin", # google_project_iam_member; reads the project number
-    "roles/secretmanager.admin",             # the statuspage-key container and who may read it
+    "roles/datastore.owner",                 # the Firestore database
+    "roles/artifactregistry.admin",          # the image repository and who may push to it
+    "roles/bigquery.dataOwner",              # the redirect log dataset
+    "roles/secretmanager.admin",             # the secret containers and who may read them
     "roles/run.admin",                       # the health check job and who may start it
-    "roles/artifactregistry.reader",         # deploying the job reads its image; run.admin does not carry that
     "roles/cloudscheduler.admin",            # the job's schedule
   ]
 }
