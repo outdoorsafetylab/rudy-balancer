@@ -6,20 +6,20 @@ Issue: #32
 ## 背景
 
 魯地圖分流器目前跑在 `outdoorsafetylab` 這個 GCP 專案。`rudy-tiles` 已經在 `rudymap` 專案，
-GSA 也已經搬走（globalspatialatlas#120），分流器是 `outdoorsafetylab` 裡剩下最大的一塊公益服務。
-Director 2026-10-19 決定搬到 `rudymap`，先寫計畫。
+GSA 也已經搬走，分流器是 `outdoorsafetylab` 裡剩下最大的一塊公益服務。
+維護者 2026-10-19 決定搬到 `rudymap`，先寫計畫。
 
 2026-10-19 盤點到的依賴：
 
 | 項目 | 現況 |
 |---|---|
-| 服務 | `rubymap`（`rudymap.tw`，主力，一天上千次轉址）、`ruby-balancer`（`rudy.oslab.tw`，備援入口）、`ruby-balancer-alpha`（master 合併即部署）；都以預設 compute 服務帳號執行 |
+| 服務 | `rubymap`（`rudymap.tw`，主力，一天上千次轉址）、`ruby-balancer`（`rudy.oslab.tw`，備援入口）、`ruby-balancer-alpha`（master 合併即部署） |
 | 網域 | 兩個都是 Cloud Run domain mapping。`rudymap.tw` 的 DNS 在 Cloudflare，沒開代理；`oslab.tw` 的 DNS 在 GoDaddy |
 | Firestore | `outdoorsafetylab` 預設資料庫（asia-northeast2）的 `RudyMirrorSites`、`RudyMirrorFiles`、`RudyMirrorSiteStats`（含每日 `DailyStats`，2022 年起）、`RudyClientSalt`（本季的 client id 鹽） |
 | 轉址 log | log sink → BigQuery `outdoorsafetylab.rudymap_file_redirect`（asia-east1，約 34 萬列、196 MB）；季報（`outdoorsafetylab/outdoorsafetylab` 的 `tools/rudymap-report/`）讀這份 dataset 和 `DailyStats` |
 | 建置 | 三個 Cloud Build trigger、映像在 `outdoorsafetylab` 的 Artifact Registry（asia-northeast1） |
 | 健康檢查 | `deploy/terraform/`（#27、#31）：WIF 身分、`rudy-healthcheck` job 與 Scheduler、`statuspage-key` secret |
-| 其他 | CloudFront 用量計的 AWS 金鑰是一般環境變數；geoipd 在 `outdoorsafetylab`、公開、另有其他 app 在用；Statuspage 與 GCP 無關 |
+| 其他 | CloudFront 用量計需要 AWS 金鑰；geoipd 在 `outdoorsafetylab`，另有其他 app 在用；Statuspage 與 GCP 無關 |
 
 ## 決定
 
@@ -89,19 +89,18 @@ HTTPS 可能中斷幾分鐘到幾小時。各家 app 直接打 `rudymap.tw`，�
 `rudymap.tw` 用中斷較短的做法。`rudy.oslab.tw` 的 DNS 不在 Cloudflare、流量也小，直接重掛，
 並且先切它，當作正式切換的預演。
 
-domain mapping 由 Director 手動建立，不放 Terraform：Terraform 身分要能建 mapping，得成為網域的
-Search Console 擁有者，等於合併 PR 就能動到網域控制權（devops 10-12 的意見）。
+domain mapping 由維護者手動建立，不放 Terraform：Terraform 身分要能建 mapping，得成為網域的
+Search Console 擁有者，等於合併 PR 就能動到網域控制權。
 
 ### D7 三個服務都搬，改用專用服務帳號，金鑰改放 Secret Manager
 
 - `ruby-balancer-alpha` 一起搬：它跟 master 走，留在舊專案會讓舊專案永遠清不掉。
-- 服務改用專用服務帳號，只給 Firestore 讀寫和需要的 secret。現在用的預設 compute 帳號在
-  `outdoorsafetylab` 有 `datastore.owner` 等多餘權限。
-- AWS 金鑰和 Statuspage key 改用 Secret Manager 參照，值由人手動放，不進 state。
+- 服務改用專用服務帳號，只給 Firestore 讀寫和需要的 secret。
+- 服務需要的金鑰都改用 Secret Manager 參照，值由人手動放，不進 state。
 
 ### D8 geoipd 不搬
 
-它是公開服務，沒有驗證，另有其他 app 在用。分流器跨專案呼叫它的網址就好，不需要額外授權。
+另有其他 app 在用，不屬於分流器。分流器照舊呼叫它的網址。
 
 ### D9 健康檢查：一次只開一邊
 
@@ -129,7 +128,7 @@ Search Console 擁有者，等於合併 PR 就能動到網域控制權（devops 
 | 步驟 | 內容 | 驗證 | 回滾 |
 |---|---|---|---|
 | 0 | D6 探測 | 兩種做法各自的中斷秒數 | 刪掉拋棄式子網域 |
-| 1 | D2 改名舊 root、新 root bootstrap（Director 建 state bucket＋本機 apply）：GitOps 身分、Firestore、AR、服務帳號、secret 容器、BigQuery dataset、job（關閉） | 第二次 plan 為空 | destroy 新 root（Firestore 位置除外，見 D3） |
+| 1 | D2 改名舊 root、新 root bootstrap（維護者建 state bucket＋本機 apply）：GitOps 身分、Firestore、AR、服務帳號、secret 容器、BigQuery dataset、job（關閉） | 第二次 plan 為空 | destroy 新 root（Firestore 位置除外，見 D3） |
 | 2 | `rudymap` 建 trigger（手動），部署三個服務，不掛網域；**不發下載請求**（D4） | 服務 ready、`/v1/apps` 200 | 刪服務 |
 | 3 | D4 匯入 Firestore；D5 建 sink；手動跑一次新 job | 鹽的文件與舊庫相同；`/v1/stats` 有歷史；run.app 上的下載回 302（判準見測試策略） | 重新匯入 |
 | 4 | 切 `rudy.oslab.tw`（D6） | 轉址判準同第 3 步；記錄實際中斷時間 | 改掛回舊服務；新庫增量加回舊庫（D4） |
