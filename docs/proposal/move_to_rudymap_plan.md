@@ -1,6 +1,6 @@
 # 分流器從 outdoorsafetylab 專案搬到 rudymap
 
-Status: r1
+Status: r2
 Issue: #32
 
 ## 背景
@@ -47,21 +47,28 @@ apply 刪掉剩下的資源後移除。
 服務都在 asia-east1，現在的資料庫在大阪（asia-northeast2），每次讀寫都跨區。
 位置建立後不能改，所以這是本計畫最不可逆的一項。
 
-### D4 資料：四個 collection 全複製，鹽要在接流量前到位
+### D4 資料：五個 collection group 全複製，鹽要在第一個下載請求前到位
 
-- 用 Firestore 的匯出／匯入，指定這四個 collection，搬到新資料庫。
-- `RudyClientSalt` 必須在新服務接到第一個真實請求前就位。缺少的話，新服務會為本季產生新鹽，
-  同一季的 client id 會斷成兩段，季報的不重複用戶數會灌水。
-- 切換那幾天，兩邊資料庫都在累加 `DailyStats`。切換完成後補一次差額：
-  以匯出時的值為基準，把舊庫之後的增量加到新庫，只處理切換當天和前一天。
+- 用 Firestore 的匯出／匯入搬到新資料庫，指定五個 collection group：`RudyMirrorSites`、
+  `RudyMirrorFiles`、`RudyMirrorSiteStats`、`RudyClientSalt`，以及統計本身所在的子集合
+  `DailyStats`（`RudyMirrorSiteStats/{site}/DailyStats/{day}`）。指定 collection group 的匯出
+  不會帶上子集合，漏掉 `DailyStats` 就等於沒搬歷史。
+- **匯入完成前，不對新服務發任何下載請求。** 下載會讀 `RudyMirrorFiles`（空庫回 500），也會在
+  找不到本季鹽時產生新鹽並快取在 instance 裡；之後再匯入正確的鹽，已在跑的 instance 也不會換。
+  缺鹽的後果是同一季的 client id 斷成兩段，季報的不重複用戶數灌水。
+- 搬遷期間兩邊資料庫都在累加 `DailyStats`（以 UTC 分日）。差額涵蓋**從匯出那天起，到舊服務不再
+  收到轉址為止的每一天**：新庫的值加上「舊庫最終值減匯入時的值」。若在新服務接過流量後回滾，
+  反方向做同一件事，把新庫的增量加回舊庫。
 - `RudyMirrorSites`、`RudyMirrorFiles` 下一輪健康檢查就會重寫，照樣複製，免得新服務一開始沒有站台狀態。
 
-被否決：接受切換窗口的計數遺失。窗口長度要等 D6 的探測才知道，可能長達數小時。
+被否決：接受搬遷窗口的計數遺失。窗口長度要等 D6 的探測才知道，而且第 3 到 5 步可能分在不同天。
 
 ### D5 轉址 log：歷史表複製到 `rudymap`，sink 改寫新 dataset
 
-- 在 `rudymap` 建同名 dataset（asia-east1，同區可以直接複製表）。先把歷史表複製過去，再建新 sink 寫入。
-- 切換窗口兩邊都會有 log，最後把舊 dataset 在窗口內的列併進新表。
+- 在 `rudymap` 建同名 dataset（asia-east1，同區可以直接複製表）。**先複製歷史表，複製完才建 sink**，
+  sink 因此放在第 3 步、不在第 1 步，新 log 不會跟歷史複製搶同一張表。第 2 步部署後的驗證流量沒有
+  sink 收，那只是測試請求，不影響季報。
+- 搬遷期間舊服務的 log 仍寫舊 dataset。舊服務不再收到轉址後，把舊表中晚於複製時間點的列併進新表。
 - 季報改讀 `rudymap`，包括 BigQuery 和 Firestore 兩處，這是 `outdoorsafetylab/outdoorsafetylab` 的一個 PR。
 
 被否決：新專案的 sink 跨專案寫回舊 dataset。這樣歷史不用搬，但分流器又依賴回 `outdoorsafetylab`，等於沒搬完。
@@ -99,7 +106,11 @@ Search Console 擁有者，等於合併 PR 就能動到網域控制權（devops 
 新專案的 job 和 Scheduler 先建好但不排程。切換 `rudymap.tw` 時，新的開、舊的停（兩個 root 各改一個開關，
 放在同一個 PR）。這樣不會兩邊同時寫 Statuspage：兩邊對同一個鏡像若看到不同結果，狀態會來回跳動。
 
-新服務接流量前，手動跑一次新 job，刷新新資料庫的站台狀態。
+**前置條件：GitHub 的排程 workflow（`.github/workflows/healthcheck.yml`）在第 5 步之前已經移除**，
+連同它用的 `GCP_SA_KEY`。它也寫舊 Firestore 和同一個 Statuspage；留著的話，「一次只開一邊」不成立，
+清理後還會把舊 collection 重新寫出來。這原本就排在 #27 之後的收尾裡。
+
+匯入完成後、新服務接流量前，手動跑一次新 job，刷新新資料庫的站台狀態。
 
 ### D10 舊資源在切換後觀察 7 天才刪
 
@@ -117,10 +128,10 @@ Search Console 擁有者，等於合併 PR 就能動到網域控制權（devops 
 |---|---|---|---|
 | 0 | D6 探測 | 兩種做法各自的中斷秒數 | 刪掉拋棄式子網域 |
 | 1 | D2 改名舊 root、新 root bootstrap（Director 建 state bucket＋本機 apply）：GitOps 身分、Firestore、AR、服務帳號、secret 容器、BigQuery dataset 與 sink、job（關閉） | 第二次 plan 為空 | destroy 新 root（Firestore 位置除外，見 D3） |
-| 2 | `rudymap` 建 trigger（手動），部署三個服務，不掛網域 | run.app 網址回 302、`/v1/apps` 200 | 刪服務 |
-| 3 | D4 複製 Firestore、D5 複製歷史表 | run.app 上 `/v1/stats` 有歷史；鹽的文件與舊庫相同 | 重新匯入 |
-| 4 | 切 `rudy.oslab.tw`（D6） | 302 指向的鏡像與舊服務相同；記錄實際中斷時間 | 改掛回舊服務 |
-| 5 | 離峰切 `rudymap.tw`；D9 切健康檢查；D4、D5 補差額 | 同上，加上新專案 log 與 BigQuery 有新列 | 改掛回舊服務、健康檢查開關改回 |
+| 2 | `rudymap` 建 trigger（手動），部署三個服務，不掛網域；**不發下載請求**（D4） | 服務 ready、`/v1/apps` 200 | 刪服務 |
+| 3 | D4 匯入 Firestore；D5 複製歷史表後建 sink；手動跑一次新 job | 鹽的文件與舊庫相同；`/v1/stats` 有歷史；run.app 上的下載回 302（判準見測試策略） | 重新匯入 |
+| 4 | 切 `rudy.oslab.tw`（D6） | 轉址判準同第 3 步；記錄實際中斷時間 | 改掛回舊服務；D4 反向補差額 |
+| 5 | 離峰切 `rudymap.tw`；D9 切健康檢查（前置：GitHub workflow 已移除）；舊服務不再收到轉址後，D4、D5 補差額 | 轉址判準同上；新專案 log 與 BigQuery 有新列；窗口統計判準見測試策略 | 改掛回舊服務、健康檢查開關改回；D4 反向補差額 |
 | 6 | 季報改讀 `rudymap` | 用 2026-Q3 重算，數字與已發布的季報相同 | revert 季報 PR |
 | 7 | 觀察 7 天後刪舊（D10） | `outdoorsafetylab` 裡找不到分流器的資源 | 無（刪除不可逆，所以要等 7 天） |
 
@@ -129,10 +140,23 @@ Search Console 擁有者，等於合併 PR 就能動到網域控制權（devops 
 這次搬的是資源和資料，不是程式碼，所以要抓的是「搬錯了」和「少搬了」：
 
 - **鹽：** 新舊資料庫本季的鹽文件逐位元相同。不同的話，同季的 client id 會斷開，而且單元測試抓不到。
-- **轉址：** 同一個檔案從新舊服務各要一次，302 的目的地要相同，否則就是站台狀態或設定沒搬對。
-- **統計：** 用已發布的 2026-Q3 季報當基準重算一次，只要有不同，就代表歷史或差額漏了。
+- **轉址：** 分流是依權重隨機挑鏡像，兩次請求本來就可能去不同地方，所以不比對單次目的地。比的是：
+  新舊服務對同一個檔案列出的可用鏡像集合相同，而且對新服務多次下載的每個目的地都在這個集合裡。
+- **歷史統計：** 用已發布的 2026-Q3 季報當基準重算一次，只要有不同，就代表歷史漏搬（例如漏了 `DailyStats`）。
+- **搬遷窗口的統計：** Q3 重算看不到 10 月的窗口。窗口內每個 UTC 日，新庫 `DailyStats` 的總次數要等於
+  BigQuery 同一天的轉址列數。搬遷前先用前一週確認這兩者本來就相等，當作基準；本來就不相等的話，
+  改用兩邊各自的差額互相核對。
 - **Terraform：** 每個 PR 的 plan 留言要跟 PR 描述的預期一致；bootstrap 之後的第二次 plan 必須為空。
 
 ## 變更歷程
 
 - r1（2026-10-19）：初版。
+- r2（2026-10-19）：a2a r1（1 High、5 Medium）。D4：
+  - 改為五個 collection group，補上子集合 `DailyStats`。
+  - 匯入前不發下載請求，避免新鹽被快取。
+  - 差額改為涵蓋匯出起到舊服務停止收轉址的每一天，並補上回滾時的反向做法。
+
+  其他：
+  - D5：先複製歷史表才建 sink，sink 移到第 3 步。
+  - D9：GitHub 排程 workflow 移除改為第 5 步的前置條件。
+  - 測試策略：轉址不比單次目的地，改比可用鏡像集合；新增搬遷窗口的統計核對。
