@@ -147,22 +147,6 @@ func (c *Client) CreateIncident(pageID, componentID, name string, affectedSource
 	return incident, nil
 }
 
-func (c *Client) ResolveIncidents(pageID, componentID string) error {
-	incidents, err := c.listUnresolvedIncidents(pageID)
-	if err != nil {
-		return err
-	}
-	for _, i := range incidents {
-		if len(i.Components) > 0 && i.Components[0].ID == componentID {
-			err = c.updateIncidentStatus(i, "resolved")
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func (c *Client) AddDataPoint(pageID, metricID string, data *DataPoint) error {
 	return c.request("POST", fmt.Sprintf("/v1/pages/%s/metrics/%s/data", pageID, metricID), &struct {
 		Data dataPoint `json:"data"`
