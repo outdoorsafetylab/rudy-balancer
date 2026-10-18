@@ -81,10 +81,14 @@ func (c *Client) CreateComponent(pageID, groupId, name string) (*Component, erro
 		GroupID   string `json:"group_id"`
 		Name      string `json:"name"`
 		StartDate string `json:"start_date"`
+		// Showcase shows the uptime bars. The API defaults it to false, which left
+		// a component created here with a status but no uptime history on the page.
+		Showcase bool `json:"showcase"`
 	}{
 		GroupID:   groupId,
 		Name:      name,
 		StartDate: time.Now().Add(-time.Hour * 24).Format("2006-01-02"),
+		Showcase:  true,
 	}
 	comp := &Component{}
 	err := c.request("POST", fmt.Sprintf("/v1/pages/%s/components", pageID), &struct {
@@ -141,22 +145,6 @@ func (c *Client) CreateIncident(pageID, componentID, name string, affectedSource
 		return nil, err
 	}
 	return incident, nil
-}
-
-func (c *Client) ResolveIncidents(pageID, componentID string) error {
-	incidents, err := c.listUnresolvedIncidents(pageID)
-	if err != nil {
-		return err
-	}
-	for _, i := range incidents {
-		if len(i.Components) > 0 && i.Components[0].ID == componentID {
-			err = c.updateIncidentStatus(i, "resolved")
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 func (c *Client) AddDataPoint(pageID, metricID string, data *DataPoint) error {

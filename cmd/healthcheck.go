@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"service/config"
 	"service/db"
 	"service/healthcheck"
@@ -36,6 +37,10 @@ var healthcheckCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		err = healthcheck.RequireStatusPage(config.Get())
+		if err != nil {
+			return err
+		}
 		err = db.Init()
 		if err != nil {
 			return err
@@ -49,13 +54,16 @@ var healthcheckCmd = &cobra.Command{
 		runPortals := !healthcheckOptions.portals && !healthcheckOptions.mirrors || healthcheckOptions.portals
 		runMirrors := !healthcheckOptions.portals && !healthcheckOptions.mirrors || healthcheckOptions.mirrors
 
+		// A failure in one part does not skip the other.
+		var errs []error
+
 		// Part 1: Portal Sites Health Check
 		if runPortals {
 			log.Debugf("Starting portal sites health check")
-			err = healthcheck.CheckPortalSites(cfg)
+			err := healthcheck.CheckPortalSites(cfg)
 			if err != nil {
 				log.Errorf("Portal sites health check failed: %s", err.Error())
-				return err
+				errs = append(errs, err)
 			}
 		} else {
 			log.Debugf("Skipping portal sites health check")
@@ -64,15 +72,15 @@ var healthcheckCmd = &cobra.Command{
 		// Part 2: Mirror Sites Health Check
 		if runMirrors {
 			log.Debugf("Starting mirror sites health check")
-			err = healthcheck.CheckMirrorSites(cfg, ctx)
+			err := healthcheck.CheckMirrorSites(cfg, ctx)
 			if err != nil {
 				log.Errorf("Mirror sites health check failed: %s", err.Error())
-				return err
+				errs = append(errs, err)
 			}
 		} else {
 			log.Debugf("Skipping mirror sites health check")
 		}
-		return nil
+		return errors.Join(errs...)
 	},
 }
 
