@@ -1,0 +1,110 @@
+# Terraform GitOps, pull-request side: a PR that touches deploy/terraform/ gets a `terraform plan`
+# posted as one PR comment, rewritten in place on every push. This workflow only plans; the apply
+# is terraform-apply.yml, on master. Credentials come from Workload Identity Federation
+# (deploy/terraform/gitops.tf): no key. A pull request from a fork gets no OIDC token, so it cannot
+# plan; a maintainer pushes its branch here instead.
+name: terraform-plan
+
+on:
+  pull_request:
+    paths:
+      - deploy/terraform/**
+      - .github/workflows/terraform-plan.yml
+
+permissions:
+  contents: read
+  id-token: write # the OIDC token that WIF exchanges for the service account
+  pull-requests: write # the plan comment
+
+concurrency:
+  group: terraform-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_DIR: deploy/terraform
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          # Must be at least the version that last wrote the state: an older Terraform refuses a
+          # newer state snapshot. Bump here and in terraform-apply.yml together.
+          terraform_version: "1.16.5"
+          terraform_wrapper: false
+      - name: terraform fmt
+        run: terraform -chdir="${TF_DIR}" fmt -check -diff
+      - uses: google-github-actions/auth@v2
+        with:
+          # Both fixed by deploy/terraform/gitops.tf; 154323041965 is the project number.
+          workload_identity_provider: projects/154323041965/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
+          service_account: rudy-balancer-terraform@outdoorsafetylab.iam.gserviceaccount.com
+      - name: terraform init
+        run: terraform -chdir="${TF_DIR}" init -input=false
+      - name: terraform plan
+        id: plan
+        run: |
+          # The runner's bash is -e: the exit code is the result here, so take it by hand.
+          # -lock=false: a plan on a PR must never hold the state lock against an apply on master.
+          # -detailed-exitcode: 0 no changes, 2 changes, 1 error; the comment step reads all three.
+          set +e
+          terraform -chdir="${TF_DIR}" plan -input=false -lock=false -no-color -detailed-exitcode > plan.txt 2>&1
+          rc=$?
+          set -e
+          echo "rc=${rc}" >> "$GITHUB_OUTPUT"
+          case "${rc}" in
+            0) echo "summary=No changes." >> "$GITHUB_OUTPUT" ;;
+            2) echo "summary=$(grep -E '^Plan: ' plan.txt | tail -1)" >> "$GITHUB_OUTPUT" ;;
+            *) echo "summary=Plan failed (exit ${rc})." >> "$GITHUB_OUTPUT" ;;
+          esac
+          cat plan.txt
+      - name: post or update the plan comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- terraform-plan -->';
+            const rc = '${{ steps.plan.outputs.rc }}';
+            const summary = ${{ toJSON(steps.plan.outputs.summary) }};
+            const icon = rc === '0' ? '✅' : rc === '2' ? '📝' : '❌';
+            let out = fs.readFileSync('plan.txt', 'utf8').trimEnd();
+            const limit = 60000; // a comment body caps at 65536 characters
+            if (out.length > limit) {
+              out = '…(truncated; the run has the whole output)\n' + out.slice(-limit);
+            }
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const sha = context.payload.pull_request.head.sha.slice(0, 7);
+            const body = [
+              marker,
+              `### ${icon} terraform plan \`deploy/terraform\` — ${summary}`,
+              '',
+              `commit \`${sha}\` · [run](${run})`,
+              '',
+              '<details><summary>output</summary>',
+              '',
+              '```text',
+              out,
+              '```',
+              '',
+              '</details>',
+            ].join('\n');
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo, issue_number: context.issue.number, per_page: 100,
+            });
+            const mine = comments.find((c) => c.body && c.body.startsWith(marker));
+            if (mine) {
+              await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
+            } else {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
+            }
+      - name: fail the check when the plan failed
+        if: steps.plan.outputs.rc != '0' && steps.plan.outputs.rc != '2'
+        run: exit 1
