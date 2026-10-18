@@ -46,6 +46,3 @@ broken; after such an apply, the next plan comment must read *No changes*.
    gcloud builds triggers update github rudymap --project=outdoorsafetylab --region=global \
      --update-substitutions=_HEALTHCHECK_JOB=rudy-healthcheck
    ```
-
-Once the job has run on schedule, a follow-up removes `.github/workflows/healthcheck.yml` and the
-`GCP_SA_KEY` key it uses.
