@@ -88,6 +88,11 @@ func (c *Client) sync(comp *Component, o Observation, open []*Incident) error {
 	case status == "operational":
 		var errs []error
 		for _, i := range open {
+			// An incident covering other components too is left for a person:
+			// this component recovering says nothing about the others.
+			if len(i.Components) != 1 {
+				continue
+			}
 			log.Warnf("Resolving incident: %s is back", o.Component)
 			err := c.updateIncidentStatus(i, "resolved")
 			if err != nil {

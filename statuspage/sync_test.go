@@ -75,8 +75,9 @@ func component(status string) string {
 }
 
 const (
-	noIncident   = `[]`
-	openIncident = `[{"id":"i","page_id":"p","components":[{"id":"c"}]}]`
+	noIncident     = `[]`
+	openIncident   = `[{"id":"i","page_id":"p","components":[{"id":"c"}]}]`
+	sharedIncident = `[{"id":"i","page_id":"p","components":[{"id":"c"},{"id":"other"}]}]`
 )
 
 func observe(status string) []Observation {
@@ -117,6 +118,10 @@ func TestSyncPage(t *testing.T) {
 		{"recovery after one failed run opens nothing", "degraded_performance", noIncident, "operational",
 			[]string{list, unresolve, status("operational")}},
 		{"a healthy component is not written", "operational", noIncident, "operational",
+			[]string{list, unresolve}},
+		{"a shared incident is not resolved by one component", "major_outage", sharedIncident, "operational",
+			[]string{list, unresolve, status("operational")}},
+		{"a shared incident covers an outage", "major_outage", sharedIncident, "major_outage",
 			[]string{list, unresolve}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
