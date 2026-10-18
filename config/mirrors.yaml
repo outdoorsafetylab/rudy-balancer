@@ -52,6 +52,10 @@ files:
   - Taiwan_moi_zh_camp.gmap.zip
   - Taiwan_moi_zh_camp3D.gmap.zip
 sites:
+- name: Rex
+  host: rudy.basecamp.tw
+  redirectscheme: https
+  weight: 6
 - name: kcwu
   statuspage: KC Wu
   firestore: KC Wu
