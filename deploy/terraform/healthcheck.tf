@@ -1,7 +1,6 @@
 # The mirror health check (`rudy-balancer healthcheck -c docker`) as a Cloud Run job started by
-# Cloud Scheduler. It replaces the scheduled GitHub workflow, which GitHub runs hours late; that
-# workflow stays until this job has run on schedule, and a follow-up removes it along with the
-# GCP_SA_KEY key file it needs.
+# Cloud Scheduler. It replaced a scheduled GitHub workflow, which GitHub ran hours late and which
+# needed a key file.
 #
 # What the job runs is the deploy's: cloudbuild.yaml swaps its image for the digest production
 # just deployed, on the trigger that sets _HEALTHCHECK_JOB. Everything else about the job is here.
@@ -113,10 +112,9 @@ resource "google_cloud_scheduler_job" "healthcheck" {
   schedule  = var.healthcheck_schedule
   time_zone = "Asia/Taipei"
 
-  # A missed start is made up by the next one; retrying would only stack runs.
-  retry_config {
-    retry_count = 0
-  }
+  # No retry_config: a missed start is made up by the next one, and zero retries is the default.
+  # Declaring retry_count = 0 left the plan showing a change forever, because the API stores an
+  # all-zero retry config as absent.
 
   http_target {
     http_method = "POST"
