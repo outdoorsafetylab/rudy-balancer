@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -62,10 +63,17 @@ func TestIncrements(t *testing.T) {
 }
 
 func TestDeltaRejectsMalformedSince(t *testing.T) {
-	done := filepath.Join(t.TempDir(), "done.json")
+	dir := t.TempDir()
+	done := filepath.Join(dir, "done.json")
+	// A readable snapshot, so the only thing wrong is -since.
+	snap := filepath.Join(dir, "snapshot.json")
+	if err := os.WriteFile(snap, []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	for _, since := range []string{"2026-10-9", "20261019", "2026/10/19", ""} {
-		if err := runDelta(context.Background(), nil, nil, "snapshot.json", since, done); err == nil {
-			t.Errorf("runDelta accepted -since %q", since)
+		err := runDelta(context.Background(), nil, nil, snap, since, done)
+		if err == nil || !strings.Contains(err.Error(), "-since") {
+			t.Errorf("runDelta(-since %q) = %v, want the -since format error", since, err)
 		}
 	}
 	if _, err := os.Stat(done); err == nil {
