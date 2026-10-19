@@ -30,12 +30,40 @@ resource "google_firestore_database" "default" {
   depends_on              = [google_project_service.balancer]
 }
 
-# Plan D5: the log sink that fills it comes in step 3; the old project's history is merged in once,
-# at the end.
+# Plan D5: the old project's history is merged in once, at the end.
 resource "google_bigquery_dataset" "redirects" {
   dataset_id = "rudymap_file_redirect"
   location   = var.region
   depends_on = [google_project_service.balancer]
+}
+
+# Every redirect a service logs, into the dataset the quarterly report reads; the same filter and
+# partitioning as the old project's sink, so the tables line up. No unique_writer_identity: in the
+# sink's own project the provider reads it back as true and every plan would show a change.
+resource "google_logging_project_sink" "redirects" {
+  name        = "rudymap-file-redirect"
+  destination = "bigquery.googleapis.com/projects/${var.project}/datasets/${google_bigquery_dataset.redirects.dataset_id}"
+  filter      = <<-EOT
+    resource.type = "cloud_run_revision"
+    resource.labels.service_name = "rubymap" OR resource.labels.service_name = "ruby-balancer" OR resource.labels.service_name = "ruby-balancer-alpha"
+    resource.labels.location = "asia-east1"
+    jsonPayload.message =~ "^Redirecting"
+    jsonPayload.File != ""
+  EOT
+
+  bigquery_options {
+    use_partitioned_tables = true
+  }
+
+  # The apply that adds logging.configWriter to this module's own identity is the one that first
+  # creates the sink.
+  depends_on = [google_project_iam_member.terraform]
+}
+
+resource "google_bigquery_dataset_iam_member" "redirects_sink" {
+  dataset_id = google_bigquery_dataset.redirects.dataset_id
+  role       = "roles/bigquery.dataEditor"
+  member     = google_logging_project_sink.redirects.writer_identity
 }
 
 # ---------------------------------------------------------------- images
