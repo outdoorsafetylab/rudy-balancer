@@ -61,6 +61,18 @@ func TestIncrements(t *testing.T) {
 	}
 }
 
+func TestDeltaRejectsMalformedSince(t *testing.T) {
+	done := filepath.Join(t.TempDir(), "done.json")
+	for _, since := range []string{"2026-10-9", "20261019", "2026/10/19", ""} {
+		if err := runDelta(context.Background(), nil, nil, "snapshot.json", since, done); err == nil {
+			t.Errorf("runDelta accepted -since %q", since)
+		}
+	}
+	if _, err := os.Stat(done); err == nil {
+		t.Error("a rejected delta still recorded itself as done")
+	}
+}
+
 // TestAgainstEmulator runs copy, verify, a rollback-style refusal and delta
 // against the Firestore emulator, two projects in one emulator. It is
 // skipped unless FIRESTORE_EMULATOR_HOST is set.
@@ -100,6 +112,23 @@ func TestAgainstEmulator(t *testing.T) {
 	}
 	if err := runVerify(ctx, src, dst); err != nil {
 		t.Fatalf("verify after copy: %v", err)
+	}
+	// Independently of docs(), which copy and verify share: every seeded
+	// document is in the destination with its contents, the salt's bytes
+	// included.
+	for path, want := range map[string]map[string]interface{}{
+		"RudyMirrorSites/KC Wu":                           {"LastCheck": day},
+		"RudyMirrorFiles/abc":                             {"File": "x.zip", "Sites": map[string]interface{}{"KC Wu": int64(5)}},
+		"RudyClientSalt/Current":                          {"Quarter": "2026Q4", "Salt": []byte{1, 2, 3}},
+		"RudyMirrorSiteStats/KC Wu/DailyStats/2026-10-19": {"Time": day, "Count": int64(4), "Size": int64(40)},
+	} {
+		d, err := dst.Doc(path).Get(ctx)
+		if err != nil {
+			t.Fatalf("%s not copied: %v", path, err)
+		}
+		if got := d.Data(); !reflect.DeepEqual(got, want) {
+			t.Errorf("%s = %v, want %v", path, got, want)
+		}
 	}
 	if d, err := dst.Doc("Accounts/someone/DailyStats/2026-10-19").Get(ctx); err == nil && d.Exists() {
 		t.Error("copied another app's DailyStats")

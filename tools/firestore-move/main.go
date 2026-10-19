@@ -29,6 +29,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	"google.golang.org/api/iterator"
@@ -279,6 +280,11 @@ func runVerify(ctx context.Context, src, dst *firestore.Client) error {
 }
 
 func runDelta(ctx context.Context, src, dst *firestore.Client, snapshot, since, done string) error {
+	// Days compare as strings, so a malformed -since ("2026-10-9") would skip
+	// days silently and still mark the one delta as done.
+	if _, err := time.Parse("2006-01-02", since); err != nil {
+		return fmt.Errorf("-since %q is not YYYY-MM-DD", since)
+	}
 	if _, err := os.Stat(done); err == nil {
 		return fmt.Errorf("%s exists: a delta has already been applied", done)
 	}
