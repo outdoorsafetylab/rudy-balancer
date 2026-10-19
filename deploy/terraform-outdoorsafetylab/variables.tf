@@ -18,6 +18,12 @@ variable "healthcheck_job" {
   default     = true
 }
 
+variable "healthcheck_scheduled" {
+  description = "Whether Cloud Scheduler starts this project's health check. Turned off at the cutover of rudymap.tw (#32 plan D9), in the same change that turns rudymap's on: one health check runs at a time. The job itself stays, for a rollback, until the module is emptied."
+  type        = bool
+  default     = false
+}
+
 variable "healthcheck_schedule" {
   description = "How often Cloud Scheduler starts the health check, as cron in Asia/Taipei. A run takes about five minutes, most of it waiting on mirrors that time out."
   type        = string
