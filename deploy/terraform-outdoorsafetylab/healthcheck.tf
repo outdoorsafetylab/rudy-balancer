@@ -106,7 +106,7 @@ resource "google_cloud_run_v2_job_iam_member" "healthcheck_runs_itself" {
 # Starting a job is a call to the Cloud Run Admin API, which takes an OAuth access token, not the
 # ID token a call to a service of ours would; neither puts a secret in the job resource.
 resource "google_cloud_scheduler_job" "healthcheck" {
-  count     = var.healthcheck_job ? 1 : 0
+  count     = var.healthcheck_job && var.healthcheck_scheduled ? 1 : 0
   name      = "rudy-healthcheck"
   region    = var.region
   schedule  = var.healthcheck_schedule

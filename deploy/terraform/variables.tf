@@ -20,9 +20,9 @@ variable "healthcheck_image" {
 }
 
 variable "healthcheck_scheduled" {
-  description = "Whether Cloud Scheduler starts the health check. Off until the cutover of rudymap.tw (plan D9): one health check runs at a time, and until then it is the outdoorsafetylab one."
+  description = "Whether Cloud Scheduler starts the health check. Off until the cutover of rudymap.tw (plan D9): one health check runs at a time, and until then it is the outdoorsafetylab one. Turned on at the cutover, in the same change that turns the outdoorsafetylab one off."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "healthcheck_schedule" {
