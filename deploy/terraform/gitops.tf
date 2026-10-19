@@ -81,7 +81,8 @@ locals {
     "roles/resourcemanager.projectIamAdmin", # google_project_iam_member; reads the project number
     "roles/datastore.owner",                 # the Firestore database
     "roles/artifactregistry.admin",          # the image repository and who may push to it
-    "roles/bigquery.dataOwner",              # the redirect log dataset
+    "roles/bigquery.dataOwner",              # the redirect log dataset and who may write to it
+    "roles/logging.configWriter",            # the log sink that fills it
     "roles/secretmanager.admin",             # the secret containers and who may read them
     "roles/run.admin",                       # the health check job and who may start it
     "roles/cloudscheduler.admin",            # the job's schedule
