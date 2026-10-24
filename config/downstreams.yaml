@@ -1,0 +1,39 @@
+# 下游登記：使用魯地圖檔案（rudymap.tw）或圖磚（tiles.rudymap.tw）的 app 與網站。
+#
+# 這份檔案讓我們認得出流量來自哪個產品，用在使用報告裡，出問題時也找得到開發者。
+# 登記不是使用的前提，也不會改變分流結果。
+#
+# 登記方式：開一個 pull request，在 downstreams 底下加一筆。
+#
+#   id          小寫英數字與 -，在這份檔案裡不重複。報告用它當代號。
+#   name        產品名稱。
+#   developer   開發者或公司名稱（可省略）。
+#   url         產品頁或聯絡網址（https），我們需要時可以找到你。
+#   useragents  app 送出的 User-Agent 開頭，例如 MyHikingApp/。
+#               請用你自己的產品名稱，不要用 okhttp/、Dalvik/、Dart/ 這類函式庫或系統預設值。
+#   referers    網站的主機名稱，例如 www.example.com，不含 https:// 與路徑。只比對完全相同的主機名稱，
+#               子網域不算在內；有多個主機名稱就分開列。
+#
+# useragents 與 referers 至少要有一項。User-Agent 的建議格式是 AppName/版本 (+聯絡網址)。
+# `go test ./downstream/` 會檢查這份檔案的格式。
+downstreams:
+- id: gts
+  name: 綠野遊蹤
+  url: https://play.google.com/store/apps/details?id=com.mountain.tracks
+  useragents:
+  - Green Tracks
+- id: wadi
+  name: 蛙弟
+  url: https://play.google.com/store/apps/details?id=tw.div.balawu.wadi
+  useragents:
+  - wadi/
+- id: locus
+  name: Locus Map
+  url: https://play.google.com/store/apps/details?id=menion.android.locus
+  useragents:
+  - Locus Map
+- id: carto
+  name: Cartograph Maps
+  url: https://play.google.com/store/apps/details?id=eu.cartograph3
+  useragents:
+  - cartograph
