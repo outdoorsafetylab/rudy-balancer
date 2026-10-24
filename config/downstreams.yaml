@@ -9,7 +9,8 @@
 #   name         產品名稱。
 #   developer    開發者或公司名稱（可省略）。
 #   url          產品頁或聯絡網址（https），我們需要時可以找到你。
-#   email        聯絡信箱（可省略）。這份檔案是公開的，請填你願意公開的信箱。
+#   email        聯絡信箱（可省略，但強烈建議填寫）。rudymap.tw 本身出問題時，這是我們唯一能通知你的方式。
+#                這份檔案是公開的，請填你願意公開的信箱。
 #   user_agents  app 送出的 User-Agent 開頭，例如 MyHikingApp/。
 #                請用你自己的產品名稱，不要用 okhttp/、Dalvik/、Dart/ 這類函式庫或系統預設值。
 #   referers     網站的主機名稱，例如 www.example.com，不含 https:// 與路徑。只比對完全相同的主機名稱，
