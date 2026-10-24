@@ -16,8 +16,8 @@
 #                - 請用你自己的產品名稱，不要用 okhttp/、Dalvik/、Dart/ 這類函式庫或系統預設值。
 #                - 不可與已登記的開頭重疊（其中一個是另一個的開頭也不行），同一產品內也一樣：
 #                  較短的那個已經涵蓋較長的。
-#   referers     網站的主機名稱，例如 www.example.com，小寫，不含 https:// 與路徑。至少兩段，每段最多 63 個字元，
-#                全長最多 253 個字元；中文網域請寫成 punycode（xn--…）。
+#   referers     網站的主機名稱，例如 www.example.com，小寫，不含 https:// 與路徑。
+#                要是完整網域，不能只寫 localhost 或 IP 位址；中文網域請寫成 punycode（xn--…）。
 #                只比對完全相同的主機名稱，子網域不算在內；有多個主機名稱就分開列。
 #                每個主機名稱只能登記在一個產品下。
 #
@@ -44,3 +44,10 @@ downstreams:
   url: https://play.google.com/store/apps/details?id=eu.cartograph3
   user_agents:
   - cartograph
+- id: gpx
+  name: 航跡管理器
+  developer: Outdoor Safety Lab
+  url: https://gpx.oslab.tw/
+  referers:
+  - gpx.oslab.tw
+  - gpxtoolkit.outdoorsafetylab.org
