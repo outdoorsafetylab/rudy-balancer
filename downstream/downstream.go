@@ -6,7 +6,10 @@
 package downstream
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"net/mail"
 	"net/url"
 	"os"
@@ -31,8 +34,10 @@ type registry struct {
 }
 
 var (
-	idPattern   = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
-	hostPattern = regexp.MustCompile(`^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$`)
+	idPattern    = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+	labelPattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
+	// A top-level domain is letters, or punycode for an internationalised one.
+	tldPattern = regexp.MustCompile(`^([a-z]{2,63}|xn--[a-z0-9-]{1,59})$`)
 )
 
 // Prefixes that libraries and platforms send by default. Many unrelated apps
@@ -59,15 +64,22 @@ var genericUserAgents = []string{
 const minUserAgentLen = 4
 
 // Load reads and checks the registry at path. Unknown keys are errors, so a
-// misspelt field fails instead of being dropped.
+// misspelt field fails instead of being dropped, and so is a second YAML
+// document, which would otherwise be skipped unchecked.
 func Load(path string) ([]*Downstream, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
+	dec := yaml.NewDecoder(bytes.NewReader(data))
+	dec.SetStrict(true)
 	var r registry
-	if err := yaml.UnmarshalStrict(data, &r); err != nil {
+	if err := dec.Decode(&r); err != nil {
 		return nil, err
+	}
+	var extra interface{}
+	if err := dec.Decode(&extra); !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("only one YAML document is allowed")
 	}
 	if err := check(r.Downstreams); err != nil {
 		return nil, err
@@ -93,7 +105,7 @@ func check(list []*Downstream) error {
 		if strings.TrimSpace(d.Name) == "" {
 			return fmt.Errorf("%s: name is required", d.ID)
 		}
-		if u, err := url.Parse(d.URL); err != nil || u.Scheme != "https" || u.Host == "" {
+		if u, err := url.Parse(d.URL); err != nil || u.Scheme != "https" || u.Hostname() == "" {
 			return fmt.Errorf("%s: url %q must be an https URL", d.ID, d.URL)
 		}
 		// A bare address only: a display name ("Name <a@b>") would not be
@@ -120,7 +132,7 @@ func check(list []*Downstream) error {
 			agents[ua] = d.ID
 		}
 		for _, host := range d.Referers {
-			if !hostPattern.MatchString(host) {
+			if !validHost(host) {
 				return fmt.Errorf("%s: referer %q must be a lower-case host name, without scheme or path", d.ID, host)
 			}
 			if owner, ok := hosts[host]; ok {
@@ -132,7 +144,31 @@ func check(list []*Downstream) error {
 	return nil
 }
 
+// validHost accepts a lower-case DNS host name of at least two labels.
+func validHost(host string) bool {
+	if len(host) > 253 {
+		return false
+	}
+	labels := strings.Split(host, ".")
+	if len(labels) < 2 || !tldPattern.MatchString(labels[len(labels)-1]) {
+		return false
+	}
+	for _, label := range labels {
+		if !labelPattern.MatchString(label) {
+			return false
+		}
+	}
+	return true
+}
+
 func checkUserAgent(ua string) error {
+	// Printable ASCII only: a header value cannot carry control characters,
+	// and every product token we have seen is ASCII.
+	for _, c := range ua {
+		if c < 0x20 || c > 0x7e {
+			return fmt.Errorf("user agent %q must be printable ASCII", ua)
+		}
+	}
 	if ua != strings.TrimSpace(ua) {
 		return fmt.Errorf("user agent %q has leading or trailing spaces", ua)
 	}

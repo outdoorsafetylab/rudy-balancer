@@ -40,6 +40,17 @@ func TestLoadRejects(t *testing.T) {
 		{"referer with scheme", entry("a", "", "https://a.example"), "host name"},
 		{"referer with path", entry("a", "", "a.example/map"), "host name"},
 		{"upper-case referer", entry("a", "", "A.example"), "host name"},
+		{"second document", entry("a", "AppA/", "") + "---\ndownstreams:\n- id: b\n  bogus: 1\n", "one YAML document"},
+		{"empty entry", "downstreams:\n-\n", "empty"},
+		{"url without host", "downstreams:\n- id: a\n  name: A\n  url: https://:443/\n  user_agents:\n  - AppA/\n", "https"},
+		{"control character", entry("a", "AppA/\\ninvalid", ""), "printable ASCII"},
+		{"non-ASCII agent", entry("a", "登山App/", ""), "printable ASCII"},
+		{"mixed-case generic agent", entry("a", "OkHttp/4", ""), "library or platform default"},
+		{"same agent twice", entry("a", "AppA/", "") + entryItem("b", "AppA/", ""), "overlaps"},
+		{"agent inside an earlier one", entry("a", "HikerPro/", "") + entryItem("b", "Hiker", ""), "overlaps"},
+		{"single-label referer", entry("a", "", "localhost"), "host name"},
+		{"numeric tld", entry("a", "", "a.example.123"), "host name"},
+		{"label over 63", entry("a", "", strings.Repeat("a", 64)+".example"), "host name"},
 		{"duplicate referer", entry("a", "", "a.example") + entryItem("b", "", "a.example"), "already registered"},
 	}
 	for _, c := range cases {
@@ -52,12 +63,13 @@ func TestLoadRejects(t *testing.T) {
 
 func TestLoadAccepts(t *testing.T) {
 	yaml := entry("a", "AppA/", "") + entryItem("b", "", "www.b.example") + entryItem("c", "AppC/", "c.example") +
+		entryItem("e", "", "map.example.xn--kpry57d") +
 		"- id: d\n  name: D\n  url: https://d.example\n  email: dev@d.example\n  user_agents:\n  - AppD/\n"
 	list, err := Load(write(t, yaml))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(list) != 4 || list[3].Email != "dev@d.example" || list[2].Referers[0] != "c.example" || list[0].UserAgents[0] != "AppA/" {
+	if len(list) != 5 || list[4].Email != "dev@d.example" || list[2].Referers[0] != "c.example" || list[0].UserAgents[0] != "AppA/" {
 		t.Errorf("loaded %+v", list)
 	}
 }
