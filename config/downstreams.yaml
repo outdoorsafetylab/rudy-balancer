@@ -44,7 +44,7 @@ downstreams:
   url: https://play.google.com/store/apps/details?id=eu.cartograph3
   user_agents:
   - cartograph
-- id: gpx
+- id: gpxhub
   name: 航跡管理器
   developer: Outdoor Safety Lab
   url: https://gpx.oslab.tw/
