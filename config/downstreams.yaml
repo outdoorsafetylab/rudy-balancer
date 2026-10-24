@@ -1,0 +1,46 @@
+# 下游登記：使用魯地圖檔案（rudymap.tw）或圖磚（tiles.rudymap.tw）的 app 與網站。
+#
+# 這份檔案讓我們認得出流量來自哪個產品，用在使用報告裡，出問題時也找得到開發者。
+# 登記不是使用的前提，也不會改變分流結果。
+#
+# 登記方式：開一個 pull request，在 downstreams 底下加一筆。
+#
+#   id           小寫英數字，可用單一的 - 連接（不可開頭、結尾或連續），在這份檔案裡不重複。報告用它當代號。
+#   name         產品名稱。
+#   developer    開發者或公司名稱（可省略）。
+#   url          產品頁或聯絡網址（https），我們需要時可以找到你。
+#   email        聯絡信箱（可省略，但強烈建議填寫）。rudymap.tw 本身出問題時，這是我們唯一能通知你的方式。
+#                只填信箱本身，例如 dev@example.com。這份檔案是公開的，請填你願意公開的信箱。
+#   user_agents  app 送出的 User-Agent 開頭，例如 MyHikingApp/。
+#                - 至少 4 個字元，只能用可列印的 ASCII，前後不可有空白。
+#                - 請用你自己的產品名稱，不要用 okhttp/、Dalvik/、Dart/ 這類函式庫或系統預設值。
+#                - 不可與已登記的開頭重疊（其中一個是另一個的開頭也不行），同一產品內也一樣：
+#                  較短的那個已經涵蓋較長的。
+#   referers     網站的主機名稱，例如 www.example.com，小寫，不含 https:// 與路徑。至少兩段，每段最多 63 個字元，
+#                全長最多 253 個字元；中文網域請寫成 punycode（xn--…）。
+#                只比對完全相同的主機名稱，子網域不算在內；有多個主機名稱就分開列。
+#                每個主機名稱只能登記在一個產品下。
+#
+# user_agents 與 referers 至少要有一項。User-Agent 的建議格式是 AppName/版本 (+聯絡網址)。
+# `go test ./downstream/` 會檢查這份檔案的格式。
+downstreams:
+- id: gts
+  name: 綠野遊蹤
+  url: https://play.google.com/store/apps/details?id=com.mountain.tracks
+  user_agents:
+  - Green Tracks
+- id: wadi
+  name: 蛙弟
+  url: https://play.google.com/store/apps/details?id=tw.div.balawu.wadi
+  user_agents:
+  - wadi/
+- id: locus
+  name: Locus Map
+  url: https://play.google.com/store/apps/details?id=menion.android.locus
+  user_agents:
+  - Locus Map
+- id: carto
+  name: Cartograph Maps
+  url: https://play.google.com/store/apps/details?id=eu.cartograph3
+  user_agents:
+  - cartograph

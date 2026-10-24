@@ -20,6 +20,7 @@
 ## 運作方式
 
 - 站台設定檔: [mirrors.yaml](https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/mirrors.yaml)
+- 下游登記檔: [downstreams.yaml](https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/downstreams.yaml)：使用魯地圖檔案或圖磚的 app 與網站，以 pull request 登記，格式說明在檔案開頭。登記不影響分流。
 
 ### 魯地圖說明網頁
 
