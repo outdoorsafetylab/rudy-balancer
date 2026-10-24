@@ -50,4 +50,9 @@ downstreams:
   url: https://gpx.oslab.tw/
   referers:
   - gpx.oslab.tw
+- id: gpxtoolkit
+  name: 航跡工具箱
+  developer: Outdoor Safety Lab
+  url: https://gpxtoolkit.outdoorsafetylab.org/
+  referers:
   - gpxtoolkit.outdoorsafetylab.org
