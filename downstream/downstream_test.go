@@ -23,12 +23,14 @@ func TestLoadRejects(t *testing.T) {
 	cases := []struct {
 		name, yaml, want string
 	}{
-		{"unknown key", "downstreams:\n- id: a\n  name: A\n  url: https://a.example\n  useragent:\n  - AppA/\n", "useragent"},
+		{"unknown key", "downstreams:\n- id: a\n  name: A\n  url: https://a.example\n  useragents:\n  - AppA/\n", "useragents"},
 		{"bad id", entry("App A", "AppA/", ""), "id"},
 		{"duplicate id", entry("a", "AppA/", "") + entryItem("a", "AppB/", ""), "duplicate id"},
-		{"no name", "downstreams:\n- id: a\n  url: https://a.example\n  useragents:\n  - AppA/\n", "name is required"},
-		{"http url", "downstreams:\n- id: a\n  name: A\n  url: http://a.example\n  useragents:\n  - AppA/\n", "https"},
-		{"nothing to match", "downstreams:\n- id: a\n  name: A\n  url: https://a.example\n", "needs useragents"},
+		{"no name", "downstreams:\n- id: a\n  url: https://a.example\n  user_agents:\n  - AppA/\n", "name is required"},
+		{"http url", "downstreams:\n- id: a\n  name: A\n  url: http://a.example\n  user_agents:\n  - AppA/\n", "https"},
+		{"nothing to match", "downstreams:\n- id: a\n  name: A\n  url: https://a.example\n", "needs user_agents"},
+		{"bad email", "downstreams:\n- id: a\n  name: A\n  url: https://a.example\n  email: not-an-address\n  user_agents:\n  - AppA/\n", "email"},
+		{"email with display name", "downstreams:\n- id: a\n  name: A\n  url: https://a.example\n  email: A <a@a.example>\n  user_agents:\n  - AppA/\n", "email"},
 		{"generic agent", entry("a", "okhttp/", ""), "library or platform default"},
 		{"generic agent with suffix", entry("a", "Mozilla/5.0 (Linux; Android 14)", ""), "library or platform default"},
 		{"prefix of a generic agent", entry("a", "Dalv", ""), "library or platform default"},
@@ -49,12 +51,13 @@ func TestLoadRejects(t *testing.T) {
 }
 
 func TestLoadAccepts(t *testing.T) {
-	yaml := entry("a", "AppA/", "") + entryItem("b", "", "www.b.example") + entryItem("c", "AppC/", "c.example")
+	yaml := entry("a", "AppA/", "") + entryItem("b", "", "www.b.example") + entryItem("c", "AppC/", "c.example") +
+		"- id: d\n  name: D\n  url: https://d.example\n  email: dev@d.example\n  user_agents:\n  - AppD/\n"
 	list, err := Load(write(t, yaml))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(list) != 3 || list[2].Referers[0] != "c.example" || list[0].UserAgents[0] != "AppA/" {
+	if len(list) != 4 || list[3].Email != "dev@d.example" || list[2].Referers[0] != "c.example" || list[0].UserAgents[0] != "AppA/" {
 		t.Errorf("loaded %+v", list)
 	}
 }
@@ -66,7 +69,7 @@ func entry(id, ua, referer string) string {
 func entryItem(id, ua, referer string) string {
 	s := "- id: " + id + "\n  name: N\n  url: https://n.example\n"
 	if ua != "" {
-		s += "  useragents:\n  - \"" + ua + "\"\n"
+		s += "  user_agents:\n  - \"" + ua + "\"\n"
 	}
 	if referer != "" {
 		s += "  referers:\n  - " + referer + "\n"

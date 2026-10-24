@@ -7,6 +7,7 @@ package downstream
 
 import (
 	"fmt"
+	"net/mail"
 	"net/url"
 	"os"
 	"regexp"
@@ -20,7 +21,8 @@ type Downstream struct {
 	Name       string   `yaml:"name"`
 	Developer  string   `yaml:"developer"`
 	URL        string   `yaml:"url"`
-	UserAgents []string `yaml:"useragents"`
+	Email      string   `yaml:"email"`
+	UserAgents []string `yaml:"user_agents"`
 	Referers   []string `yaml:"referers"`
 }
 
@@ -94,8 +96,15 @@ func check(list []*Downstream) error {
 		if u, err := url.Parse(d.URL); err != nil || u.Scheme != "https" || u.Host == "" {
 			return fmt.Errorf("%s: url %q must be an https URL", d.ID, d.URL)
 		}
+		// A bare address only: a display name ("Name <a@b>") would not be
+		// what the field says.
+		if d.Email != "" {
+			if a, err := mail.ParseAddress(d.Email); err != nil || a.Address != d.Email {
+				return fmt.Errorf("%s: email %q must be a bare address such as dev@example.com", d.ID, d.Email)
+			}
+		}
 		if len(d.UserAgents) == 0 && len(d.Referers) == 0 {
-			return fmt.Errorf("%s: needs useragents, referers or both", d.ID)
+			return fmt.Errorf("%s: needs user_agents, referers or both", d.ID)
 		}
 		for _, ua := range d.UserAgents {
 			if err := checkUserAgent(ua); err != nil {
