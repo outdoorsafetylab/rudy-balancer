@@ -48,11 +48,13 @@ downstreams:
   name: 航跡管理器
   developer: Outdoor Safety Lab
   url: https://gpx.oslab.tw/
+  email: outdoorsafetylab@gmail.com
   referers:
   - gpx.oslab.tw
 - id: gpxtoolkit
   name: 航跡工具箱
   developer: Outdoor Safety Lab
   url: https://gpxtoolkit.outdoorsafetylab.org/
+  email: outdoorsafetylab@gmail.com
   referers:
   - gpxtoolkit.outdoorsafetylab.org
