@@ -47,6 +47,8 @@ func TestLoadRejects(t *testing.T) {
 		{"non-ASCII agent", entry("a", "登山App/", ""), "printable ASCII"},
 		{"mixed-case generic agent", entry("a", "OkHttp/4", ""), "library or platform default"},
 		{"same agent twice", entry("a", "AppA/", "") + entryItem("b", "AppA/", ""), "overlaps"},
+		{"overlap within one entry", "downstreams:\n- id: a\n  name: A\n  url: https://a.example\n  user_agents:\n  - Hiker\n  - HikerPro/\n", "overlaps"},
+		{"host over 253", entry("a", "", strings.Repeat(strings.Repeat("a", 60)+".", 5)+"example"), "host name"},
 		{"agent inside an earlier one", entry("a", "HikerPro/", "") + entryItem("b", "Hiker", ""), "overlaps"},
 		{"single-label referer", entry("a", "", "localhost"), "host name"},
 		{"numeric tld", entry("a", "", "a.example.123"), "host name"},
@@ -63,13 +65,13 @@ func TestLoadRejects(t *testing.T) {
 
 func TestLoadAccepts(t *testing.T) {
 	yaml := entry("a", "AppA/", "") + entryItem("b", "", "www.b.example") + entryItem("c", "AppC/", "c.example") +
-		entryItem("e", "", "map.example.xn--kpry57d") +
+		entryItem("e", "", "map.example.xn--kpry57d") + entryItem("f", "", strings.Repeat("a", 63)+".example") +
 		"- id: d\n  name: D\n  url: https://d.example\n  email: dev@d.example\n  user_agents:\n  - AppD/\n"
 	list, err := Load(write(t, yaml))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(list) != 5 || list[4].Email != "dev@d.example" || list[2].Referers[0] != "c.example" || list[0].UserAgents[0] != "AppA/" {
+	if len(list) != 6 || list[5].Email != "dev@d.example" || list[2].Referers[0] != "c.example" || list[0].UserAgents[0] != "AppA/" {
 		t.Errorf("loaded %+v", list)
 	}
 }
