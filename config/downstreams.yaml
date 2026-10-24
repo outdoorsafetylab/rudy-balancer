@@ -44,6 +44,13 @@ downstreams:
   url: https://play.google.com/store/apps/details?id=eu.cartograph3
   user_agents:
   - cartograph
+- id: twdcompass
+  name: 台灣大地羅盤
+  developer: Outdoor Safety Lab
+  url: https://play.google.com/store/apps/details?id=com.ubiris.twdcompass
+  email: outdoorsafetylab@gmail.com
+  user_agents:
+  - twdcompass/
 - id: gpxhub
   name: 航跡管理器
   developer: Outdoor Safety Lab
