@@ -47,6 +47,11 @@ func load() (*Mirror, error) {
 		if site.Firestore == "" {
 			site.Firestore = site.Name
 		}
+		// A site with no weight gets no downloads, so it is hidden as well:
+		// the portal leaves it out and its status is no longer published.
+		if site.Weight <= 0 {
+			site.Hidden = true
+		}
 		for filename := range files {
 			source := &model.Source{
 				Site:     site,
