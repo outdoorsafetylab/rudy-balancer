@@ -7,6 +7,7 @@ import (
 	"service/dao"
 	"service/log"
 	"service/mirror"
+	"service/model"
 	"time"
 
 	"github.com/spf13/viper"
@@ -24,11 +25,7 @@ func CheckMirrorSites(cfg *viper.Viper, ctx context.Context) error {
 	}
 
 	for _, site := range sites {
-		for _, s := range site.Sources {
-			log.Debugf("Checking source: %s", s.URL)
-			_ = s.Check(client)
-			log.Debugf("%s => %s @ %v", s.URL, s.Status.String(), s.Latency)
-		}
+		checkSite(client, site, retryDelay)
 	}
 
 	err = dao.Update(sites)
@@ -37,4 +34,32 @@ func CheckMirrorSites(cfg *viper.Viper, ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// retryDelay is how long a failed check waits before it is tried again.
+const retryDelay = 3 * time.Second
+
+// maxFailedRetries is how many retries may fail on one site before its
+// remaining files are no longer retried.
+const maxFailedRetries = 3
+
+// checkSite checks each of the site's files. A file that fails is tried once
+// more after delay, so a single reset or timeout on an otherwise healthy site
+// does not count as an outage. Once maxFailedRetries retries have failed too,
+// the site is taken as down and its remaining files are not retried: a dead
+// site costs the run a few retries, not one per file, while a file or two
+// still missing on a syncing mirror does not stop the retries for the rest.
+func checkSite(client *http.Client, site *model.Site, delay time.Duration) {
+	failed := 0
+	for _, s := range site.Sources {
+		log.Debugf("Checking source: %s", s.URL)
+		if err := s.Check(client); err != nil && failed < maxFailedRetries {
+			log.Debugf("%s => %v, retrying", s.URL, err)
+			time.Sleep(delay)
+			if s.Check(client) != nil {
+				failed++
+			}
+		}
+		log.Debugf("%s => %s @ %v", s.URL, s.Status.String(), s.Latency)
+	}
 }
