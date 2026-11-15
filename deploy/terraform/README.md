@@ -7,6 +7,8 @@ The rudymap project's resources that rudy-balancer needs, as one Terraform root 
 - `balancer.tf`: Firestore, the image repository, the service and build identities, the secret
   containers and the redirect log dataset.
 - `healthcheck.tf`: the health check job and its schedule.
+- `tiles_usage.tf`: where the tiles service's weekly build keeps its usage export, and the Cloudflare
+  token it reads.
 
 The Cloud Run services and the image stay with Cloud Build (`cloudbuild.yaml`), and the triggers
 are made by hand. `deploy/terraform-outdoorsafetylab/` is the old project's module, kept until the
@@ -40,7 +42,7 @@ after such an apply, the next plan comment must read *No changes*.
 3. Add each secret's first version. None of the values enters git or state:
 
    ```sh
-   printf '%s' "$VALUE" | gcloud secrets versions add <statuspage-key|aws-access-key-id|aws-secret-access-key> \
+   printf '%s' "$VALUE" | gcloud secrets versions add <statuspage-key|aws-access-key-id|aws-secret-access-key|cloudflare-analytics-token> \
      --project=rudymap --data-file=-
    ```
 

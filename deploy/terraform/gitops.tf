@@ -86,6 +86,7 @@ locals {
     "roles/secretmanager.admin",             # the secret containers and who may read them
     "roles/run.admin",                       # the health check job and who may start it
     "roles/cloudscheduler.admin",            # the job's schedule
+    "roles/storage.admin",                   # the usage bucket
   ]
 }
 
