@@ -49,12 +49,18 @@ after such an apply, the next plan comment must read *No changes*.
      --project=rudymap --data-file=-
    ```
 
-4. The Cloudflare token for `data.tf` is a repository secret,
-   `CLOUDFLARE_API_TOKEN`, read by both workflows (scope: R2 on the account;
-   DNS, zone read and cache settings on rudymap.tw):
+4. `data.tf` reads two Cloudflare tokens, neither in git or state:
+   - plan (pull requests, which run their own code) reads a read-only one,
+     the repository secret `CLOUDFLARE_API_TOKEN_READONLY`: R2 read on the
+     account; zone read and cache settings read on rudymap.tw.
+   - apply reads one that can write, the secret `CLOUDFLARE_API_TOKEN` of the
+     `production` environment, whose deployment branches are master only:
+     R2 write on the account; zone read and cache settings write on
+     rudymap.tw. DNS write is added only while a custom domain is changed.
 
    ```sh
-   gh secret set CLOUDFLARE_API_TOKEN   # from this checkout
+   gh secret set CLOUDFLARE_API_TOKEN_READONLY   # from this checkout
+   gh secret set CLOUDFLARE_API_TOKEN --env production
    ```
 
 The health check job waits for `healthcheck_image` and its schedule for `healthcheck_scheduled`
