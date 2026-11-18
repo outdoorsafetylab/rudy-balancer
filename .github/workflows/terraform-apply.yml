@@ -76,9 +76,12 @@ jobs:
           terraform -chdir="${{ matrix.dir }}" apply -input=false -auto-approve -no-color > apply.txt 2>&1
           rc=$?
           set -e
-          # The run log is public: only the resource lines and the result, or the error. The full
+          # The run log is public: only the resource lines and the result, and on failure the
+          # whole error, with ids removed and any 32-hex id left in an error masked. The full
           # output stays on the runner (and its tail goes to Slack on failure).
-          grep -E '^[^ ]+: (Creating|Modifying|Destroying|Creation complete|Modifications complete|Destruction complete|Importing|Import complete)|^Apply complete!|^Error|^[│╷╵]' apply.txt | sed -E 's/ \[id=[^]]*\]//' || true
+          { grep -E '^[^ ]+: (Creating|Modifying|Destroying|Creation complete|Modifications complete|Destruction complete|Importing|Import complete)|^Apply complete!' apply.txt \
+              | sed -E 's/ \[id=[^]]*\]//'; sed -n '/^Error: /,$p' apply.txt; } \
+            | sed -E 's/[0-9a-f]{32}/<id>/g' || true
           echo "rc=${rc}" >> "$GITHUB_OUTPUT"
           summary="$(grep -E '^Apply complete!' apply.txt | tail -1 || true)"
           if [ "${rc}" != "0" ]; then

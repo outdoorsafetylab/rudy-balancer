@@ -89,9 +89,12 @@ jobs:
             *) echo "summary=Plan failed (exit ${rc})." >> "$GITHUB_OUTPUT" ;;
           esac
           # The repository is public, and so are its run logs and comments: only which resources
-          # change and how, or the error, leaves the runner. The refresh lines and attribute values
-          # carry account, zone and project identifiers; a full plan is run locally when needed.
-          grep -E '^ *# .+ (will be|must be)|^Plan: |^No changes|^Error|^[│╷╵]' plan.txt > summary.txt || true
+          # change and how leaves the runner, and on failure the whole error (Terraform prints
+          # errors last), so it can be debugged from here. The refresh lines and attribute values,
+          # which carry Cloudflare's account, zone and ruleset ids, do not; any 32-hex id left in
+          # an error is masked. A full plan is run locally when needed.
+          { grep -E '^ *# .+ (will be|must be)|^Plan: |^No changes' plan.txt; sed -n '/^Error: /,$p' plan.txt; } \
+            | sed -E 's/[0-9a-f]{32}/<id>/g' > summary.txt || true
           cat summary.txt
       - name: post or update the plan comment
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
