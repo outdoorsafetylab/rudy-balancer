@@ -25,9 +25,6 @@ concurrency:
 
 env:
   TF_IN_AUTOMATION: "true"
-  # deploy/terraform/data.tf: R2 and rudymap.tw cache rules. The cloudflare provider reads it
-  # from the environment; the other module has no use for it.
-  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
 defaults:
   run:
@@ -55,8 +52,8 @@ jobs:
             workload_identity_provider: projects/154323041965/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
             service_account: rudy-balancer-terraform@outdoorsafetylab.iam.gserviceaccount.com
     steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
           # Must be at least the version that last wrote the state: an older Terraform refuses a
           # newer state snapshot. Bump here and in terraform-apply.yml together.
@@ -64,7 +61,7 @@ jobs:
           terraform_wrapper: false
       - name: terraform fmt
         run: terraform -chdir="${{ matrix.dir }}" fmt -check -diff
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
         with:
           workload_identity_provider: ${{ matrix.workload_identity_provider }}
           service_account: ${{ matrix.service_account }}
@@ -72,6 +69,11 @@ jobs:
         run: terraform -chdir="${{ matrix.dir }}" init -input=false
       - name: terraform plan
         id: plan
+        env:
+          # deploy/terraform/data.tf's cloudflare provider. A read-only token: this job runs a pull
+          # request's own code, so it gets nothing that can change the zone or the bucket. The
+          # other module has no use for it.
+          CLOUDFLARE_API_TOKEN: ${{ matrix.dir == 'deploy/terraform' && secrets.CLOUDFLARE_API_TOKEN_READONLY || '' }}
         run: |
           # The runner's bash is -e: the exit code is the result here, so take it by hand.
           # -lock=false: a plan on a PR must never hold the state lock against an apply on master.
@@ -86,9 +88,16 @@ jobs:
             2) echo "summary=$(grep -E '^Plan: ' plan.txt | tail -1)" >> "$GITHUB_OUTPUT" ;;
             *) echo "summary=Plan failed (exit ${rc})." >> "$GITHUB_OUTPUT" ;;
           esac
-          cat plan.txt
+          # The repository is public, and so are its run logs and comments: only which resources
+          # change and how leaves the runner, and on failure the whole error (Terraform prints
+          # errors last), so it can be debugged from here. The refresh lines and attribute values,
+          # which carry Cloudflare's account, zone and ruleset ids, do not; any 32-hex id left in
+          # an error is masked. A full plan is run locally when needed.
+          { grep -E '^ *# .+ (will be|must be)|^Plan: |^No changes' plan.txt; sed -n '/^Error: /,$p' plan.txt; } \
+            | sed -E 's/[0-9a-f]{32}/<id>/g' > summary.txt || true
+          cat summary.txt
       - name: post or update the plan comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             const fs = require('fs');
@@ -97,7 +106,7 @@ jobs:
             const rc = '${{ steps.plan.outputs.rc }}';
             const summary = ${{ toJSON(steps.plan.outputs.summary) }};
             const icon = rc === '0' ? '✅' : rc === '2' ? '📝' : '❌';
-            let out = fs.readFileSync('plan.txt', 'utf8').trimEnd();
+            let out = fs.readFileSync('summary.txt', 'utf8').trimEnd();
             const limit = 60000; // a comment body caps at 65536 characters
             if (out.length > limit) {
               out = '…(truncated; the run has the whole output)\n' + out.slice(-limit);
