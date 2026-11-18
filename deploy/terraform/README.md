@@ -54,7 +54,7 @@ after such an apply, the next plan comment must read *No changes*.
    DNS, zone read and cache settings on rudymap.tw):
 
    ```sh
-   gh secret set CLOUDFLARE_API_TOKEN -R outdoorsafetylab/rudy-balancer
+   gh secret set CLOUDFLARE_API_TOKEN   # from this checkout
    ```
 
 The health check job waits for `healthcheck_image` and its schedule for `healthcheck_scheduled`
