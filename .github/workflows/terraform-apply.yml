@@ -24,6 +24,9 @@ concurrency:
 
 env:
   TF_IN_AUTOMATION: "true"
+  # deploy/terraform/data.tf: R2 and rudymap.tw cache rules. The cloudflare provider reads it
+  # from the environment; the other module has no use for it.
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
 defaults:
   run:

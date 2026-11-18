@@ -13,6 +13,10 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 6.30"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5.0"
+    }
   }
 
   backend "gcs" {
@@ -27,3 +31,8 @@ provider "google" {
   project = var.project
   region  = var.region
 }
+
+# The token is the CLOUDFLARE_API_TOKEN environment variable (a repository secret in the
+# workflows), which the provider reads by itself; it never enters git or state. Its scope: R2 on
+# the account, and DNS, zone read and cache settings on rudymap.tw (data.tf).
+provider "cloudflare" {}
