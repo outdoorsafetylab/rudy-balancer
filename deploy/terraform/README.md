@@ -9,6 +9,9 @@ The rudymap project's resources that rudy-balancer needs, as one Terraform root 
 - `healthcheck.tf`: the health check job and its schedule.
 - `tiles_usage.tf`: where the tiles service's weekly build keeps its usage export, and the Cloudflare
   token it reads.
+- `data.tf`: on Cloudflare, not in the project: the R2 bucket behind
+  `data.rudymap.tw` (the vector map's files), its custom domain, and
+  rudymap.tw's cache rules.
 
 The Cloud Run services and the image stay with Cloud Build (`cloudbuild.yaml`), and the triggers
 are made by hand. `deploy/terraform-outdoorsafetylab/` is the old project's module, kept until the
@@ -44,6 +47,14 @@ after such an apply, the next plan comment must read *No changes*.
    ```sh
    printf '%s' "$VALUE" | gcloud secrets versions add <statuspage-key|aws-access-key-id|aws-secret-access-key|cloudflare-analytics-token> \
      --project=rudymap --data-file=-
+   ```
+
+4. The Cloudflare token for `data.tf` is a repository secret,
+   `CLOUDFLARE_API_TOKEN`, read by both workflows (scope: R2 on the account;
+   DNS, zone read and cache settings on rudymap.tw):
+
+   ```sh
+   gh secret set CLOUDFLARE_API_TOKEN -R outdoorsafetylab/rudy-balancer
    ```
 
 The health check job waits for `healthcheck_image` and its schedule for `healthcheck_scheduled`
