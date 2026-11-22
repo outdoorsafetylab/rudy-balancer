@@ -28,15 +28,16 @@ resource "cloudflare_r2_bucket" "data" {
   location   = "apac"
 }
 
-# Browsers may read the files only from the tiles service's page, as the GCS bucket allowed before;
-# apps and servers are not subject to CORS. Range and the headers PMTiles reads are exposed.
+# Browsers may read the files from the tiles service's page and from gpx.oslab.tw, which is moving
+# its base map to the vector edition; apps and servers are not subject to CORS. Range and the headers
+# PMTiles reads are exposed. Every other site follows when the vector edition opens to all.
 resource "cloudflare_r2_bucket_cors" "data" {
   account_id  = local.cloudflare_account_id
   bucket_name = cloudflare_r2_bucket.data.name
   rules = [
     {
       allowed = {
-        origins = ["https://tiles.rudymap.tw"]
+        origins = ["https://tiles.rudymap.tw", "https://gpx.oslab.tw"]
         methods = ["GET", "HEAD"]
         headers = ["Range", "If-Match", "If-None-Match"]
       }
