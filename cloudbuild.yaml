@@ -1,10 +1,6 @@
-# The registry's region is _AR_REGION. In the outdoorsafetylab project it is
-# asia-northeast1: both `asia.gcr.io` and that project's asia-east1 Artifact
-# Registry location stopped accepting writes (503) and blob reads (500) in
-# August 2026, after the project was deleted and restored. See
-# outdoorsafetylab/outdoorsafetylab#47. The rudymap project's triggers set
+# The registry's region is _AR_REGION; the rudymap project's triggers set
 # asia-east1, next to the services (#32). `gcr.io/cloud-builders/*` below is
-# Google's own public builder image and is unrelated to either registry.
+# Google's own public builder image and is unrelated to the registry.
 #
 # The rudymap triggers run as their own service account (_SERVICE_ACCOUNT is
 # the services' runtime account), which is why logs go to Cloud Logging only.

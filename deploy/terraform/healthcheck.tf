@@ -1,5 +1,5 @@
 # The mirror health check (`rudy-balancer healthcheck -c docker`) as a Cloud Run job started by
-# Cloud Scheduler, as in deploy/terraform-outdoorsafetylab/. The job is declared once this
+# Cloud Scheduler. The job is declared once this
 # project's registry holds an image (healthcheck_image); the schedule only from the cutover of
 # rudymap.tw (healthcheck_scheduled, plan D9). Production deploys swap the job's image
 # (cloudbuild.yaml).
