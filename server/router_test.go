@@ -94,3 +94,36 @@ func TestViaRoutes(t *testing.T) {
 		}
 	}
 }
+
+// A web page's preflight to a file route reaches Download, which answers it
+// without Firestore (#53), instead of the router's 405.
+func TestFileRoutesAnswerPreflight(t *testing.T) {
+	os.Setenv("MIRRORS_FILE", "../config/mirrors.yaml")
+	defer os.Unsetenv("MIRRORS_FILE")
+	if err := config.Init("docker"); err != nil {
+		t.Fatal(err)
+	}
+	if err := log.Init(); err != nil {
+		t.Fatal(err)
+	}
+	r, err := newRouter()
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := mirror.Get()
+	if err != nil {
+		t.Fatal(err)
+	}
+	paths := []string{"/v1/MOI_OSM_Taiwan_TOPO_Rudy.map.zip", "/v1" + m.ViaLinks()[0].Path()}
+	for _, path := range paths {
+		req := httptest.NewRequest("OPTIONS", path, nil)
+		req.Header.Set("Origin", "https://cairn.tw")
+		req.Header.Set("Access-Control-Request-Method", "GET")
+		req.Header.Set("Access-Control-Request-Headers", "range")
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+		if rec.Code != http.StatusNoContent || rec.Header().Get("Access-Control-Allow-Origin") != "*" {
+			t.Errorf("OPTIONS %s: %d, Access-Control-Allow-Origin %q; want 204 with *", path, rec.Code, rec.Header().Get("Access-Control-Allow-Origin"))
+		}
+	}
+}

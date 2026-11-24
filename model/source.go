@@ -21,6 +21,10 @@ type Source struct {
 	LastModifiedUnix int64     `json:"LastModified" firestore:"-"`
 	Size             int64
 	Latency          time.Duration
+	// CORS is whether a web page may download this file from this mirror
+	// after the balancer's redirect (see CheckCORS). It is checked only when
+	// the file is GOOD and does not affect Status.
+	CORS bool `json:",omitempty"`
 }
 
 func (s *Source) Check(client *http.Client) error {
@@ -48,6 +52,60 @@ func (s *Source) Check(client *http.Client) error {
 		s.LastModifiedUnix = 0
 	}
 	return nil
+}
+
+// CheckCORS reports whether a web page can download the file from this
+// mirror once the balancer has redirected it there. After a cross-origin
+// redirect the browser sends Origin: null, so only "*" passes. A download
+// that resumes sends Range, which may make the browser send a preflight
+// first: the mirror has to answer it with a 2xx that allows Range. Both are
+// separate requests so the health check's own HEAD stays as it was; a mirror
+// that answered an unexpected Origin with an error would otherwise be marked
+// down.
+func (s *Source) CheckCORS(client *http.Client) bool {
+	head, err := http.NewRequest(http.MethodHead, s.URL, nil)
+	if err != nil {
+		return false
+	}
+	head.Header.Set("Origin", "null")
+	res, err := client.Do(head)
+	if err != nil {
+		return false
+	}
+	res.Body.Close()
+	if res.StatusCode != http.StatusOK || res.Header.Get("Access-Control-Allow-Origin") != "*" {
+		return false
+	}
+	pre, err := http.NewRequest(http.MethodOptions, s.URL, nil)
+	if err != nil {
+		return false
+	}
+	pre.Header.Set("Origin", "null")
+	pre.Header.Set("Access-Control-Request-Method", http.MethodGet)
+	pre.Header.Set("Access-Control-Request-Headers", "range")
+	res, err = client.Do(pre)
+	if err != nil {
+		return false
+	}
+	res.Body.Close()
+	if res.StatusCode < 200 || res.StatusCode > 299 || res.Header.Get("Access-Control-Allow-Origin") != "*" {
+		return false
+	}
+	return allowsHeader(res.Header.Values("Access-Control-Allow-Headers"), "range")
+}
+
+// allowsHeader reports whether a preflight's Access-Control-Allow-Headers
+// values list name (case-insensitively) or the wildcard.
+func allowsHeader(values []string, name string) bool {
+	for _, v := range values {
+		for _, h := range strings.Split(v, ",") {
+			h = strings.TrimSpace(h)
+			if h == "*" || strings.EqualFold(h, name) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // lastModified is when the release reached this mirror, compared across

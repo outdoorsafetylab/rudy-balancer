@@ -37,6 +37,7 @@
    1. 部份連結沒有回應時則判定為 Partial outage
    1. 所有連結都無回應時則判定為 Major outage
    1. 每次成功的測試都會紀錄 Latency，並與已儲存的 Latency 值平均後再存回資料庫。
+   1. 測試成功的連結再以 `Origin: null` 各送一次 HEAD 與預檢 (OPTIONS)，記下網頁能不能從這一站下載：兩者都要回 `Access-Control-Allow-Origin: *`，預檢還要回 2xx 並允許 `Range`。不影響站台狀態。
    1. 使用 [Statuspage API](https://developer.statuspage.io/) 來更新狀態。
 1. 由 Operational 轉為其它狀態時會自動建立 Incident，例如：[Rex is not operational](https://rudymap.statuspage.io/incidents/blp2ytvrjg05)
 1. 由其它狀態回覆為 Operational 後即會自動 Resolve Incident。
@@ -62,6 +63,7 @@
    1. 沒有 Last-Modified 的連結不排除，也不參與比較。
    1. 由 S3 供應的鏡像站（例如 OSL），Last-Modified 是上傳到 S3 的時間，比發版晚；這類回應若帶有 rclone 寫入的 `x-amz-meta-mtime`（來源的修改時間），改用它並截到整秒，與其他站的 Last-Modified 比較。
    1. 限制：各檔案分別判斷。若某檔案的新版只存在於這次分不到的站（例如該站這個檔案測試逾時，或該站超過月流量），該檔案在這一輪只能分到舊版；與其搭配的檔案若已同步到其他可分流的站，仍可能分到新版。
+1. 網頁也能經分流器下載：轉址回應都帶 `Access-Control-Allow-Origin: *`，預檢 (OPTIONS) 回 204。帶 `Origin` 的請求（網頁裡的程式發出的）只分到定時測試確認網頁能下載的站；一站都沒有時回 502。App 與一般下載不帶 `Origin`，照原本方式分流。
 1. 分流前會使用設定檔內定義的站台權重。
 1. 最後會以亂數選擇要使用的連結，權重較高的連結獲選率也較高。
 1. 選定連結後會以 HTTP 302 重新導向，流量不會經過分流器端點。
