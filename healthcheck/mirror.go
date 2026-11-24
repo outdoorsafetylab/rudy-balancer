@@ -60,6 +60,7 @@ func checkSite(client *http.Client, site *model.Site, delay time.Duration) {
 				failed++
 			}
 		}
-		log.Debugf("%s => %s @ %v", s.URL, s.Status.String(), s.Latency)
+		s.CORS = s.Status == model.GOOD && s.CheckCORS(client)
+		log.Debugf("%s => %s @ %v, cors=%v", s.URL, s.Status.String(), s.Latency, s.CORS)
 	}
 }

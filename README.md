@@ -37,6 +37,7 @@
    1. 部份連結沒有回應時則判定為 Partial outage
    1. 所有連結都無回應時則判定為 Major outage
    1. 每次成功的測試都會紀錄 Latency，並與已儲存的 Latency 值平均後再存回資料庫。
+   1. 測試成功的連結再以 `Origin: null` 各送一次 HEAD 與預檢 (OPTIONS)，記下網頁能不能從這一站下載：兩者都要回 `Access-Control-Allow-Origin: *`，預檢還要回 2xx 並允許 `Range`。不影響站台狀態。
    1. 使用 [Statuspage API](https://developer.statuspage.io/) 來更新狀態。
 1. 由 Operational 轉為其它狀態時會自動建立 Incident，例如：[Rex is not operational](https://rudymap.statuspage.io/incidents/blp2ytvrjg05)
 1. 由其它狀態回覆為 Operational 後即會自動 Resolve Incident。
@@ -58,6 +59,7 @@
 
 1. 分流前會排除定期測試後失敗的連結。
 1. 分流前會排除 Last-Modified 早於其他站的連結（發版後仍在同步中），避免同一用戶端連續下載的地圖與樣式分到不同版本；追上後自動恢復。
+1. 網頁也能經分流器下載：轉址回應都帶 `Access-Control-Allow-Origin: *`，預檢 (OPTIONS) 回 204。帶 `Origin` 的請求（網頁裡的程式發出的）只分到定時測試確認網頁能下載的站；一站都沒有時回 502。App 與一般下載不帶 `Origin`，照原本方式分流。
    1. 「其他站」只包含該檔案這次可分流的站（定期測試成功、未超過月流量、非 hidden 且權重大於 0）。擁有最新版本的站一定會保留，因此不會因同步延遲而無站可選。
    1. 沒有 Last-Modified 的連結不排除，也不參與比較。
    1. 由 S3 供應的鏡像站（例如 OSL），Last-Modified 是上傳到 S3 的時間，比發版晚；這類回應若帶有 rclone 寫入的 `x-amz-meta-mtime`（來源的修改時間），改用它並截到整秒，與其他站的 Last-Modified 比較。
