@@ -75,22 +75,29 @@ func (dao *SiteDao) load() (*mirror.Mirror, error) {
 				s.Status = model.UNKNWON
 				continue
 			}
-			s.LastCheck = ss.LastCheck
-			s.LastCheckUnix = s.LastCheck.Unix()
-			if s.LastCheckUnix < 0 {
-				s.LastCheckUnix = 0
-			}
-			s.Status = ss.Status
-			s.Size = ss.Size
-			s.Latency = ss.Latency
-			s.LastModified = ss.LastModified
-			s.LastModifiedUnix = s.LastModified.Unix()
-			if s.LastModifiedUnix < 0 {
-				s.LastModifiedUnix = 0
-			}
+			restoreSource(s, ss)
 		}
 	}
 	return mirror, nil
+}
+
+// restoreSource copies what the health check saved for a source onto the one
+// built from mirrors.yaml, which /v1/sites and /v1/files report.
+func restoreSource(s, saved *model.Source) {
+	s.LastCheck = saved.LastCheck
+	s.LastCheckUnix = s.LastCheck.Unix()
+	if s.LastCheckUnix < 0 {
+		s.LastCheckUnix = 0
+	}
+	s.Status = saved.Status
+	s.Size = saved.Size
+	s.Latency = saved.Latency
+	s.LastModified = saved.LastModified
+	s.LastModifiedUnix = s.LastModified.Unix()
+	if s.LastModifiedUnix < 0 {
+		s.LastModifiedUnix = 0
+	}
+	s.CORS = saved.CORS
 }
 
 func (dao *SiteDao) Apps() ([]*model.App, error) {

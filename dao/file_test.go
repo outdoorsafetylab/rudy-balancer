@@ -1,7 +1,9 @@
 package dao
 
 import (
+	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -165,5 +167,23 @@ func TestPickSourcesCORSOnly(t *testing.T) {
 	fs.CORS = nil
 	if got := pickSources(sites, fs, "f.zip", true, nil); len(got) != 0 {
 		t.Errorf("with Origin and no CORS site: %v, want none", siteNames(got))
+	}
+}
+
+// /v1/sites and /v1/files report what the health check saved, CORS included.
+func TestRestoreSourceKeepsCORS(t *testing.T) {
+	saved := &model.Source{Status: model.GOOD, Size: 10, CORS: true,
+		LastModified: time.Date(2026, 11, 19, 7, 21, 20, 0, time.UTC)}
+	s := &model.Source{URL: "https://kcwu/f.zip"}
+	restoreSource(s, saved)
+	if !s.CORS || s.Status != model.GOOD || s.Size != 10 || s.LastModifiedUnix != saved.LastModified.Unix() {
+		t.Errorf("restored %+v", s)
+	}
+	b, err := json.Marshal(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), `"CORS":true`) {
+		t.Errorf("JSON %s has no \"CORS\":true", b)
 	}
 }
