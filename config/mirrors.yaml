@@ -28,6 +28,9 @@ files:
   - MOI_OSM_Taiwan_TOPO_Rudy_hs_style.zip
   - MOI_OSM_Taiwan_TOPO_Lite.zip
   - MOI_OSM_Taiwan_TOPO_Lite.map.zip
+  - rudymap_pmtiles_style.zip
+  - MOI_OSM_Taiwan_TOPO_Rudy.pmtiles
+  - taiwan_dem.pmtiles
   - MOI_OSM_Taiwan_TOPO_Lite_style.zip
   - MOI_OSM_Taiwan_TOPO_Rudy.poi.zip
   - MOI_OSM_Taiwan_TOPO_Rudy_style.zip
