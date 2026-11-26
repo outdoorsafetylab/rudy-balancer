@@ -9,6 +9,8 @@ The rudymap project's resources that rudy-balancer needs, as one Terraform root 
 - `healthcheck.tf`: the health check job and its schedule.
 - `tiles_usage.tf`: where the tiles service's weekly build keeps its usage export, and the Cloudflare
   token it reads.
+- `tiles_data.tf`: the Cloudflare token the tiles service's release builds read to sync the
+  vector map's files to `data.rudymap.tw`.
 - `data.tf`: on Cloudflare, not in the project: the R2 bucket behind
   `data.rudymap.tw` (the vector map's files), its custom domain, and
   rudymap.tw's cache rules.
@@ -44,9 +46,13 @@ after such an apply, the next plan comment must read *No changes*.
 3. Add each secret's first version. None of the values enters git or state:
 
    ```sh
-   printf '%s' "$VALUE" | gcloud secrets versions add <statuspage-key|aws-access-key-id|aws-secret-access-key|cloudflare-analytics-token> \
+   printf '%s' "$VALUE" | gcloud secrets versions add <statuspage-key|aws-access-key-id|aws-secret-access-key|cloudflare-analytics-token|r2-rudymap-data-writer> \
      --project=rudymap --data-file=-
    ```
+
+   `r2-rudymap-data-writer` is a Cloudflare API token with only Workers R2 Storage Bucket Item
+   Write on the bucket in `data.tf`. The tiles service's build identity also needs
+   `roles/secretmanager.secretAccessor` on it, given by hand like the usage export's.
 
 4. `data.tf` reads two Cloudflare tokens, neither in git or state:
    - plan (pull requests, which run their own code) reads a read-only one,
