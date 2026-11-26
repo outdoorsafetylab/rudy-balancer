@@ -32,7 +32,7 @@ provider "google" {
   region  = var.region
 }
 
-# The token is the CLOUDFLARE_API_TOKEN environment variable (a repository secret in the
-# workflows), which the provider reads by itself; it never enters git or state. Its scope: R2 on
-# the account, and DNS, zone read and cache settings on rudymap.tw (data.tf).
+# The token is the CLOUDFLARE_API_TOKEN environment variable, which the provider reads by itself;
+# it never enters git or state. Plan gets a read-only token and apply one that can write; the
+# README (step 4) has their secrets and scopes.
 provider "cloudflare" {}
