@@ -1,6 +1,6 @@
 # 分流器從 outdoorsafetylab 專案搬到 rudymap
 
-Status: r4
+Status: r5
 Issue: #32
 
 ## 背景
@@ -34,8 +34,8 @@ GSA 也已經搬走，分流器是 `outdoorsafetylab` 裡剩下最大的一塊�
 
 一個專案一個 root。現有 root 改名為 `deploy/terraform-outdoorsafetylab/`（backend 不變，state 不動），
 `deploy/terraform/` 重新指向 `rudymap`，state 放新的 `rudy-balancer-tfstate-rudymap`，
-GitOps 身分在 `rudymap` 重建。plan／apply workflow 兩個 root 都跑，直到舊 root 在最後一步清空、
-apply 刪掉剩下的資源後移除。
+GitOps 身分在 `rudymap` 重建。plan／apply workflow 兩個 root 都跑，直到最後一步：維護者先在本機
+destroy 舊 root（共用的 WIF pool 先移出 state、保留），再用一個 PR 移除舊 root 與 workflow 裡的項目（r5）。
 
 `rudymap` 專案的 root 放在 rudy-balancer。`rudy-tiles` 目前手動建的資源（AR、trigger、bucket、
 告警）不在本票收編，之後另開票 import 進同一個 root。
@@ -143,7 +143,8 @@ Search Console 擁有者，等於合併 PR 就能動到網域控制權。
 - Firestore 只刪分流器的路徑：`RudyMirrorSites`、`RudyMirrorFiles`、`RudyMirrorSiteStats`（含其下的
   `DailyStats`）、`RudyClientSalt`，以及停用的 `RudyMirrors`。**不可以用 collection group 刪 `DailyStats`**，
   那會連另一個 app 的資料一起刪掉。
-- 舊 root 裡的全部資源：WIF pool、服務帳號、`statuspage-key`、job、Scheduler。
+- 舊 root 裡的資源：本 repo 的 WIF provider、服務帳號、`statuspage-key`、job、Scheduler。WIF pool 不刪：
+  裡面已經有另一個 repo 的 provider，destroy 前先移出 state（r5）。
 - 舊 state bucket。
 
 ## 步驟
@@ -229,3 +230,6 @@ Search Console 擁有者，等於合併 PR 就能動到網域控制權。
   - 新增〈附錄：盤點〉。
   - a2a r4（1 Medium）：`/v1/sites`、`/v1/files` 只比對決定分流的內容，排除延遲、檢查時間等每輪量測值。
   - 附錄加上 Cloud Asset Inventory 的核對結果。
+- r5（2026-11-23）：第 7 步的做法。
+  - D2：舊 root 改由維護者在本機 destroy，再用 PR 移除 root 與 workflow 項目，不再靠清空後由 apply 刪除。
+  - D10：WIF pool 保留並移出 state，因為另一個 repo 的 provider 也在裡面；只刪本 repo 的 provider。

@@ -49,7 +49,10 @@ func (dao *FileDao) Files() (map[string][]*model.Source, error) {
 	return files, nil
 }
 
-func (dao *FileDao) GetSources(file string) ([]*model.Source, error) {
+// GetSources returns the sources to pick a redirect from, each repeated by its
+// site's weight. corsOnly keeps only the sites a web page can download the file
+// from: the request carried Origin (#53).
+func (dao *FileDao) GetSources(file string, corsOnly bool) ([]*model.Source, error) {
 	fileID, err := hash.SHA1([]byte(file))
 	if err != nil {
 		return nil, err
@@ -71,10 +74,20 @@ func (dao *FileDao) GetSources(file string) ([]*model.Source, error) {
 	if m := cloudfront.Default(); m != nil {
 		meter = m
 	}
+	return pickSources(sites, fileSites, file, corsOnly, meter), nil
+}
+
+// pickSources is GetSources after the reads: the sites the health check found
+// holding the file (with corsOnly, also serving it to web pages), minus those
+// over quota or lagging, each repeated by its weight.
+func pickSources(sites []*model.Site, fileSites *fileSites, file string, corsOnly bool, meter usageMeter) []*model.Source {
 	sources := make([]*model.Source, 0)
 	for _, site := range sites {
 		size := fileSites.Sites[site.Name]
 		if size <= 0 {
+			continue
+		}
+		if corsOnly && !fileSites.CORS[site.Name] {
 			continue
 		}
 		if overQuota(site, meter) {
@@ -119,7 +132,7 @@ func (dao *FileDao) GetSources(file string) ([]*model.Source, error) {
 			weightedSources = append(weightedSources, src)
 		}
 	}
-	return weightedSources, nil
+	return weightedSources
 }
 
 // excludeLagging drops sources whose copy of the file is older than the newest

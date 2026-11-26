@@ -1,9 +1,7 @@
-# Terraform GitOps, pull-request side: a PR that touches deploy/terraform/ or
-# deploy/terraform-outdoorsafetylab/ gets a `terraform plan` of each module posted as one PR comment
-# per module, rewritten in place on every push. Both modules are planned whichever one changed: the
-# other's comment reads "No changes", which is the evidence that the PR leaves it alone. This workflow only plans; the apply
+# Terraform GitOps, pull-request side: a PR that touches deploy/terraform/ gets a `terraform plan`
+# posted as a PR comment, rewritten in place on every push. This workflow only plans; the apply
 # is terraform-apply.yml, on master. Credentials come from Workload Identity Federation
-# (each module's gitops.tf): no key. A pull request from a fork gets no OIDC token, so it cannot
+# (deploy/terraform/gitops.tf): no key. A pull request from a fork gets no OIDC token, so it cannot
 # plan; a maintainer pushes its branch here instead.
 name: terraform-plan
 
@@ -11,7 +9,6 @@ on:
   pull_request:
     paths:
       - deploy/terraform/**
-      - deploy/terraform-outdoorsafetylab/**
       - .github/workflows/terraform-plan.yml
 
 permissions:
@@ -45,12 +42,6 @@ jobs:
             marker: "<!-- terraform-plan -->"
             workload_identity_provider: projects/933372650185/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
             service_account: rudy-balancer-terraform@rudymap.iam.gserviceaccount.com
-          # outdoorsafetylab, being retired (#32): fixed by deploy/terraform-outdoorsafetylab/gitops.tf;
-          # 154323041965 is the project number.
-          - dir: deploy/terraform-outdoorsafetylab
-            marker: "<!-- terraform-plan deploy/terraform-outdoorsafetylab -->"
-            workload_identity_provider: projects/154323041965/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
-            service_account: rudy-balancer-terraform@outdoorsafetylab.iam.gserviceaccount.com
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
@@ -71,9 +62,8 @@ jobs:
         id: plan
         env:
           # deploy/terraform/data.tf's cloudflare provider. A read-only token: this job runs a pull
-          # request's own code, so it gets nothing that can change the zone or the bucket. The
-          # other module has no use for it.
-          CLOUDFLARE_API_TOKEN: ${{ matrix.dir == 'deploy/terraform' && secrets.CLOUDFLARE_API_TOKEN_READONLY || '' }}
+          # request's own code, so it gets nothing that can change the zone or the bucket.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_READONLY }}
         run: |
           # The runner's bash is -e: the exit code is the result here, so take it by hand.
           # -lock=false: a plan on a PR must never hold the state lock against an apply on master.

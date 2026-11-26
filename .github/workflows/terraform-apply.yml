@@ -1,7 +1,6 @@
-# Terraform GitOps, master side: merging a change to deploy/terraform/ or
-# deploy/terraform-outdoorsafetylab/ applies both modules (one with nothing to do reports 0/0/0). One run at a
+# Terraform GitOps, master side: merging a change to deploy/terraform/ applies it. One run at a
 # time, never cancelled (a killed apply leaves a half-applied state), and a Slack message whatever
-# the outcome. Credentials come from Workload Identity Federation (each module's gitops.tf): no
+# the outcome. Credentials come from Workload Identity Federation (deploy/terraform/gitops.tf): no
 # key. The webhook is the repo secret SLACK_WEBHOOK_URL; without it the apply still runs and the
 # notification step only warns, and with one from another Slack workspace the step fails.
 name: terraform-apply
@@ -11,7 +10,6 @@ on:
     branches: [master]
     paths:
       - deploy/terraform/**
-      - deploy/terraform-outdoorsafetylab/**
       - .github/workflows/terraform-apply.yml
 
 permissions:
@@ -46,11 +44,6 @@ jobs:
           - dir: deploy/terraform
             workload_identity_provider: projects/933372650185/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
             service_account: rudy-balancer-terraform@rudymap.iam.gserviceaccount.com
-          # outdoorsafetylab, being retired (#32): fixed by deploy/terraform-outdoorsafetylab/gitops.tf;
-          # 154323041965 is the project number.
-          - dir: deploy/terraform-outdoorsafetylab
-            workload_identity_provider: projects/154323041965/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
-            service_account: rudy-balancer-terraform@outdoorsafetylab.iam.gserviceaccount.com
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
@@ -67,8 +60,8 @@ jobs:
       - name: terraform apply
         id: apply
         env:
-          # deploy/terraform/data.tf's cloudflare provider; the other module has no use for it.
-          CLOUDFLARE_API_TOKEN: ${{ matrix.dir == 'deploy/terraform' && secrets.CLOUDFLARE_API_TOKEN || '' }}
+          # deploy/terraform/data.tf's cloudflare provider.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           # The runner's bash is -eo pipefail: a failed apply must still reach the lines below,
           # so the exit code is taken by hand and returned at the end.

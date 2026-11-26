@@ -1,7 +1,9 @@
 package dao
 
 import (
+	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -127,5 +129,61 @@ func TestOverQuota(t *testing.T) {
 		if got := overQuota(tt.site, tt.meter); got != tt.want {
 			t.Errorf("%s: got %v, want %v", tt.name, got, tt.want)
 		}
+	}
+}
+
+func TestPickSourcesCORSOnly(t *testing.T) {
+	if err := config.Init("docker"); err != nil {
+		t.Fatal(err)
+	}
+	if err := log.Init(); err != nil {
+		t.Fatal(err)
+	}
+	mk := func(name string, weight int) *model.Site {
+		site := &model.Site{Name: name, Weight: weight}
+		site.Sources = []*model.Source{{Site: site, SiteName: name, File: "f.zip", URL: "https://" + name + "/f.zip"}}
+		return site
+	}
+	sites := []*model.Site{mk("kcwu", 4), mk("osl", 2), mk("happyman", 1), mk("gone", 1)}
+	fs := &fileSites{
+		File:  "f.zip",
+		Sites: map[string]int64{"kcwu": 10, "osl": 10, "happyman": 10},
+		// "gone" serves web pages but no longer holds the file.
+		CORS: map[string]bool{"kcwu": true, "gone": true},
+	}
+	count := func(sources []*model.Source) map[string]int {
+		n := map[string]int{}
+		for _, src := range sources {
+			n[src.SiteName]++
+		}
+		return n
+	}
+	if got, want := count(pickSources(sites, fs, "f.zip", false, nil)), map[string]int{"kcwu": 4, "osl": 2, "happyman": 1}; !reflect.DeepEqual(got, want) {
+		t.Errorf("without Origin: %v, want %v (every site holding the file, by weight)", got, want)
+	}
+	if got, want := count(pickSources(sites, fs, "f.zip", true, nil)), map[string]int{"kcwu": 4}; !reflect.DeepEqual(got, want) {
+		t.Errorf("with Origin: %v, want %v (only sites serving web pages)", got, want)
+	}
+	fs.CORS = nil
+	if got := pickSources(sites, fs, "f.zip", true, nil); len(got) != 0 {
+		t.Errorf("with Origin and no CORS site: %v, want none", siteNames(got))
+	}
+}
+
+// /v1/sites and /v1/files report what the health check saved, CORS included.
+func TestRestoreSourceKeepsCORS(t *testing.T) {
+	saved := &model.Source{Status: model.GOOD, Size: 10, CORS: true,
+		LastModified: time.Date(2026, 11, 19, 7, 21, 20, 0, time.UTC)}
+	s := &model.Source{URL: "https://kcwu/f.zip"}
+	restoreSource(s, saved)
+	if !s.CORS || s.Status != model.GOOD || s.Size != 10 || s.LastModifiedUnix != saved.LastModified.Unix() {
+		t.Errorf("restored %+v", s)
+	}
+	b, err := json.Marshal(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), `"CORS":true`) {
+		t.Errorf("JSON %s has no \"CORS\":true", b)
 	}
 }
