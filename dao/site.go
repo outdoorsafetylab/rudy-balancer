@@ -39,6 +39,8 @@ type fileSites struct {
 	File     string
 	Sites    map[string]int64
 	Modified map[string]time.Time `firestore:",omitempty"`
+	// CORS holds the sites a web page can download this file from (#53).
+	CORS map[string]bool `firestore:",omitempty"`
 }
 
 func (dao *SiteDao) load() (*mirror.Mirror, error) {
@@ -73,22 +75,29 @@ func (dao *SiteDao) load() (*mirror.Mirror, error) {
 				s.Status = model.UNKNWON
 				continue
 			}
-			s.LastCheck = ss.LastCheck
-			s.LastCheckUnix = s.LastCheck.Unix()
-			if s.LastCheckUnix < 0 {
-				s.LastCheckUnix = 0
-			}
-			s.Status = ss.Status
-			s.Size = ss.Size
-			s.Latency = ss.Latency
-			s.LastModified = ss.LastModified
-			s.LastModifiedUnix = s.LastModified.Unix()
-			if s.LastModifiedUnix < 0 {
-				s.LastModifiedUnix = 0
-			}
+			restoreSource(s, ss)
 		}
 	}
 	return mirror, nil
+}
+
+// restoreSource copies what the health check saved for a source onto the one
+// built from mirrors.yaml, which /v1/sites and /v1/files report.
+func restoreSource(s, saved *model.Source) {
+	s.LastCheck = saved.LastCheck
+	s.LastCheckUnix = s.LastCheck.Unix()
+	if s.LastCheckUnix < 0 {
+		s.LastCheckUnix = 0
+	}
+	s.Status = saved.Status
+	s.Size = saved.Size
+	s.Latency = saved.Latency
+	s.LastModified = saved.LastModified
+	s.LastModifiedUnix = s.LastModified.Unix()
+	if s.LastModifiedUnix < 0 {
+		s.LastModifiedUnix = 0
+	}
+	s.CORS = saved.CORS
 }
 
 func (dao *SiteDao) Apps() ([]*model.App, error) {
@@ -110,6 +119,7 @@ func (dao *SiteDao) Sites() ([]*model.Site, error) {
 func (dao *SiteDao) Update(sites []*model.Site) error {
 	files := make(map[string]map[string]int64)
 	modified := make(map[string]map[string]time.Time)
+	cors := make(map[string]map[string]bool)
 	statuses := make(map[string]*siteStatus)
 	err := db.Client().RunTransaction(dao.Context, func(ctx context.Context, tx *firestore.Transaction) error {
 		for _, s := range sites {
@@ -140,6 +150,12 @@ func (dao *SiteDao) Update(sites []*model.Site) error {
 							modified[src.File] = make(map[string]time.Time)
 						}
 						modified[src.File][s.Name] = src.LastModified
+					}
+					if src.CORS {
+						if cors[src.File] == nil {
+							cors[src.File] = make(map[string]bool)
+						}
+						cors[src.File][s.Name] = true
 					}
 				case model.BAD:
 					st.bads = append(st.bads, src)
@@ -176,6 +192,7 @@ func (dao *SiteDao) Update(sites []*model.Site) error {
 				File:     file,
 				Sites:    sites,
 				Modified: modified[file],
+				CORS:     cors[file],
 			})
 			if err != nil {
 				return err

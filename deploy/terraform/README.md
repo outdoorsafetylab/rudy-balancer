@@ -14,14 +14,13 @@ The rudymap project's resources that rudy-balancer needs, as one Terraform root 
   rudymap.tw's cache rules.
 
 The Cloud Run services and the image stay with Cloud Build (`cloudbuild.yaml`), and the triggers
-are made by hand. `deploy/terraform-outdoorsafetylab/` is the old project's module, kept until the
-move is done.
+are made by hand.
 
 ## How a change goes live
 
-A pull request that touches either module gets one `terraform plan` comment per module
+A pull request that touches this module gets a `terraform plan` comment
 (`.github/workflows/terraform-plan.yml`), rewritten on every push. Merging it applies the merged code
-(`.github/workflows/terraform-apply.yml`), so read the plan comments before merging: merging is the
+(`.github/workflows/terraform-apply.yml`), so read the plan comment before merging: merging is the
 irreversible step. Nobody runs `apply` by hand except to bootstrap and when the workflow is broken;
 after such an apply, the next plan comment must read *No changes*.
 

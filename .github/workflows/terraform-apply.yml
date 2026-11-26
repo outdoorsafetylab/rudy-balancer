@@ -1,7 +1,6 @@
-# Terraform GitOps, master side: merging a change to deploy/terraform/ or
-# deploy/terraform-outdoorsafetylab/ applies both modules (one with nothing to do reports 0/0/0). One run at a
+# Terraform GitOps, master side: merging a change to deploy/terraform/ applies it. One run at a
 # time, never cancelled (a killed apply leaves a half-applied state), and a Slack message whatever
-# the outcome. Credentials come from Workload Identity Federation (each module's gitops.tf): no
+# the outcome. Credentials come from Workload Identity Federation (deploy/terraform/gitops.tf): no
 # key. The webhook is the repo secret SLACK_WEBHOOK_URL; without it the apply still runs and the
 # notification step only warns, and with one from another Slack workspace the step fails.
 name: terraform-apply
@@ -11,7 +10,6 @@ on:
     branches: [master]
     paths:
       - deploy/terraform/**
-      - deploy/terraform-outdoorsafetylab/**
       - .github/workflows/terraform-apply.yml
 
 permissions:
@@ -25,7 +23,7 @@ concurrency:
 env:
   TF_IN_AUTOMATION: "true"
   # deploy/terraform/data.tf: R2 and rudymap.tw cache rules. The cloudflare provider reads it
-  # from the environment; the other module has no use for it.
+  # from the environment.
   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
 defaults:
@@ -47,11 +45,6 @@ jobs:
           - dir: deploy/terraform
             workload_identity_provider: projects/933372650185/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
             service_account: rudy-balancer-terraform@rudymap.iam.gserviceaccount.com
-          # outdoorsafetylab, being retired (#32): fixed by deploy/terraform-outdoorsafetylab/gitops.tf;
-          # 154323041965 is the project number.
-          - dir: deploy/terraform-outdoorsafetylab
-            workload_identity_provider: projects/154323041965/locations/global/workloadIdentityPools/github-actions/providers/rudy-balancer
-            service_account: rudy-balancer-terraform@outdoorsafetylab.iam.gserviceaccount.com
     steps:
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v2
