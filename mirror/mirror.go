@@ -46,6 +46,15 @@ func load() (*Mirror, error) {
 		if folder == "" || probe == "" || strings.Contains(folder, "/") || strings.HasPrefix(probe, "/") {
 			return nil, fmt.Errorf("bad folder: %q: %q", folder, probe)
 		}
+		// A folder route is matched before the file routes, so a listed file
+		// inside a folder of that name would never be reached.
+		for _, list := range meta.Files {
+			for _, f := range list {
+				if strings.HasPrefix(f, folder+"/") {
+					return nil, fmt.Errorf("folder %q would shadow listed file %s", folder, f)
+				}
+			}
+		}
 		if meta.Files == nil {
 			meta.Files = make(map[string][]string)
 		}

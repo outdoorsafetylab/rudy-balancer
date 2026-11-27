@@ -97,8 +97,8 @@ sites:
 	if !found {
 		t.Error("no source for the folder's probe: the health check would not check it")
 	}
-	for _, bad := range []string{"folders:\n  a/b: version.txt\n", "folders:\n  style: \"\"\n"} {
-		write("files:\n  weekly:\n  - a.map.zip\n" + bad + "sites:\n- name: up\n  host: up.example.org\n  weight: 1\n")
+	for _, bad := range []string{"folders:\n  a/b: version.txt\n", "folders:\n  style: \"\"\n", "folders:\n  drops: version.txt\n"} {
+		write("files:\n  weekly:\n  - a.map.zip\n  - drops/b.map.zip\n" + bad + "sites:\n- name: up\n  host: up.example.org\n  weight: 1\n")
 		if _, err := Get(); err == nil {
 			t.Errorf("%q: no error", bad)
 		}

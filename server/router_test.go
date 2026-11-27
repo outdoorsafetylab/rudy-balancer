@@ -156,3 +156,43 @@ func TestUnknownEndpointPathsAre404(t *testing.T) {
 		t.Errorf("/v1/hgtmix.zip matched %q", got)
 	}
 }
+
+// A folder in mirrors.yaml gets its route from newRouter, ahead of the file
+// routes, with the rest of the path in the variable the handler reads (#63).
+func TestFolderRoute(t *testing.T) {
+	dir := t.TempDir()
+	file := dir + "/mirrors.yaml"
+	yaml := "files:\n  weekly:\n  - a.map.zip\nfolders:\n  style: version.txt\nsites:\n- name: up\n  host: up.example.org\n  weight: 1\n"
+	if err := os.WriteFile(file, []byte(yaml), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	os.Setenv("MIRRORS_FILE", file)
+	defer os.Unsetenv("MIRRORS_FILE")
+	if err := config.Init("docker"); err != nil {
+		t.Fatal(err)
+	}
+	if err := log.Init(); err != nil {
+		t.Fatal(err)
+	}
+	r, err := newRouter()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for path, rest := range map[string]string{
+		"/v1/style/style.json":         "style.json",
+		"/v1/style/version.txt":        "version.txt",
+		"/v1/style/glyphs/a/0-255.pbf": "glyphs/a/0-255.pbf",
+	} {
+		var match mux.RouteMatch
+		if !r.Match(httptest.NewRequest("HEAD", path, nil), &match) || match.Route == nil {
+			t.Errorf("%s: no route", path)
+			continue
+		}
+		if got, _ := match.Route.GetPathTemplate(); got != "/v1/style/{path:.+}" {
+			t.Errorf("%s: matched %q, want the folder route", path, got)
+		}
+		if match.Vars["path"] != rest {
+			t.Errorf("%s: path %q, want %q", path, match.Vars["path"], rest)
+		}
+	}
+}
