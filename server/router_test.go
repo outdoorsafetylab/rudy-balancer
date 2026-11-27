@@ -129,6 +129,75 @@ func TestFileRoutesAnswerPreflight(t *testing.T) {
 	}
 }
 
+// Paths under /v1/ with no route are a 404, not the reverse proxy's redirect
+// to <mirror>/v1/<path> (#63); listed files keep their own routes.
+func TestUnknownEndpointPathsAre404(t *testing.T) {
+	os.Setenv("MIRRORS_FILE", "../config/mirrors.yaml")
+	defer os.Unsetenv("MIRRORS_FILE")
+	if err := config.Init("docker"); err != nil {
+		t.Fatal(err)
+	}
+	if err := log.Init(); err != nil {
+		t.Fatal(err)
+	}
+	r, err := newRouter()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/v1/no-such-file.zip", "/v1/rudymap_pmtiles_style/style.json"} {
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest("HEAD", path, nil))
+		if w.Code != http.StatusNotFound {
+			t.Errorf("%s: %d (Location %q), want 404", path, w.Code, w.Header().Get("Location"))
+		}
+	}
+	var match mux.RouteMatch
+	r.Match(httptest.NewRequest("GET", "/v1/hgtmix.zip", nil), &match)
+	if got, _ := match.Route.GetPathTemplate(); got != "/v1/hgtmix.zip" {
+		t.Errorf("/v1/hgtmix.zip matched %q", got)
+	}
+}
+
+// A folder in mirrors.yaml gets its route from newRouter, ahead of the file
+// routes, with the rest of the path in the variable the handler reads (#63).
+func TestFolderRoute(t *testing.T) {
+	dir := t.TempDir()
+	file := dir + "/mirrors.yaml"
+	yaml := "files:\n  weekly:\n  - a.map.zip\nfolders:\n  style: version.txt\nsites:\n- name: up\n  host: up.example.org\n  weight: 1\n"
+	if err := os.WriteFile(file, []byte(yaml), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	os.Setenv("MIRRORS_FILE", file)
+	defer os.Unsetenv("MIRRORS_FILE")
+	if err := config.Init("docker"); err != nil {
+		t.Fatal(err)
+	}
+	if err := log.Init(); err != nil {
+		t.Fatal(err)
+	}
+	r, err := newRouter()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for path, rest := range map[string]string{
+		"/v1/style/style.json":         "style.json",
+		"/v1/style/version.txt":        "version.txt",
+		"/v1/style/glyphs/a/0-255.pbf": "glyphs/a/0-255.pbf",
+	} {
+		var match mux.RouteMatch
+		if !r.Match(httptest.NewRequest("HEAD", path, nil), &match) || match.Route == nil {
+			t.Errorf("%s: no route", path)
+			continue
+		}
+		if got, _ := match.Route.GetPathTemplate(); got != "/v1/style/{path:.+}" {
+			t.Errorf("%s: matched %q, want the folder route", path, got)
+		}
+		if match.Vars["path"] != rest {
+			t.Errorf("%s: path %q, want %q", path, match.Vars["path"], rest)
+		}
+	}
+}
+
 // /deployment and /developers are the balancer's own pages, served from the
 // webroot; the rest of the root still goes to Rudy Map's site on the mirrors.
 func TestDocumentationPages(t *testing.T) {

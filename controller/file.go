@@ -14,6 +14,7 @@ import (
 	"service/model"
 	"service/statuspage"
 
+	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -24,6 +25,11 @@ type FileController struct {
 	// plain /v1/<file> route. Many apps download with a library-default
 	// User-Agent, so this is the only way to tell them apart.
 	Via string
+	// Folder, when set, makes this the route for /v1/<Folder>/<path>: File is
+	// the folder's probe, the mirror is picked by it, and the redirect goes to
+	// <path> in that mirror's folder. Such reads are a web page's assets, not
+	// downloads, so they are not recorded (#63).
+	Folder string
 	// sources stands in for dao.FileDao.GetSources in tests.
 	sources func(ctx context.Context, file string, corsOnly bool) ([]*model.Source, error)
 }
@@ -80,6 +86,11 @@ func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
 		if ip, err := geoip.IPAddress(r); err == nil {
 			src = stickySource(sources, ip.String())
 		}
+	}
+	if c.Folder != "" {
+		// mux cleans the path first, so <path> cannot climb out of the folder
+		http.Redirect(w, r, src.Site.GetRedirectURL(c.Folder+"/"+mux.Vars(r)["path"]), http.StatusFound)
+		return
 	}
 	http.Redirect(w, r, src.URL, http.StatusFound)
 	stop := time.Now()
