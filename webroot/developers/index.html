@@ -174,7 +174,7 @@ new maplibregl.Map({ container: "map", style, center: [header.centerLon, header.
         <h2 class="h5 mt-4" id="app-tiles">線上圖磚</h2>
         <p><a href="https://tiles.rudymap.tw/">tiles.rudymap.tw</a> 把魯地圖的 Mapsforge 地圖畫成圖磚。圖磚網址從 <code>https://tiles.rudymap.tw/tilejson</code> 取得：<code>tiles</code> 是 256 px 的圖磚，<code>tiles_2x</code> 是給高解析度螢幕的 512 px 版本，<code>attribution</code> 是出處標示。不讀 tilejson 的程式可以用 <code>https://tiles.rudymap.tw/latest/{z}/{x}/{y}.png</code> (高解析度換成 <code>@2x.png</code>)。</p>
         <ul>
-          <li>請照<a href="#app-user-agent">上面的格式</a>帶 <code>User-Agent</code>。</li>
+          <li>請照<a href="#app-user-agent">User-Agent 那段的格式</a>帶 <code>User-Agent</code>。</li>
             <li>從 tilejson 取得的圖磚網址，請確認主機是 <code>tiles.rudymap.tw</code> 再用。</li>
           <li>版本號不要寫死在網址裡。每週更新後，舊版號的圖磚會回 404，請重新讀 tilejson，或改用 <code>latest</code>。</li>
           <li>只抓縮放層級 7–18 的圖磚，超出範圍會回 400。帶版本號的圖磚可以一直快取，<code>latest</code> 快取一天。</li>
@@ -256,7 +256,7 @@ TrailMaps/1.4.2 (+https://example.org/)</code></pre>
       <h2 class="h5 mt-4" id="report">讓使用報告認得你</h2>
       <p>我們每季公開<a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>，向架設鏡像站的志工與圖資作者說明魯地圖被怎麼使用，報告裡會列出各應用程式的下載量；出問題時也靠它找到開發者。</p>
       <ul>
-        <li><strong>應用程式</strong>：照<a href="#app-user-agent">上面的格式</a>帶 <code>User-Agent</code>。</li>
+        <li><strong>應用程式</strong>：照<a href="#app-user-agent">User-Agent 那段的格式</a>帶 <code>User-Agent</code>。</li>
         <li><strong>網頁</strong>：目前使用報告只依檔名與 <code>User-Agent</code> 分，瀏覽器的下載都算在「網頁瀏覽器」，還分不出是哪個網站。仍歡迎登記網站的主機名稱，出問題時我們才找得到你。</li>
         <li><strong>登記</strong>：到 <a href="https://github.com/outdoorsafetylab/rudy-balancer/issues">rudy-balancer</a> 開一個 issue，寫上產品名稱、網址 (網站；沒有網站的應用程式，給 Google Play 或 App Store 的頁面)、聯絡方式，以及 <code>User-Agent</code> 的開頭 (應用程式) 或網站的主機名稱 (網頁)。我們會登記到 <a href="https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/downstreams.yaml">downstreams.yaml</a>。登記不是使用的前提，也不影響分流。</li>
       </ul>
@@ -306,7 +306,8 @@ TrailMaps/1.4.2 (+https://example.org/)</code></pre>
         const halves = pane ? pane.dataset.forPane.split(" ") : [];
         const before = half;
         half = halves.length === 1 ? halves[0] : halves.includes(half) ? half : halves[0] || null;
-        if (half !== before) kind = null;
+        // a link to the half itself (#web, #app, or Back from a kind) has no kind yet
+        if (half !== before || el === pane) kind = null;
         const section = el && el.closest("[data-kind]");
         if (section) kind = section.dataset.kind;
         const extra = el && el.closest("[data-detail], [data-shared]");
