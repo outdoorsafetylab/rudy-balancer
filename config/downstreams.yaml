@@ -51,6 +51,13 @@ downstreams:
   email: outdoorsafetylab@gmail.com
   user_agents:
   - twdcompass/
+- id: dija
+  name: Dija 抵家
+  developer: Outdoor Safety Lab
+  url: https://dija.oslab.tw/
+  email: outdoorsafetylab@gmail.com
+  user_agents:
+  - dija/
 - id: gpxhub
   name: 航跡管理器
   developer: Outdoor Safety Lab
