@@ -76,7 +76,7 @@ map.addLayer({ id: "rudy", type: "raster", source: "rudy" });</code></pre>
         <li>樣式：<code>rudymap_pmtiles_style.zip</code>，所有地區共用。裡面有 <code>style.json</code> 與紙本風格的 <code>paper.json</code>、圖示 <code>sprite/</code> 與 <code>sprite-paper/</code>、拉丁字形 <code>glyphs/</code>、<code>version.txt</code>。</li>
       </ul>
       <p>樣式有兩個資料來源：<code>topo</code> 是地圖，<code>dem</code> 是高程。樣式裡的來源網址、<code>glyphs</code> 和 <code>sprite</code> 都是相對檔名，載入前請依來源 id 換成地圖檔和高程檔的完整網址。沒有高程檔，就拿掉 <code>dem</code> 來源和 <code>hillshade</code> 圖層。填不到來源請當成錯誤，不要沿用樣式裡寫的網址，否則可能畫出別的地區。</p>
-          <p>網頁用 MapLibre GL JS。地圖檔和高程檔可以直接經分流器讀。分流器會把同一個網頁用戶端固定轉到同一個鏡像站，所以就算每次讀取都經過分流器，讀到的也是同一份檔 (換了網路可能會換站)；但每次都會多一趟轉址，建議先問分流器一次，之後都直接讀它轉到的那一站。<code>rudymap.tw</code> 連不上時，可以改問備援入口 <code>rudy.oslab.tw</code>。樣式 zip 請解開，放在自己的網站。</p>
+          <p>網頁用 MapLibre GL JS。地圖檔和高程檔請先問分流器一次，之後都直接讀它轉到的那一站。分流器會盡量把同一個網頁用戶端轉到同一個鏡像站，但那一站被排除或用戶端換了網路時會換站，讀到一半換站就可能接到另一份檔；每次讀取都經過分流器，也會每次多一趟轉址。<code>rudymap.tw</code> 連不上時，可以改問備援入口 <code>rudy.oslab.tw</code>。樣式 zip 請解開，放在自己的網站。</p>
       <pre><code>const base = "https://example.com/rudymap/";      // 解開樣式 zip 的資料夾
 const mirror = async (file) =&gt; {                   // 分流器挑的鏡像站
   const r = await fetch("https://rudymap.tw/v1/" + file, { method: "HEAD" });
@@ -152,7 +152,7 @@ TrailMaps/1.4.2 (+https://example.org/)</code></pre>
         <li><strong>Flutter / Dart</strong>：<code>HttpClient()..userAgent = ua</code>，或在 <code>package:http</code> 的請求加上標頭。</li>
       </ul>
       <h3 class="h6 mt-3">目前辨識得出的 app</h3>
-      <p>報告依下列規則辨識下載來源；其餘歸在「未知」或「其他」。</p>
+      <p>報告依下列規則辨識下載來源，先看下載的檔名、再看 <code>User-Agent</code> (例如瀏覽器下載 <code>.exe</code> 算 Garmin)；其餘歸在「未知」或「其他」。</p>
       <div class="table-responsive">
         <table class="table table-sm">
           <thead>
@@ -201,7 +201,7 @@ TrailMaps/1.4.2 (+https://example.org/)</code></pre>
       <ol>
         <li>依<a href="#app-download">下載規則</a>下載地圖、主題，要地形陰影再加高程檔，各自解開。</li>
         <li>主題要整個資料夾一起放：<code>MOI_OSM.xml</code> 用相對路徑讀旁邊的圖示資料夾，只留 XML 會畫不出圖示。</li>
-        <li>高程檔解開後把 <code>.hgt</code> 放在同一個資料夾，交給地圖程式庫的地形陰影設定。有地形陰影的主題裡寫了 <code>&lt;hillshading /&gt;</code>；沒有設定高程檔時，地圖照常畫，只是沒有陰影。</li>
+        <li>高程檔解開後把 <code>.hgt</code> 放在同一個資料夾，交給地圖程式庫的地形陰影設定。有地形陰影的主題裡寫了 <code>&lt;hillshading /&gt;</code>；不給高程檔時應該照常畫、只是沒有陰影，請在你用的程式庫確認一次。</li>
         <li>Android 或 Java 用 <a href="https://github.com/mapsforge/mapsforge">mapsforge</a>：地圖檔用 <code>MapFile</code> 讀，主題用 <code>ExternalRenderTheme</code> 指到解開的 XML，地形陰影用 <code>HillsRenderConfig</code> 加 <code>MemoryCachingHgtReaderTileSource</code> 指到高程檔資料夾。Flutter 可以用 <a href="https://pub.dev/packages/mapsforge_flutter">mapsforge_flutter</a>。</li>
         <li>POI 檔是 SQLite 格式的 Mapsforge POI 資料庫，可用 mapsforge 的 POI 程式庫依位置或名稱查詢。</li>
       </ol>
