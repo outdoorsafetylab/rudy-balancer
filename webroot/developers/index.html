@@ -331,15 +331,19 @@ TrailMaps/1.4.2 (+https://example.org/)</code></pre>
         if (section) kind = section.dataset.kind;
         const extra = el && el.closest("[data-detail], [data-shared]");
         show(extra);
-        if (kinds.has(id)) {
-          // picking a kind shows its must-read list first, not the section below it
-          const must = pane.querySelector("[data-must]");
-          if (must) must.scrollIntoView();
-        } else if (el && el !== pane) {
-          el.scrollIntoView();
-        }
+        // Scroll after the browser's own jump to the fragment, which would land
+        // on a kind's section and skip its must-read list.
+        setTimeout(() => {
+          if (kinds.has(id)) {
+            const must = pane.querySelector("[data-must]");
+            if (must) must.scrollIntoView();
+          } else if (el && el !== pane) {
+            el.scrollIntoView();
+          }
+        }, 0);
       };
       window.addEventListener("hashchange", fromHash);
+      window.addEventListener("load", fromHash);
       fromHash();
     })();
   </script>
