@@ -22,9 +22,14 @@ func newRouter() (*mux.Router, error) {
 
 	r := mux.NewRouter()
 	r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
-	r.PathPrefix("/app").Handler(&webrootHandler{
-		path: cfg.GetString("webroot"),
-	})
+	webroot := &webrootHandler{path: cfg.GetString("webroot")}
+	r.PathPrefix("/app").Handler(webroot)
+	// The balancer's own documentation pages. Everything else at the root is
+	// Rudy Map's site, proxied from the mirrors (the NotFoundHandler below).
+	for _, page := range []string{"/deployment", "/developers"} {
+		r.Path(page).Handler(webroot)
+		r.Path(page + "/").Handler(webroot)
+	}
 
 	prefix := cfg.GetString("endpoint")
 	endpoint := r.PathPrefix(prefix).Subrouter()

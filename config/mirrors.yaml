@@ -208,7 +208,7 @@ apps:
   name: OruxMaps
   android: true
   description: |
-    <p>OruxMaps 支援 Android 平台。若您還沒在手機上安裝，請先到 <a href="https://play.google.com/store/apps/details?id=com.orux.oruxmapsDonate">Google Play</a> 安裝贊助版，或至其<a href="https://www.oruxmaps.com/cs/en/more/downloads">官網</a>安裝免費版。</p>
+    <p>OruxMaps 支援 Android 平台。若您還沒在手機上安裝，請到 <a href="https://play.google.com/store/apps/details?id=com.orux.oruxmapsDonate">Google Play</a> 安裝。</p>
   icon: /images/OruxMaps.jpeg
   variants:
   - id: standard

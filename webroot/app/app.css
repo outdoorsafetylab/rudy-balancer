@@ -18,3 +18,62 @@
 .icon-link:hover>.bi {
     transform: translate(.25rem);
 }
+
+/* The documentation pages (/deployment, /developers). */
+.doc p,
+.doc li {
+    max-width: 75ch;
+}
+
+.doc pre {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: .25rem;
+    padding: .75rem 1rem;
+    overflow-x: auto;
+}
+
+.doc .toc {
+    columns: 2 14rem;
+}
+
+.arch svg {
+    width: 100%;
+    max-width: 640px;
+    height: auto;
+    color: #3a4280;
+}
+
+.arch .box rect {
+    fill: #fff;
+    stroke: #3a4280;
+    stroke-width: 1.5;
+}
+
+.arch .entry rect {
+    fill: #eef0fa;
+}
+
+.arch text {
+    font-size: 15px;
+    text-anchor: middle;
+    fill: #212529;
+}
+
+.arch text.sub {
+    font-size: 12px;
+    fill: #6c757d;
+}
+
+.arch .flow path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+}
+
+.doc .for-pick {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+}
