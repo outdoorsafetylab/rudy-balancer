@@ -3,14 +3,15 @@
 # 這份檔案讓我們認得出流量來自哪個產品，用在使用報告裡，出問題時也找得到開發者。
 # 登記不是使用的前提，也不會改變分流結果。
 #
-# 登記方式：到 https://github.com/outdoorsafetylab/rudy-balancer/issues 開一個 issue，寫上產品名稱、網址、聯絡方式，
+# 登記方式：到 https://github.com/outdoorsafetylab/rudy-balancer/issues 開一個 issue，寫上產品名稱、
+# 網址 (網站；沒有網站的應用程式，給 Google Play 或 App Store 的頁面)、聯絡方式，
 # 以及 User-Agent 的開頭或網站的主機名稱，我們會在 downstreams 底下加一筆。
 # 熟悉格式的話，也可以直接開 pull request。
 #
 #   id           小寫英數字，可用單一的 - 連接（不可開頭、結尾或連續），在這份檔案裡不重複。報告用它當代號。
 #   name         產品名稱。
 #   developer    開發者或公司名稱（可省略）。
-#   url          產品頁或聯絡網址（https），我們需要時可以找到你。
+#   url          產品網站，或 Google Play、App Store 的頁面（https），我們需要時可以找到你。
 #   email        聯絡信箱（可省略，但強烈建議填寫）。rudymap.tw 本身出問題時，這是我們唯一能通知你的方式。
 #                只填信箱本身，例如 dev@example.com。這份檔案是公開的，請填你願意公開的信箱。
 #   user_agents  app 送出的 User-Agent 開頭，例如 MyHikingApp/。

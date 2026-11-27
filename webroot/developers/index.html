@@ -246,11 +246,11 @@ TrailMaps/1.4.2 (+https://example.org/)</code></pre>
 
     <section data-for-pane="web app">
       <h2 class="h5 mt-4" id="report">讓使用報告認得你</h2>
-      <p>我們每季公開<a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>，向架設鏡像站的志工與圖資作者說明魯地圖被怎麼使用，報告裡會列出各網站和應用程式的下載量；出問題時也靠它找到開發者。</p>
+      <p>我們每季公開<a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>，向架設鏡像站的志工與圖資作者說明魯地圖被怎麼使用，報告裡會列出各應用程式的下載量；出問題時也靠它找到開發者。</p>
       <ul>
         <li><strong>應用程式</strong>：照<a href="#app-user-agent">上面的格式</a>帶 <code>User-Agent</code>。</li>
         <li><strong>網頁</strong>：目前使用報告只依檔名與 <code>User-Agent</code> 分，瀏覽器的下載都算在「網頁瀏覽器」，還分不出是哪個網站。仍歡迎登記網站的主機名稱，出問題時我們才找得到你。</li>
-        <li><strong>登記</strong>：到 <a href="https://github.com/outdoorsafetylab/rudy-balancer/issues">rudy-balancer</a> 開一個 issue，寫上產品名稱、網址、聯絡方式，以及 <code>User-Agent</code> 的開頭 (應用程式) 或網站的主機名稱 (網頁)。我們會登記到 <a href="https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/downstreams.yaml">downstreams.yaml</a>。登記不是使用的前提，也不影響分流。</li>
+        <li><strong>登記</strong>：到 <a href="https://github.com/outdoorsafetylab/rudy-balancer/issues">rudy-balancer</a> 開一個 issue，寫上產品名稱、網址 (網站；沒有網站的應用程式，給 Google Play 或 App Store 的頁面)、聯絡方式，以及 <code>User-Agent</code> 的開頭 (應用程式) 或網站的主機名稱 (網頁)。我們會登記到 <a href="https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/downstreams.yaml">downstreams.yaml</a>。登記不是使用的前提，也不影響分流。</li>
       </ul>
       <h2 class="h5 mt-4" id="copyright">版權與出處</h2>
       <p>魯地圖的授權與散佈方式，請見<a href="https://rudymap.tw/">魯地圖官網</a>的「地圖版權與散佈說明」。地圖資料 © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>；台灣的等高線與高程來自內政部。</p>
@@ -260,7 +260,7 @@ TrailMaps/1.4.2 (+https://example.org/)</code></pre>
       </ul>
 
       <h2 class="h5 mt-4" id="contact">聯絡我們</h2>
-      <p>有任何問題，或想確認你的應用程式在報告中是否被正確辨識，請來信 <code>outdoorsafetylab 小老鼠 gmail 點 com</code>。程式與設定在 <a href="https://github.com/outdoorsafetylab/rudy-balancer">GitHub</a>，也歡迎開 issue。</p>
+      <p>有任何問題，或想知道你的應用程式或網站在報告裡怎麼計算，請來信 <code>outdoorsafetylab 小老鼠 gmail 點 com</code>。程式與設定在 <a href="https://github.com/outdoorsafetylab/rudy-balancer">GitHub</a>，也歡迎開 issue。</p>
     </section>
   </main>
   <footer class="container text-muted small text-center my-4">
