@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type webrootHandler struct {
@@ -30,12 +31,21 @@ func (h *webrootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	match := r.Header.Get("If-None-Match")
-	if match == sum {
-		w.WriteHeader(304)
-		return
+	// Revalidate every time: these pages change in place under the same URL
+	// (a stylesheet left cached for days drew the deployment diagram in black),
+	// and with no Cache-Control a browser guesses a lifetime from the file's age.
+	// A strong ETag is quoted; the unquoted form older responses carried is
+	// still accepted, so those caches revalidate to a 304 too.
+	etag := `"` + sum + `"`
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("ETag", etag)
+	for _, m := range strings.Split(r.Header.Get("If-None-Match"), ",") {
+		m = strings.TrimPrefix(strings.TrimSpace(m), "W/")
+		if m == etag || m == sum || m == "*" {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
 	}
-	w.Header().Set("ETag", sum)
 	http.ServeFile(w, r, path)
 }
 

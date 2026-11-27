@@ -12,7 +12,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
     crossorigin="anonymous"></script>
-  <link href="/app/app.css" rel="stylesheet">
+  <link href="/app/app.css?v=2" rel="stylesheet">
   <!-- What this page says about failover must match what the balancer does:
        update it in the same change as dao/file.go, controller/file.go,
        controller/affinity.go or the health check. -->
@@ -47,39 +47,39 @@
         <title id="arch-title">下載經入口轉址到鏡像站</title>
         <defs>
           <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-            <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+            <path d="M0,0 L10,5 L0,10 z" fill="#3a4280" />
           </marker>
         </defs>
         <g class="box">
-          <rect x="10" y="95" width="120" height="60" rx="6" />
-          <text x="70" y="122">App、網頁</text>
-          <text x="70" y="142" class="sub">下載的人</text>
+          <rect x="10" y="95" width="120" height="60" rx="6" fill="#fff" stroke="#3a4280" stroke-width="1.5" />
+          <text x="70" y="122" text-anchor="middle" font-size="15" fill="#212529">應用程式、網頁</text>
+          <text x="70" y="142" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">下載的人</text>
         </g>
         <g class="box entry">
-          <rect x="200" y="40" width="170" height="60" rx="6" />
-          <text x="285" y="67">rudymap.tw</text>
-          <text x="285" y="87" class="sub">主要入口</text>
-          <rect x="200" y="150" width="170" height="60" rx="6" />
-          <text x="285" y="177">rudy.oslab.tw</text>
-          <text x="285" y="197" class="sub">備援入口</text>
+          <rect x="200" y="40" width="170" height="60" rx="6" fill="#eef0fa" stroke="#3a4280" stroke-width="1.5" />
+          <text x="285" y="67" text-anchor="middle" font-size="15" fill="#212529">rudymap.tw</text>
+          <text x="285" y="87" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">主要入口</text>
+          <rect x="200" y="150" width="170" height="60" rx="6" fill="#eef0fa" stroke="#3a4280" stroke-width="1.5" />
+          <text x="285" y="177" text-anchor="middle" font-size="15" fill="#212529">rudy.oslab.tw</text>
+          <text x="285" y="197" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">備援入口</text>
         </g>
         <g class="box">
-          <rect x="450" y="20" width="180" height="210" rx="6" />
-          <text x="540" y="52">志工鏡像站</text>
-          <text x="540" y="92" class="sub">站 A</text>
-          <text x="540" y="122" class="sub">站 B</text>
-          <text x="540" y="152" class="sub">站 C</text>
-          <text x="540" y="182" class="sub">…</text>
+          <rect x="450" y="20" width="180" height="210" rx="6" fill="#fff" stroke="#3a4280" stroke-width="1.5" />
+          <text x="540" y="52" text-anchor="middle" font-size="15" fill="#212529">志工鏡像站</text>
+          <text x="540" y="92" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">站 A</text>
+          <text x="540" y="122" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">站 B</text>
+          <text x="540" y="152" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">站 C</text>
+          <text x="540" y="182" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">…</text>
         </g>
-        <g class="flow">
+        <g class="flow" fill="none" stroke="#3a4280" stroke-width="1.5">
           <path d="M130,115 L198,75" marker-end="url(#arrow)" />
           <path d="M130,135 L198,175" marker-end="url(#arrow)" stroke-dasharray="5 4" />
           <path d="M370,70 L448,90" marker-end="url(#arrow)" />
           <path d="M370,180 L448,160" marker-end="url(#arrow)" />
         </g>
-        <text x="410" y="66" class="sub">302</text>
-        <text x="410" y="200" class="sub">302</text>
-        <text x="150" y="184" class="sub">連不上時</text>
+        <text x="410" y="66" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">302</text>
+        <text x="410" y="200" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">302</text>
+        <text x="150" y="184" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">連不上時</text>
       </svg>
       <figcaption class="text-muted small">入口只回轉址 (302)，檔案直接從鏡像站送出，不經過分流器。</figcaption>
     </figure>
@@ -162,7 +162,7 @@
     <h2 class="h5 mt-4">狀態與報告</h2>
     <ul>
       <li><a href="https://rudymap.statuspage.io/">狀態頁</a>：各鏡像站與入口網站的即時狀態，以及過去的故障紀錄。</li>
-      <li><a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>：每季公開各鏡像站、各 app 的下載量，向志工、圖資作者與 app 致謝。</li>
+      <li><a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>：每季公開各鏡像站、各應用程式的下載量，向志工與圖資作者說明魯地圖的使用情況。</li>
       <li>程式與設定都在 <a href="https://github.com/outdoorsafetylab/rudy-balancer">GitHub</a>。</li>
     </ul>
   </main>
