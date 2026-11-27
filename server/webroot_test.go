@@ -114,6 +114,9 @@ func TestDeploymentDiagramSelfStyled(t *testing.T) {
 	if !strings.Contains(svg, `<g class="flow" fill="none" stroke=`) {
 		t.Error("the arrows' group has no stroke of its own")
 	}
+	if !strings.Contains(svg, `<path d="M0,0 L10,5 L0,10 z" fill="#`) {
+		t.Error("the arrowhead has no colour of its own (currentColor is black without the stylesheet)")
+	}
 }
 
 // Pages ask for the stylesheet under a versioned URL: responses before
