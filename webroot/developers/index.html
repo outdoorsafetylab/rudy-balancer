@@ -47,6 +47,8 @@
         <a class="btn btn-outline-secondary btn-sm" href="#web-tiles" data-pick="web-tiles">線上圖磚</a>
         <a class="btn btn-outline-secondary btn-sm" href="#web-pmtiles" data-pick="web-pmtiles">向量版 PMTiles (測試中)</a>
       </div>
+      <span id="web-tiles"></span>
+      <span id="web-pmtiles"></span>
       <div class="must-read" data-must>
         <h2 class="h6">必讀</h2>
         <ul>
@@ -57,7 +59,7 @@
         </ul>
       </div>
       <section data-kind="web-tiles">
-        <h2 class="h5 mt-4" id="web-tiles">線上圖磚</h2>
+        <h2 class="h5 mt-4">線上圖磚</h2>
         <p><a href="https://tiles.rudymap.tw/">tiles.rudymap.tw</a> 把魯地圖的 Mapsforge 地圖畫成圖磚。圖磚網址從 tilejson 取得：</p>
         <pre><code>https://tiles.rudymap.tw/tilejson</code></pre>
         <p>tilejson 的 <code>tiles</code> 是 256 px 的圖磚，<code>tiles_2x</code> 是給高解析度螢幕的 512 px 版本；<code>attribution</code> 是出處標示。</p>
@@ -79,7 +81,7 @@ map.addLayer({ id: "rudy", type: "raster", source: "rudy" });</code></pre>
         </ul>
       </section>
       <section data-kind="web-pmtiles">
-        <h2 class="h5 mt-4" id="web-pmtiles">向量版 PMTiles (測試中)</h2>
+        <h2 class="h5 mt-4">向量版 PMTiles (測試中)</h2>
         <div class="alert alert-warning py-2" role="note">向量版還在測試，檔案與樣式的內容可能隨時調整。</div>
         <p>向量版是 PMTiles 格式，用 MapLibre 畫。目前分流器上只有台灣的向量版檔案，每週發布：</p>
         <ul>
@@ -122,6 +124,9 @@ new maplibregl.Map({ container: "map", style, center: [header.centerLon, header.
         <a class="btn btn-outline-secondary btn-sm" href="#app-pmtiles" data-pick="app-pmtiles">向量版 PMTiles 離線地圖 (測試中)</a>
         <a class="btn btn-outline-secondary btn-sm" href="#app-tiles" data-pick="app-tiles">線上圖磚</a>
       </div>
+      <span id="app-mapsforge"></span>
+      <span id="app-pmtiles"></span>
+      <span id="app-tiles"></span>
       <div class="must-read" data-must>
         <h2 class="h6">必讀</h2>
         <ul>
@@ -131,7 +136,7 @@ new maplibregl.Map({ container: "map", style, center: [header.centerLon, header.
         </ul>
       </div>
       <section data-kind="app-mapsforge">
-        <h2 class="h5 mt-4" id="app-mapsforge">Mapsforge 離線地圖</h2>
+        <h2 class="h5 mt-4">Mapsforge 離線地圖</h2>
         <p>魯地圖原本就是 Mapsforge 地圖，手機應用程式最常用的是這一套。每週發布，以台灣為例：</p>
         <div class="table-responsive">
           <table class="table table-sm">
@@ -166,7 +171,7 @@ new maplibregl.Map({ container: "map", style, center: [header.centerLon, header.
         <p>主題 zip 裡的 <code>MOI_OSM.pdf</code>、<code>MOI_OSM.png</code> 是圖例。主題內建的選單 (例如步道、等高線間距) 由應用程式依 XML 的 <code>stylemenu</code> 呈現；不做選單的應用程式照預設畫即可。</p>
       </section>
       <section data-kind="app-pmtiles">
-        <h2 class="h5 mt-4" id="app-pmtiles">向量版 PMTiles 離線地圖 (測試中)</h2>
+        <h2 class="h5 mt-4">向量版 PMTiles 離線地圖 (測試中)</h2>
         <div class="alert alert-warning py-2" role="note">向量版還在測試，檔案與樣式的內容可能隨時調整。</div>
         <p>向量版是 PMTiles 格式，用 MapLibre 畫。目前分流器上只有台灣的向量版檔案，每週發布：</p>
         <ul>
@@ -188,7 +193,7 @@ new maplibregl.Map({ container: "map", style, center: [header.centerLon, header.
         <p>樣式 metadata 的 <code>taiwan-topo:overlays</code> 列出各個開關和它打開的分類，<code>taiwan-topo:style-cats</code> 是一直開著的分類，每個圖層的 <code>metadata["taiwan-topo:cats"]</code> 列出它需要的分類。需要的分類都開著，圖層才顯示，和魯地圖 Mapsforge 主題的選單相同。不做圖層開關的應用程式照樣式原樣畫即可。</p>
       </section>
       <section data-kind="app-tiles">
-        <h2 class="h5 mt-4" id="app-tiles">線上圖磚</h2>
+        <h2 class="h5 mt-4">線上圖磚</h2>
         <p><a href="https://tiles.rudymap.tw/">tiles.rudymap.tw</a> 把魯地圖的 Mapsforge 地圖畫成圖磚。圖磚網址從 <code>https://tiles.rudymap.tw/tilejson</code> 取得：<code>tiles</code> 是 256 px 的圖磚，<code>tiles_2x</code> 是給高解析度螢幕的 512 px 版本，<code>attribution</code> 是出處標示。不讀 tilejson 的程式可以用 <code>https://tiles.rudymap.tw/latest/{z}/{x}/{y}.png</code> (高解析度換成 <code>@2x.png</code>)。</p>
         <ul>
           <li>請照<a href="#app-user-agent">上面的格式</a>帶 <code>User-Agent</code>。</li>
@@ -327,23 +332,17 @@ TrailMaps/1.4.2 (+https://example.org/)</code></pre>
         const before = half;
         half = halves.length === 1 ? halves[0] : halves.includes(half) ? half : halves[0] || null;
         if (half !== before) kind = null;
+        // a kind's id sits just above the must-read list, so the browser's own
+        // jump to the fragment lands on that list rather than the section below
         const section = el && el.closest("[data-kind]");
-        if (section) kind = section.dataset.kind;
+        if (kinds.has(id)) kind = id;
+        else if (section) kind = section.dataset.kind;
         const extra = el && el.closest("[data-detail], [data-shared]");
         show(extra);
-        // Scroll after the browser's own jump to the fragment, which would land
-        // on a kind's section and skip its must-read list.
-        setTimeout(() => {
-          if (kinds.has(id)) {
-            const must = pane.querySelector("[data-must]");
-            if (must) must.scrollIntoView();
-          } else if (el && el !== pane) {
-            el.scrollIntoView();
-          }
-        }, 0);
+        // the target may only now be shown: jump to it after the browser's own
+        if (el && el !== pane) setTimeout(() => el.scrollIntoView(), 0);
       };
       window.addEventListener("hashchange", fromHash);
-      window.addEventListener("load", fromHash);
       fromHash();
     })();
   </script>
