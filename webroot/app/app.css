@@ -77,11 +77,3 @@
     align-items: center;
     gap: .5rem;
 }
-
-.doc .must-read {
-    background: #fff;
-    border: 1px solid #c9cdea;
-    border-radius: .25rem;
-    padding: .75rem 1rem .25rem;
-    margin: 1rem 0;
-}
