@@ -81,10 +81,12 @@ sites:
   monthlyQuota: 900000000000
   proxyscheme: https
 # Files only, on Cloudflare R2, so no proxyscheme: there is no landing page.
+# Weight 1 while it was new; 2 after watching it on the status page (healthier
+# than Happyman's over the same weeks).
 - name: PeaKit
   host: rudy.peakitcdn.com
   redirectscheme: https
-  weight: 1
+  weight: 2
 apps:
 - id: hikinglogger
   name: 山林日誌
