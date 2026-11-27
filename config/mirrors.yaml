@@ -35,8 +35,9 @@ files:
   - MOI_OSM_Taiwan_TOPO_Rudy.poi.zip
   - MOI_OSM_Taiwan_TOPO_Rudy_v2.poi.zip
   - MOI_OSM_Taiwan_TOPO_Rudy.db.zip
-  # Old name of rudymap_pmtiles_style.zip, still linked from the Rudy Map homepage;
-  # drop it once the homepage links the new name.
+  # Old name of rudymap_pmtiles_style.zip, still linked from the published homepage
+  # (https://rudymap.tw/taiwan_topo.html). Drop it once that page links the new
+  # name: taiwan-topo's markdown already does, but the published page lags it.
   - MOI_OSM_Taiwan_TOPO_Rudy_pmtiles_style.zip
   - MOI_OSM_Taiwan_TOPO_Rudy_style.zip
   - MOI_OSM_twmap_style.zip
