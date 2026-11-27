@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 )
 
@@ -24,19 +25,19 @@ type Site struct {
 }
 
 func (s *Site) GetRedirectURL(uri string) string {
-	if uri != "" {
-		if !strings.HasPrefix(uri, "/") {
-			uri = "/" + uri
-		}
-	}
-	return fmt.Sprintf("%s://%s%s%s", s.RedirectScheme, s.Host, s.Prefix, uri)
+	return fmt.Sprintf("%s://%s%s", s.RedirectScheme, s.Host, s.path(uri))
 }
 
 func (s *Site) GetProxyURL(uri string) string {
-	if uri != "" {
-		if !strings.HasPrefix(uri, "/") {
-			uri = "/" + uri
-		}
+	return fmt.Sprintf("%s://%s%s", s.ProxyScheme, s.Host, s.path(uri))
+}
+
+// path is the prefix and the file's path, escaped for a URL: a file name with a
+// space (a glyph range under "Noto Sans Regular") would otherwise go out raw in
+// a Location header, which http.Redirect escapes only beyond ASCII (#57).
+func (s *Site) path(uri string) string {
+	if uri != "" && !strings.HasPrefix(uri, "/") {
+		uri = "/" + uri
 	}
-	return fmt.Sprintf("%s://%s%s%s", s.ProxyScheme, s.Host, s.Prefix, uri)
+	return (&url.URL{Path: s.Prefix + uri}).EscapedPath()
 }
