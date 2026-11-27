@@ -75,6 +75,12 @@ func (c *FileController) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	src := sources[rand.Intn(len(sources))]
+	if corsOnly {
+		// a web page: the same mirror for the same client (#58)
+		if ip, err := geoip.IPAddress(r); err == nil {
+			src = stickySource(sources, ip.String())
+		}
+	}
 	http.Redirect(w, r, src.URL, http.StatusFound)
 	stop := time.Now()
 	if r.Method != "GET" {
