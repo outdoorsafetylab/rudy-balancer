@@ -127,7 +127,7 @@ new maplibregl.Map({ container: "map", style, center: [header.centerLon, header.
 
       <h2 class="h5 mt-4" id="app-user-agent">User-Agent：請標示應用程式名稱</h2>
       <p>
-        我們每季公開<a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>，向志工、圖資作者與各應用程式致謝。報告靠 <code>User-Agent</code> 辨識下載來自哪個應用程式。如果只帶著 <code>Dalvik/2.1.0</code>、<code>Dart/3.5</code> 這類函式庫或系統的預設值，我們就認不出是哪個應用程式，出問題時也找不到開發者。
+        我們每季公開<a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>，列出各應用程式的下載量。報告靠 <code>User-Agent</code> 辨識下載來自哪個應用程式。如果只帶著 <code>Dalvik/2.1.0</code>、<code>Dart/3.5</code> 這類函式庫或系統的預設值，我們就認不出是哪個應用程式，出問題時也找不到開發者。
       </p>
       <p>向 <code>rudymap.tw</code> 下載時，請在 <code>User-Agent</code> 標頭放上：</p>
       <pre><code>AppName/版本 (+聯絡網址)</code></pre>
@@ -246,7 +246,7 @@ TrailMaps/1.4.2 (+https://example.org/)</code></pre>
 
     <section data-for-pane="web app">
       <h2 class="h5 mt-4" id="report">讓使用報告認得你</h2>
-      <p>我們每季公開<a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>，向志工、圖資作者與各個網站和應用程式致謝，出問題時也靠它找到開發者。</p>
+      <p>我們每季公開<a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>，向架設鏡像站的志工與圖資作者說明魯地圖被怎麼使用，報告裡會列出各網站和應用程式的下載量；出問題時也靠它找到開發者。</p>
       <ul>
         <li><strong>應用程式</strong>：照<a href="#app-user-agent">上面的格式</a>帶 <code>User-Agent</code>。</li>
         <li><strong>網頁</strong>：目前使用報告只依檔名與 <code>User-Agent</code> 分，瀏覽器的下載都算在「網頁瀏覽器」，還分不出是哪個網站。仍歡迎登記網站的主機名稱，出問題時我們才找得到你。</li>
