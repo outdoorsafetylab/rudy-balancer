@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <link rel="icon" type="image/png" href="/app/favicon.png">
+  <title>部署架構 - 魯地圖分流器</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+    crossorigin="anonymous"></script>
+  <link href="/app/app.css" rel="stylesheet">
+  <!-- What this page says about failover must match what the balancer does:
+       update it in the same change as dao/file.go, controller/file.go,
+       controller/affinity.go or the health check. -->
+</head>
+
+<body class="bg-light">
+  <header>
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #3a4280;">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/app">魯地圖分流器</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
+          aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+          <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+            <li class="nav-item"><a class="nav-link active" aria-current="page" href="/deployment">部署架構</a></li>
+            <li class="nav-item"><a class="nav-link" href="/developers">開發者整合</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+  <main class="container my-4 doc">
+    <h1 class="h3">部署架構</h1>
+    <p>
+      魯地圖的檔案由志工架設的鏡像站免費提供，分流器負責把每一次下載轉到其中一站。本頁說明這套架構怎麼避開故障，以及哪些情況會讓下載失敗、下游可以怎麼退。
+    </p>
+
+    <figure class="arch my-4">
+      <svg viewBox="0 0 640 250" role="img" aria-labelledby="arch-title">
+        <title id="arch-title">下載經入口轉址到鏡像站</title>
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+          </marker>
+        </defs>
+        <g class="box">
+          <rect x="10" y="95" width="120" height="60" rx="6" />
+          <text x="70" y="122">App、網頁</text>
+          <text x="70" y="142" class="sub">下載的人</text>
+        </g>
+        <g class="box entry">
+          <rect x="200" y="40" width="170" height="60" rx="6" />
+          <text x="285" y="67">rudymap.tw</text>
+          <text x="285" y="87" class="sub">主要入口</text>
+          <rect x="200" y="150" width="170" height="60" rx="6" />
+          <text x="285" y="177">rudy.oslab.tw</text>
+          <text x="285" y="197" class="sub">備援入口</text>
+        </g>
+        <g class="box">
+          <rect x="450" y="20" width="180" height="210" rx="6" />
+          <text x="540" y="52">志工鏡像站</text>
+          <text x="540" y="92" class="sub">站 A</text>
+          <text x="540" y="122" class="sub">站 B</text>
+          <text x="540" y="152" class="sub">站 C</text>
+          <text x="540" y="182" class="sub">…</text>
+        </g>
+        <g class="flow">
+          <path d="M130,115 L198,75" marker-end="url(#arrow)" />
+          <path d="M130,135 L198,175" marker-end="url(#arrow)" stroke-dasharray="5 4" />
+          <path d="M370,70 L448,90" marker-end="url(#arrow)" />
+          <path d="M370,180 L448,160" marker-end="url(#arrow)" />
+        </g>
+        <text x="410" y="66" class="sub">302</text>
+        <text x="410" y="200" class="sub">302</text>
+        <text x="150" y="184" class="sub">連不上時</text>
+      </svg>
+      <figcaption class="text-muted small">入口只回轉址 (302)，檔案直接從鏡像站送出，不經過分流器。</figcaption>
+    </figure>
+
+    <h2 class="h5 mt-4">兩個入口</h2>
+    <ul>
+      <li><code>rudymap.tw</code> 是主要入口，<code>rudy.oslab.tw</code> 是備援入口。路徑相同，例如 <code>https://rudymap.tw/v1/hgtmix.zip</code> 和 <code>https://rudy.oslab.tw/v1/hgtmix.zip</code>。</li>
+      <li>兩個入口是各自部署的分流器，網域與 DNS 由不同業者負責，所以其中一家的 DNS 出問題時，另一個入口仍查得到。</li>
+      <li>兩個入口跑的是同一份程式，也在同一個雲端平台上：程式的錯誤或雲端平台的故障，兩個入口會一起受影響 (見下方失效模式)。</li>
+    </ul>
+
+    <h2 class="h5 mt-4">鏡像站</h2>
+    <ul>
+      <li>鏡像站由志工架設，分散在不同的主機與網路業者。名單與各站權重在 <a href="https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/mirrors.yaml">mirrors.yaml</a>，目前狀態在<a href="https://rudymap.statuspage.io/">狀態頁</a>。</li>
+      <li>每週發版後，各站分別同步新檔，有先有後。</li>
+    </ul>
+
+    <h2 class="h5 mt-4">分流器怎麼挑站</h2>
+    <ol>
+      <li>每 30 分鐘測一次每個站的每個檔。測不到的不挑，所以一站故障，最慢約 30 分鐘後就不會再被分到。有設每月流量額度的站，用完了也先不挑。</li>
+      <li>同一個檔，修改時間比其他站舊的 (發版後還在同步) 先不挑，追上後自動恢復。這樣同一個用戶端接連下載的地圖與主題，不會一個新版、一個舊版。</li>
+      <li>網頁裡的程式發出的請求 (帶 <code>Origin</code>) 只分到允許網頁讀取 (CORS) 的站，而且同一個用戶端固定在同一站，換了網路才可能換站。一站都沒有時回 502。</li>
+      <li>其餘的請求依權重隨機挑一站。</li>
+      <li>挑好後回 302 轉址，檔案由鏡像站直接送出。</li>
+    </ol>
+
+    <h2 class="h5 mt-4">失效模式</h2>
+    <div class="table-responsive">
+      <table class="table table-sm align-top">
+        <thead>
+          <tr>
+            <th>什麼壞了</th>
+            <th>影響</th>
+            <th>下游可以怎麼做</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>一個鏡像站</td>
+            <td>最慢約 30 分鐘後不再被分到；在那之前，分到那一站的下載會失敗。</td>
+            <td>重新經入口拿一次網址再下載 (會再挑一次站)。</td>
+          </tr>
+          <tr>
+            <td>鏡像站發版後還在同步</td>
+            <td>舊版的站暫時不分，不影響下載。</td>
+            <td>續傳或重試直接打原本轉到的那一站，不要重新經入口，以免接到另一站的不同版本。</td>
+          </tr>
+          <tr>
+            <td>Cloudflare</td>
+            <td><code>rudymap.tw</code> 查不到；架在 Cloudflare 後面的鏡像站約 30 分鐘內被排除，其他站照常。</td>
+            <td>改連 <code>rudy.oslab.tw</code>，路徑不變。</td>
+          </tr>
+          <tr>
+            <td>分流器的程式或它所在的雲端平台</td>
+            <td>兩個入口一起停。鏡像站本身不受影響。</td>
+            <td>從先前存下的鏡像站清單 (<a href="/v1/sites"><code>/v1/sites</code></a>) 挑一站直接下載。</td>
+          </tr>
+          <tr>
+            <td>全部鏡像站都沒有某個檔</td>
+            <td>那個檔下載不到，分流器回錯誤 (5xx)。</td>
+            <td>保留手上已有的版本，稍後再試。</td>
+          </tr>
+          <tr>
+            <td>線上圖磚 <code>tiles.rudymap.tw</code></td>
+            <td>沒有備援入口，停的期間線上圖磚看不到。</td>
+            <td>需要不中斷的場合請用離線地圖。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="h5 mt-4">建議下游的退路順序</h2>
+    <ol>
+      <li><code>rudymap.tw</code>：連不上 (DNS 查不到、連線失敗、逾時或 5xx) 才換下一個。</li>
+      <li><code>rudy.oslab.tw</code>：路徑不變，重試一次。</li>
+      <li>先前存下的鏡像站清單：平常下載成功時順便讀一次 <a href="/v1/sites"><code>/v1/sites</code></a> 存起來，兩個入口都連不上時，從中挑一站直接下載。這樣做下載照常，只是那段期間沒有分流，也不會算進使用報告。</li>
+    </ol>
+    <p>轉址到鏡像站之後的失敗不必換入口：兩個入口轉到的是同一批鏡像站。下載與續傳的細節見<a href="/developers#app-download">開發者整合</a>。</p>
+
+    <h2 class="h5 mt-4">狀態與報告</h2>
+    <ul>
+      <li><a href="https://rudymap.statuspage.io/">狀態頁</a>：各鏡像站與入口網站的即時狀態，以及過去的故障紀錄。</li>
+      <li><a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>：每季公開各鏡像站、各 app 的下載量，向志工、圖資作者與 app 致謝。</li>
+      <li>程式與設定都在 <a href="https://github.com/outdoorsafetylab/rudy-balancer">GitHub</a>。</li>
+    </ul>
+  </main>
+  <footer class="container text-muted small text-center my-4">
+    <a href="/app">魯地圖分流器</a> &middot; <a href="/app/privacy">隱私權政策</a>
+  </footer>
+</body>
+
+</html>

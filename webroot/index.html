@@ -31,14 +31,14 @@
             data-bs-toggle="tooltip" :title="version">
             魯地圖分流器
           </a>
-          <button v-if="selectedApp" class="navbar-toggler" type="button" data-bs-toggle="collapse"
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
             data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false"
             aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
-          <div v-if="selectedApp" class="collapse navbar-collapse" id="navbarCollapse">
+          <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-              <li class="nav-item dropdown">
+              <li v-if="selectedApp" class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
                   aria-expanded="false" style="font-weight: bold">
                   {{selectedApp.Name}}
@@ -48,7 +48,7 @@
                       @click.prevent="select(app, null)">{{app.Name}}</a></li>
                 </ul>
               </li>
-              <li v-if="selectedApp.Variants.length > 1" class="nav-item dropdown">
+              <li v-if="selectedApp && selectedApp.Variants.length > 1" class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
                   aria-expanded="false" style="font-weight: bold">
                   {{selectedVariant ? selectedVariant.Name : '顯示全部'}}
@@ -62,6 +62,10 @@
                       @click.prevent="select(selectedApp, variant)">{{variant.Name}}</a></li>
                 </ul>
               </li>
+            </ul>
+            <ul class="navbar-nav mb-2 mb-lg-0">
+              <li class="nav-item"><a class="nav-link" href="/deployment">部署架構</a></li>
+              <li class="nav-item"><a class="nav-link" href="/developers">開發者整合</a></li>
             </ul>
           </div>
         </div>

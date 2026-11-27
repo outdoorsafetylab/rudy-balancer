@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"service/config"
@@ -125,5 +126,41 @@ func TestFileRoutesAnswerPreflight(t *testing.T) {
 		if rec.Code != http.StatusNoContent || rec.Header().Get("Access-Control-Allow-Origin") != "*" {
 			t.Errorf("OPTIONS %s: %d, Access-Control-Allow-Origin %q; want 204 with *", path, rec.Code, rec.Header().Get("Access-Control-Allow-Origin"))
 		}
+	}
+}
+
+// /deployment and /developers are the balancer's own pages, served from the
+// webroot; the rest of the root still goes to Rudy Map's site on the mirrors.
+func TestDocumentationPages(t *testing.T) {
+	os.Setenv("MIRRORS_FILE", "../config/mirrors.yaml")
+	defer os.Unsetenv("MIRRORS_FILE")
+	os.Setenv("WEBROOT", "../webroot")
+	defer os.Unsetenv("WEBROOT")
+	if err := config.Init("docker"); err != nil {
+		t.Fatal(err)
+	}
+	if err := log.Init(); err != nil {
+		t.Fatal(err)
+	}
+	r, err := newRouter()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for path, title := range map[string]string{
+		"/deployment":  "<title>部署架構 - 魯地圖分流器</title>",
+		"/deployment/": "<title>部署架構 - 魯地圖分流器</title>",
+		"/developers":  "<title>開發者整合 - 魯地圖分流器</title>",
+		"/developers/": "<title>開發者整合 - 魯地圖分流器</title>",
+	} {
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest("GET", path, nil))
+		if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), title) {
+			t.Errorf("%s: status %d, want 200 with %s", path, w.Code, title)
+		}
+	}
+	// A path below a page is not the page: it goes to the root handler.
+	var match mux.RouteMatch
+	if r.Match(httptest.NewRequest("GET", "/developers/x", nil), &match) && match.Route != nil {
+		t.Errorf("/developers/x matched %v, want no route", match.Route)
 	}
 }
