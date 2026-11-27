@@ -41,6 +41,12 @@ func newRouter() (*mux.Router, error) {
 	if err != nil {
 		return nil, err
 	}
+	// A folder's routes come first, so its probe file is served as part of
+	// the folder (not recorded) rather than by the plain file route below.
+	for folder, probe := range mirror.Folders {
+		c := &controller.FileController{File: folder + "/" + probe, Folder: folder}
+		endpoint.HandleFunc(fmt.Sprintf("/%s/{path:.+}", folder), c.Download).Methods("GET", "HEAD", "OPTIONS")
+	}
 	for _, files := range mirror.Files {
 		for _, file := range files {
 			c := &controller.FileController{File: file}
@@ -66,6 +72,10 @@ func newRouter() (*mux.Router, error) {
 	stats := &controller.StatsController{}
 	endpoint.HandleFunc("/stats/daily", stats.DailyStats).Methods("GET")
 	endpoint.HandleFunc("/stats/{site}/daily", stats.DailyStats).Methods("GET")
+	// Any other path under the endpoint is a 404. It used to fall through to
+	// the reverse proxy, which redirected it to <mirror>/v1/<path>: a URL no
+	// mirror serves, and without CORS (#63).
+	endpoint.PathPrefix("/").HandlerFunc(http.NotFound)
 	timeout := 3 * time.Second
 	reverseProxy := &proxyHandler{
 		Redirects:   make(map[string]string),

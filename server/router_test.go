@@ -127,3 +127,32 @@ func TestFileRoutesAnswerPreflight(t *testing.T) {
 		}
 	}
 }
+
+// Paths under /v1/ with no route are a 404, not the reverse proxy's redirect
+// to <mirror>/v1/<path> (#63); listed files keep their own routes.
+func TestUnknownEndpointPathsAre404(t *testing.T) {
+	os.Setenv("MIRRORS_FILE", "../config/mirrors.yaml")
+	defer os.Unsetenv("MIRRORS_FILE")
+	if err := config.Init("docker"); err != nil {
+		t.Fatal(err)
+	}
+	if err := log.Init(); err != nil {
+		t.Fatal(err)
+	}
+	r, err := newRouter()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/v1/no-such-file.zip", "/v1/rudymap_pmtiles_style/style.json"} {
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest("HEAD", path, nil))
+		if w.Code != http.StatusNotFound {
+			t.Errorf("%s: %d (Location %q), want 404", path, w.Code, w.Header().Get("Location"))
+		}
+	}
+	var match mux.RouteMatch
+	r.Match(httptest.NewRequest("GET", "/v1/hgtmix.zip", nil), &match)
+	if got, _ := match.Route.GetPathTemplate(); got != "/v1/hgtmix.zip" {
+		t.Errorf("/v1/hgtmix.zip matched %q", got)
+	}
+}

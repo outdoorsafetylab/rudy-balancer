@@ -5,14 +5,20 @@ import (
 	"path/filepath"
 	"service/config"
 	"service/model"
+	"sort"
+	"strings"
 
 	"github.com/spf13/viper"
 )
 
 type Mirror struct {
 	Files map[string][]string
-	Sites []*model.Site
-	Apps  []*model.App
+	// Folders maps a folder published as a whole (the unpacked PMTiles style)
+	// to the file in it that stands for it. The health check probes that file
+	// like any listed one, and /v1/<folder>/<path> picks a mirror by it (#63).
+	Folders map[string]string
+	Sites   []*model.Site
+	Apps    []*model.App
 }
 
 func load() (*Mirror, error) {
@@ -29,6 +35,21 @@ func load() (*Mirror, error) {
 	err = cfg.Unmarshal(meta)
 	if err != nil {
 		return nil, err
+	}
+	folders := make([]string, 0, len(meta.Folders))
+	for folder := range meta.Folders {
+		folders = append(folders, folder)
+	}
+	sort.Strings(folders)
+	for _, folder := range folders {
+		probe := meta.Folders[folder]
+		if folder == "" || probe == "" || strings.Contains(folder, "/") || strings.HasPrefix(probe, "/") {
+			return nil, fmt.Errorf("bad folder: %q: %q", folder, probe)
+		}
+		if meta.Files == nil {
+			meta.Files = make(map[string][]string)
+		}
+		meta.Files["folders"] = append(meta.Files["folders"], FolderProbe(folder, probe))
 	}
 	files := make(map[string]string)
 	for _, list := range meta.Files {
@@ -81,6 +102,11 @@ func load() (*Mirror, error) {
 		}
 	}
 	return meta, nil
+}
+
+// FolderProbe is the listed file that stands for a folder.
+func FolderProbe(folder, probe string) string {
+	return folder + "/" + probe
 }
 
 func Get() (*Mirror, error) {
