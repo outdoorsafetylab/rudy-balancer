@@ -112,6 +112,13 @@ func TestDownloadStickyForWebPagesOnly(t *testing.T) {
 			}
 		}
 	}
+	// a web page whose address cannot be read: still answered, as before (random)
+	for _, file := range []string{"a.pmtiles", "style.json"} {
+		got := serve(file, "https://example.org", "not-an-address")
+		if got != "https://kcwu/"+file && got != "https://OSL/"+file {
+			t.Errorf("no client address, %s: %q, want a redirect to one of the mirrors", file, got)
+		}
+	}
 	// an app or a plain download: still random, so one client sees both mirrors
 	seen := map[string]bool{}
 	for i := 0; i < 200; i++ {
