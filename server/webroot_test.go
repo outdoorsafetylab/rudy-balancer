@@ -133,3 +133,38 @@ func TestPagesUseVersionedStylesheet(t *testing.T) {
 		}
 	}
 }
+
+// Every map-kind button on the developers page has a section to show, under
+// the half it belongs to, with the id the button's link and the page script use.
+func TestDevelopersKindPicks(t *testing.T) {
+	b, err := os.ReadFile(filepath.Join("..", "webroot", "developers", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(b)
+	want := map[string][]string{
+		"web": {"web-tiles", "web-pmtiles"},
+		"app": {"app-mapsforge", "app-pmtiles", "app-tiles"},
+	}
+	for half, kinds := range want {
+		start := strings.Index(s, `<section data-for-pane="`+half+`" id="`+half+`">`)
+		if start < 0 {
+			t.Fatalf("no %s pane", half)
+		}
+		end := strings.Index(s[start:], "\n    </section>")
+		pane := s[start : start+end]
+		for _, k := range kinds {
+			for _, frag := range []string{
+				`href="#` + k + `" data-pick="` + k + `"`,
+				`<section data-kind="` + k + `">` + "\n" + `        <h2 class="h5 mt-4" id="` + k + `">`,
+			} {
+				if !strings.Contains(pane, frag) {
+					t.Errorf("%s pane: missing %s", half, frag)
+				}
+			}
+		}
+		if n := strings.Count(pane, "data-pick="); n != len(kinds) {
+			t.Errorf("%s pane: %d kind buttons, want %d", half, n, len(kinds))
+		}
+	}
+}

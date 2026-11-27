@@ -35,49 +35,52 @@
   </header>
   <main class="container my-4 doc">
     <h1 class="h3">開發者整合</h1>
-    <div class="for-pick my-3" role="group" aria-label="要把魯地圖放進">
-      <span>要把魯地圖放進：</span>
-      <a class="btn btn-outline-primary" href="#web" data-for="web">網頁</a>
-      <a class="btn btn-outline-primary" href="#app" data-for="app">應用程式</a>
+    <div class="for-pick my-3" role="group" aria-label="平台">
+      <span>平台：</span>
+      <a class="btn btn-outline-secondary btn-sm" href="#web" data-for="web">網頁</a>
+      <a class="btn btn-outline-secondary btn-sm" href="#app" data-for="app">應用程式</a>
     </div>
 
     <section data-for-pane="web" id="web">
-      <ul class="toc">
-        <li><a href="#web-tiles">線上圖磚</a></li>
-        <li><a href="#web-pmtiles">向量版 PMTiles (測試中)</a></li>
-      </ul>
-      <h2 class="h5 mt-4" id="web-tiles">線上圖磚</h2>
-      <p><a href="https://tiles.rudymap.tw/">tiles.rudymap.tw</a> 把魯地圖的 Mapsforge 地圖畫成圖磚。圖磚網址從 tilejson 取得：</p>
-      <pre><code>https://tiles.rudymap.tw/tilejson</code></pre>
-      <p>tilejson 的 <code>tiles</code> 是 256 px 的圖磚，<code>tiles_2x</code> 是給高解析度螢幕的 512 px 版本；<code>attribution</code> 是出處標示。</p>
-      <p>Leaflet：</p>
-      <pre><code>const tj = await (await fetch("https://tiles.rudymap.tw/tilejson")).json();
+      <div class="for-pick kind-pick my-3" role="group" aria-label="圖資">
+        <span>圖資：</span>
+        <a class="btn btn-outline-secondary btn-sm" href="#web-tiles" data-pick="web-tiles">線上圖磚</a>
+        <a class="btn btn-outline-secondary btn-sm" href="#web-pmtiles" data-pick="web-pmtiles">向量版 PMTiles (測試中)</a>
+      </div>
+      <section data-kind="web-tiles">
+        <h2 class="h5 mt-4" id="web-tiles">線上圖磚</h2>
+        <p><a href="https://tiles.rudymap.tw/">tiles.rudymap.tw</a> 把魯地圖的 Mapsforge 地圖畫成圖磚。圖磚網址從 tilejson 取得：</p>
+        <pre><code>https://tiles.rudymap.tw/tilejson</code></pre>
+        <p>tilejson 的 <code>tiles</code> 是 256 px 的圖磚，<code>tiles_2x</code> 是給高解析度螢幕的 512 px 版本；<code>attribution</code> 是出處標示。</p>
+        <p>Leaflet：</p>
+        <pre><code>const tj = await (await fetch("https://tiles.rudymap.tw/tilejson")).json();
 L.tileLayer(tj.tiles[0].replace(/\.png$/, "{r}.png"), { attribution: tj.attribution }).addTo(map);</code></pre>
-      <p>MapLibre：</p>
-      <pre><code>map.addSource("rudy", { type: "raster", url: "https://tiles.rudymap.tw/tilejson", tileSize: 256 });
+        <p>MapLibre：</p>
+        <pre><code>map.addSource("rudy", { type: "raster", url: "https://tiles.rudymap.tw/tilejson", tileSize: 256 });
 map.addLayer({ id: "rudy", type: "raster", source: "rudy" });</code></pre>
-      <h3 class="h6 mt-3">速度與自架快取</h3>
-      <p>tiles.rudymap.tw 是圖磚的來源，不保證速度與可用性，沒有 SLA，也沒有備援入口。要把圖放進網站或服務、給很多人看，而且需要穩定速度的，請自己架 CDN 或快取伺服器，以 tiles.rudymap.tw 為來源，讓使用者連到你的 CDN。</p>
-      <p>帶版本號的圖磚網址內容不會再變，回應是 <code>Cache-Control: public, max-age=31536000, immutable</code>，可以一直快取。tilejson 快取 5 分鐘，<code>latest</code> 網址快取一天；請沿用回應的快取時間，不要拉長。</p>
-      <h3 class="h6 mt-3">使用規則</h3>
-      <ul>
-        <li>網頁本身不用設定 <code>User-Agent</code>。自己架的快取伺服器或後端程式來抓圖磚時，請帶上名稱、版本和聯絡網址，例如 <code>MySite/1.0 (+https://example.com/)</code>，出問題時我們才找得到你。</li>
-        <li>版本號不要寫死在網址裡。每週更新後，舊版號的圖磚會回 404，請重新讀 tilejson，或改用 <code>latest</code>。</li>
-        <li>只抓縮放層級 7–18 的圖磚，超出範圍會回 400。</li>
-        <li>目前不限制來源網站，但保留對大量或異常使用限制存取的權利。</li>
-      </ul>
-
-      <h2 class="h5 mt-4" id="web-pmtiles">向量版 PMTiles (測試中)</h2>
-      <div class="alert alert-warning py-2" role="note">向量版還在測試，檔案與樣式的內容可能隨時調整。</div>
-      <p>向量版是 PMTiles 格式，用 MapLibre 畫。目前分流器上只有台灣的向量版檔案，每週發布：</p>
-      <ul>
-        <li>地圖：<code>MOI_OSM_Taiwan_TOPO_Rudy.pmtiles</code>，縮放層級 4–14。</li>
-        <li>高程：<code>taiwan_dem.pmtiles</code>，畫地形陰影用，縮放層級 6–12，可以不用。</li>
-        <li>樣式：<code>rudymap_pmtiles_style.zip</code>，所有地區共用。裡面有 <code>style.json</code> 與紙本風格的 <code>paper.json</code>、圖示 <code>sprite/</code> 與 <code>sprite-paper/</code>、拉丁字形 <code>glyphs/</code>、<code>version.txt</code>。</li>
-      </ul>
-      <p>樣式有兩個資料來源：<code>topo</code> 是地圖，<code>dem</code> 是高程。樣式裡的來源網址、<code>glyphs</code> 和 <code>sprite</code> 都是相對檔名，載入前請依來源 id 換成地圖檔和高程檔的完整網址。沒有高程檔，就拿掉 <code>dem</code> 來源、用到它的圖層，以及指向它的 <code>terrain</code> 設定 (如果有)。填不到來源請當成錯誤，不要沿用樣式裡寫的網址，否則可能畫出別的地區。</p>
-          <p>網頁用 MapLibre GL JS。地圖檔和高程檔請先問分流器一次，之後都直接讀它轉到的那一站。分流器會盡量把同一個網頁用戶端轉到同一個鏡像站，但那一站被排除或用戶端換了網路時會換站，讀到一半換站就可能接到另一份檔；如果每次讀取都再經過分流器，每次都會多一趟轉址。<code>rudymap.tw</code> 連不上時，可以改問備援入口 <code>rudy.oslab.tw</code>。樣式 zip 請解開，放在自己的網站。</p>
-      <pre><code>const base = "https://example.com/rudymap/";      // 解開樣式 zip 的資料夾
+        <h3 class="h6 mt-3">速度與自架快取</h3>
+        <p>tiles.rudymap.tw 是圖磚的來源，不保證速度與可用性，沒有 SLA，也沒有備援入口。要把圖放進網站或服務、給很多人看，而且需要穩定速度的，請自己架 CDN 或快取伺服器，以 tiles.rudymap.tw 為來源，讓使用者連到你的 CDN。</p>
+        <p>帶版本號的圖磚網址內容不會再變，回應是 <code>Cache-Control: public, max-age=31536000, immutable</code>，可以一直快取。tilejson 快取 5 分鐘，<code>latest</code> 網址快取一天；請沿用回應的快取時間，不要拉長。</p>
+        <h3 class="h6 mt-3">使用規則</h3>
+        <ul>
+          <li>網頁本身不用設定 <code>User-Agent</code>。自己架的快取伺服器或後端程式來抓圖磚時，請帶上名稱、版本和聯絡網址，例如 <code>MySite/1.0 (+https://example.com/)</code>，出問題時我們才找得到你。</li>
+          <li>版本號不要寫死在網址裡。每週更新後，舊版號的圖磚會回 404，請重新讀 tilejson，或改用 <code>latest</code>。</li>
+          <li>只抓縮放層級 7–18 的圖磚，超出範圍會回 400。</li>
+          <li>目前不限制來源網站，但保留對大量或異常使用限制存取的權利。</li>
+        </ul>
+      </section>
+      <section data-kind="web-pmtiles">
+        <h2 class="h5 mt-4" id="web-pmtiles">向量版 PMTiles (測試中)</h2>
+        <div class="alert alert-warning py-2" role="note">向量版還在測試，檔案與樣式的內容可能隨時調整。</div>
+        <p>向量版是 PMTiles 格式，用 MapLibre 畫。目前分流器上只有台灣的向量版檔案，每週發布：</p>
+        <ul>
+          <li>地圖：<code>MOI_OSM_Taiwan_TOPO_Rudy.pmtiles</code>，縮放層級 4–14。</li>
+          <li>高程：<code>taiwan_dem.pmtiles</code>，畫地形陰影用，縮放層級 6–12，可以不用。</li>
+          <li>樣式：<code>rudymap_pmtiles_style.zip</code>，所有地區共用。裡面有 <code>style.json</code> 與紙本風格的 <code>paper.json</code>、圖示 <code>sprite/</code> 與 <code>sprite-paper/</code>、拉丁字形 <code>glyphs/</code>、<code>version.txt</code>。</li>
+        </ul>
+        <p>樣式有兩個資料來源：<code>topo</code> 是地圖，<code>dem</code> 是高程。樣式裡的來源網址、<code>glyphs</code> 和 <code>sprite</code> 都是相對檔名，載入前請依來源 id 換成地圖檔和高程檔的完整網址。沒有高程檔，就拿掉 <code>dem</code> 來源、用到它的圖層，以及指向它的 <code>terrain</code> 設定 (如果有)。填不到來源請當成錯誤，不要沿用樣式裡寫的網址，否則可能畫出別的地區。</p>
+            <p>網頁用 MapLibre GL JS。地圖檔和高程檔請先問分流器一次，之後都直接讀它轉到的那一站。分流器會盡量把同一個網頁用戶端轉到同一個鏡像站，但那一站被排除或用戶端換了網路時會換站，讀到一半換站就可能接到另一份檔；如果每次讀取都再經過分流器，每次都會多一趟轉址。<code>rudymap.tw</code> 連不上時，可以改問備援入口 <code>rudy.oslab.tw</code>。樣式 zip 請解開，放在自己的網站。</p>
+        <pre><code>const base = "https://example.com/rudymap/";      // 解開樣式 zip 的資料夾
 const mirror = async (file) =&gt; {                   // 分流器挑的鏡像站
   const r = await fetch("https://rudymap.tw/v1/" + file, { method: "HEAD" });
   if (!r.ok) throw new Error(file + ": " + r.status);
@@ -93,162 +96,167 @@ style.glyphs = base + "glyphs/{fontstack}/{range}.pbf";
 style.sprite = base + "sprite/sprite";
 const header = await new pmtiles.PMTiles(map).getHeader();   // 地圖檔記著地區的中心
 new maplibregl.Map({ container: "map", style, center: [header.centerLon, header.centerLat], zoom: header.centerZoom });</code></pre>
-      <p>樣式 zip 放在自己的網站，每週要跟著地圖檔一起更新。檔名固定、內容每週會換，要避免瀏覽器用到上週的快取：<code>style.json</code> 照範例用 <code>fetch(url, { cache: "no-cache" })</code> 讀；sprite 和字形是 MapLibre 自己讀的，請讓你的網站對這些檔回 <code>Cache-Control: no-cache</code>，或在 <code>style.sprite</code>、<code>style.glyphs</code> 的網址加上跟著版本變的參數 (例如 <code>?v=</code> 加上 <code>version.txt</code> 的內容)。</p>
-      <p>地圖開著時，如果讀取開始失敗 (那一站壞了或被排除)，請重新問一次分流器，用它轉到的新網址重建地圖檔和高程檔的來源。</p>
-      <p>要把地圖檔也放在自己的網站，伺服器要支援 HTTP Range 請求，網頁在別的網域時要開 CORS。</p>
-      <p>網頁要放完整字形，不能只放 zip 裡的拉丁字形：用 <a href="https://github.com/openmaptiles/fonts/releases/tag/v2.0">openmaptiles/fonts v2.0</a> 的 <code>noto-sans.zip</code>，字型是 Noto Sans Regular、Bold、Italic。MapLibre 預設用本機字型畫漢字、假名和韓文 (沒有把 <code>localIdeographFontFamily</code> 設成 <code>false</code> 時)，<code>（</code>、<code>・</code> 這類全形標點要讀字形檔，讀不到時整張圖磚都畫不出來。</p>
-      <h3 class="h6 mt-3">版本與圖層開關</h3>
-      <p>地圖檔 metadata 的 <code>version</code>、樣式 metadata 的 <code>taiwan-topo:version</code> 和 <code>version.txt</code> 相同，就是同一週的地圖和樣式。地圖檔 metadata 的 <code>taiwan-topo:dem_version</code> 是同地區高程檔的內容版本，只在高程改變時才變，沒變就不必重新下載高程檔。</p>
-      <p>樣式 metadata 的 <code>taiwan-topo:overlays</code> 列出各個開關和它打開的分類，<code>taiwan-topo:style-cats</code> 是一直開著的分類，每個圖層的 <code>metadata["taiwan-topo:cats"]</code> 列出它需要的分類。需要的分類都開著，圖層才顯示，和魯地圖 Mapsforge 主題的選單相同。不做圖層開關的應用程式照樣式原樣畫即可。</p>
-
+        <p>樣式 zip 放在自己的網站，每週要跟著地圖檔一起更新。檔名固定、內容每週會換，要避免瀏覽器用到上週的快取：<code>style.json</code> 照範例用 <code>fetch(url, { cache: "no-cache" })</code> 讀；sprite 和字形是 MapLibre 自己讀的，請讓你的網站對這些檔回 <code>Cache-Control: no-cache</code>，或在 <code>style.sprite</code>、<code>style.glyphs</code> 的網址加上跟著版本變的參數 (例如 <code>?v=</code> 加上 <code>version.txt</code> 的內容)。</p>
+        <p>地圖開著時，如果讀取開始失敗 (那一站壞了或被排除)，請重新問一次分流器，用它轉到的新網址重建地圖檔和高程檔的來源。</p>
+        <p>要把地圖檔也放在自己的網站，伺服器要支援 HTTP Range 請求，網頁在別的網域時要開 CORS。</p>
+        <p>網頁要放完整字形，不能只放 zip 裡的拉丁字形：用 <a href="https://github.com/openmaptiles/fonts/releases/tag/v2.0">openmaptiles/fonts v2.0</a> 的 <code>noto-sans.zip</code>，字型是 Noto Sans Regular、Bold、Italic。MapLibre 預設用本機字型畫漢字、假名和韓文 (沒有把 <code>localIdeographFontFamily</code> 設成 <code>false</code> 時)，<code>（</code>、<code>・</code> 這類全形標點要讀字形檔，讀不到時整張圖磚都畫不出來。</p>
+        <h3 class="h6 mt-3">版本與圖層開關</h3>
+        <p>地圖檔 metadata 的 <code>version</code>、樣式 metadata 的 <code>taiwan-topo:version</code> 和 <code>version.txt</code> 相同，就是同一週的地圖和樣式。地圖檔 metadata 的 <code>taiwan-topo:dem_version</code> 是同地區高程檔的內容版本，只在高程改變時才變，沒變就不必重新下載高程檔。</p>
+        <p>樣式 metadata 的 <code>taiwan-topo:overlays</code> 列出各個開關和它打開的分類，<code>taiwan-topo:style-cats</code> 是一直開著的分類，每個圖層的 <code>metadata["taiwan-topo:cats"]</code> 列出它需要的分類。需要的分類都開著，圖層才顯示，和魯地圖 Mapsforge 主題的選單相同。不做圖層開關的應用程式照樣式原樣畫即可。</p>
+      </section>
     </section>
 
     <section data-for-pane="app" id="app">
-      <ul class="toc">
-        <li><a href="#app-download">從分流器下載檔案</a></li>
-        <li><a href="#app-user-agent">User-Agent</a></li>
-        <li><a href="#app-mapsforge">Mapsforge 離線地圖</a></li>
-        <li><a href="#app-pmtiles">向量版 PMTiles 離線地圖 (測試中)</a></li>
-        <li><a href="#app-tiles">線上圖磚</a></li>
-      </ul>
-      <h2 class="h5 mt-4" id="app-download">從分流器下載檔案</h2>
-      <p>
-        檔案的網址是 <code>https://rudymap.tw/v1/&lt;檔名&gt;</code>。分流器不送檔案，只回 302 轉址到一個鏡像站，並留下一筆轉址紀錄。
-      </p>
-      <ul>
-        <li><strong>檢查有沒有新版，請用 <code>HEAD</code>。</strong><code>HEAD</code> 一樣會轉址，跟著轉址就能拿到鏡像站的 <code>Content-Length</code> 等資訊，而且不會留下轉址紀錄。但各站的 <code>Last-Modified</code>、<code>ETag</code> 不能互相比較：同一份檔，有的站記的是上傳時間，ETag 的格式也各站不同，拿上次記下的值跟這次分到的另一站比，會誤以為有新版。要判斷新舊，請比對檔案裡的版本 (向量版是地圖檔 metadata 的 <code>version</code>)，或只拿同一站的值比。</li>
-        <li><strong>下載只 <code>GET</code> 一次。</strong>跟著轉址下載就好，不需要先另外發一個請求確認。</li>
-        <li><strong>續傳直接打轉址後的鏡像站網址，並帶 <code>If-Range</code>。</strong>鏡像站都支援 <code>Range</code>。重新打 rudymap.tw 可能被派到另一個站，兩站的檔案可能暫時不同；同一站也可能在下載途中換成新一週的檔。續傳時帶 <code>If-Range</code>，值用第一次回應的 <code>ETag</code>：檔案沒換會回 206，換過了會回 200 整份檔，這時請從頭寫，不要接上。整份重新下載則可以重新經 rudymap.tw。</li>
-        <li><strong><code>rudymap.tw</code> 連不上時，改用備援入口 <code>rudy.oslab.tw</code>，</strong>路徑不變。</li>
-          <li><strong>先確認空間。</strong>解開 zip 時要同時放 zip 與解出的檔，大約需要檔案兩倍的空間。</li>
-      </ul>
-      <p>同一個檔重複打 rudymap.tw，不但會留下重複的紀錄、讓使用報告只能估算下載次數，每次還可能被派到不同的站。</p>
-      <p>兩個入口都連不上時的退路，見<a href="/deployment">部署架構</a>的「建議下游的退路順序」。</p>
-
-      <h2 class="h5 mt-4" id="app-user-agent">User-Agent：請標示應用程式名稱</h2>
-      <p>
-        我們每季公開<a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>，列出各應用程式的下載量。報告靠 <code>User-Agent</code> 辨識下載來自哪個應用程式。如果只帶著 <code>Dalvik/2.1.0</code>、<code>Dart/3.5</code> 這類函式庫或系統的預設值，我們就認不出是哪個應用程式，出問題時也找不到開發者。
-      </p>
-      <p>向 <code>rudymap.tw</code> 下載時，請在 <code>User-Agent</code> 標頭放上：</p>
-      <pre><code>AppName/版本 (+聯絡網址)</code></pre>
-      <p>例如：</p>
-      <pre><code>MyHikingApp/2.1.0 (+https://example.com/contact)
+      <div class="for-pick kind-pick my-3" role="group" aria-label="圖資">
+        <span>圖資：</span>
+        <a class="btn btn-outline-secondary btn-sm" href="#app-mapsforge" data-pick="app-mapsforge">Mapsforge 離線地圖</a>
+        <a class="btn btn-outline-secondary btn-sm" href="#app-pmtiles" data-pick="app-pmtiles">向量版 PMTiles 離線地圖 (測試中)</a>
+        <a class="btn btn-outline-secondary btn-sm" href="#app-tiles" data-pick="app-tiles">線上圖磚</a>
+      </div>
+      <section data-kind="app-mapsforge">
+        <h2 class="h5 mt-4" id="app-mapsforge">Mapsforge 離線地圖</h2>
+        <p>魯地圖原本就是 Mapsforge 地圖，手機應用程式最常用的是這一套。每週發布，以台灣為例：</p>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>檔案</th>
+                <th>內容</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>MOI_OSM_Taiwan_TOPO_Rudy.map.zip</code></td><td>地圖 <code>MOI_OSM_Taiwan_TOPO_Rudy.map</code> (10 公尺等高線)，附同名的 <code>.poi</code></td></tr>
+              <tr><td><code>MOI_OSM_Taiwan_TOPO_Lite.map.zip</code></td><td>輕量版地圖 (20 公尺等高線)，檔案較小</td></tr>
+              <tr><td><code>MOI_OSM_Taiwan_TOPO_Rudy_hs_style.zip</code></td><td>主題 (有地形陰影，建議預設)：<code>MOI_OSM.xml</code> 與它的圖示資料夾</td></tr>
+              <tr><td><code>MOI_OSM_Taiwan_TOPO_Rudy_style.zip</code></td><td>同一個主題，沒有地形陰影</td></tr>
+              <tr><td><code>MOI_OSM_Taiwan_TOPO_Lite_style.zip</code></td><td>輕量版地圖用的主題</td></tr>
+              <tr><td><code>hgtmix.zip</code>、<code>hgt90.zip</code></td><td>高程檔，每 1 度一個 <code>.hgt</code>，畫地形陰影用：<code>hgtmix.zip</code> 較精細，配 10 公尺等高線的地圖；<code>hgt90.zip</code> 是 90 公尺，配輕量版</td></tr>
+              <tr><td><code>MOI_OSM_Taiwan_TOPO_Rudy.poi.zip</code></td><td>只有 POI (Mapsforge POI 資料庫)，給只要搜尋地點的應用程式</td></tr>
+              <tr><td><code>MOI_OSM_Taiwan_TOPO_Rudy.zip</code></td><td>三合一包：地圖、主題、高程檔 (<code>hgtmix</code>) 一次下載，裡面分成 <code>map/</code>、<code>mapthemes/</code>、<code>hgt/</code>；地圖和主題一定是同一週的</td></tr>
+                <tr><td><code>MOI_OSM_Taiwan_TOPO_Lite.zip</code></td><td>輕量版三合一包：輕量版地圖、主題 (<code>MOI_OSM_Lite.xml</code>)、<code>hgt90</code>，結構同上</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>其他地區的檔名與內容，見各地區的下載頁 (<a href="https://rudymap.tw/">魯地圖官網</a>)。</p>
+        <h3 class="h6 mt-3">在應用程式裡顯示</h3>
+        <ol>
+          <li>依<a href="#app-download">下載規則</a>下載地圖、主題，要地形陰影再加高程檔，各自解開。</li>
+          <li>主題要整個資料夾一起放：主題 XML (例如 <code>MOI_OSM.xml</code>，輕量版是 <code>MOI_OSM_Lite.xml</code>) 用相對路徑讀旁邊的圖示資料夾，只留 XML 會畫不出圖示。三合一包的 <code>mapthemes/</code> 已經是這個樣子。</li>
+          <li>高程檔解開後把 <code>.hgt</code> 放在同一個資料夾，交給地圖程式庫的地形陰影設定。有地形陰影的主題裡寫了 <code>&lt;hillshading /&gt;</code>；不給高程檔時應該照常畫、只是沒有陰影，請在你用的程式庫確認一次。</li>
+          <li>Android 或 Java 用 <a href="https://github.com/mapsforge/mapsforge">mapsforge</a>：地圖檔用 <code>MapFile</code> 讀，主題用 <code>ExternalRenderTheme</code> 指到解開的 XML，地形陰影用 <code>HillsRenderConfig</code> 加 <code>MemoryCachingHgtReaderTileSource</code> 指到高程檔資料夾。Flutter 可以用 <a href="https://pub.dev/packages/mapsforge_flutter">mapsforge_flutter</a>。</li>
+          <li>POI 檔是 SQLite 格式的 Mapsforge POI 資料庫，可用 mapsforge 的 POI 程式庫依位置或名稱查詢。</li>
+        </ol>
+        <p>主題 zip 裡的 <code>MOI_OSM.pdf</code>、<code>MOI_OSM.png</code> 是圖例。主題內建的選單 (例如步道、等高線間距) 由應用程式依 XML 的 <code>stylemenu</code> 呈現；不做選單的應用程式照預設畫即可。</p>
+      </section>
+      <section data-kind="app-pmtiles">
+        <h2 class="h5 mt-4" id="app-pmtiles">向量版 PMTiles 離線地圖 (測試中)</h2>
+        <div class="alert alert-warning py-2" role="note">向量版還在測試，檔案與樣式的內容可能隨時調整。</div>
+        <p>向量版是 PMTiles 格式，用 MapLibre 畫。目前分流器上只有台灣的向量版檔案，每週發布：</p>
+        <ul>
+          <li>地圖：<code>MOI_OSM_Taiwan_TOPO_Rudy.pmtiles</code>，縮放層級 4–14。</li>
+          <li>高程：<code>taiwan_dem.pmtiles</code>，畫地形陰影用，縮放層級 6–12，可以不用。</li>
+          <li>樣式：<code>rudymap_pmtiles_style.zip</code>，所有地區共用。裡面有 <code>style.json</code> 與紙本風格的 <code>paper.json</code>、圖示 <code>sprite/</code> 與 <code>sprite-paper/</code>、拉丁字形 <code>glyphs/</code>、<code>version.txt</code>。</li>
+        </ul>
+        <p>樣式有兩個資料來源：<code>topo</code> 是地圖，<code>dem</code> 是高程。樣式裡的來源網址、<code>glyphs</code> 和 <code>sprite</code> 都是相對檔名，載入前請依來源 id 換成地圖檔和高程檔的完整網址。沒有高程檔，就拿掉 <code>dem</code> 來源、用到它的圖層，以及指向它的 <code>terrain</code> 設定 (如果有)。填不到來源請當成錯誤，不要沿用樣式裡寫的網址，否則可能畫出別的地區。</p>
+            <p>用 MapLibre Native 離線顯示，需要能讀 <code>pmtiles://</code> 的版本。</p>
+        <ul>
+          <li>依<a href="#app-download">下載規則</a>下載共用的樣式 <code>rudymap_pmtiles_style.zip</code> 和地區的地圖檔、高程檔。</li>
+          <li>解開樣式 zip，網址改成本機檔，例如 <code>pmtiles://file:///…/MOI_OSM_Taiwan_TOPO_Rudy.pmtiles</code>、<code>file:///…/glyphs/{fontstack}/{range}.pbf</code>、<code>file:///…/sprite/sprite</code>。</li>
+          <li>中日韓文字用手機字型畫：Android 要在地圖選項設定 <code>localIdeographFontFamily</code> (Flutter 的 maplibre_gl 0.28.1 起預設已設定)，iOS 預設已開啟。</li>
+          <li>全形標點在 zip 裡沒有字形。MapLibre Native (Android 13.7.1、iOS 7.0.0 實測) 會用手機字型畫；其他 SDK 或版本請用含全形括號的地名確認畫得出來。</li>
+          <li>地圖檔 metadata 的 <code>attribution</code> 是 HTML (含連結)，原生畫面請先轉成純文字，或自行處理連結。</li>
+        </ul>
+        <h3 class="h6 mt-3">版本與圖層開關</h3>
+        <p>地圖檔 metadata 的 <code>version</code>、樣式 metadata 的 <code>taiwan-topo:version</code> 和 <code>version.txt</code> 相同，就是同一週的地圖和樣式。地圖檔 metadata 的 <code>taiwan-topo:dem_version</code> 是同地區高程檔的內容版本，只在高程改變時才變，沒變就不必重新下載高程檔。</p>
+        <p>樣式 metadata 的 <code>taiwan-topo:overlays</code> 列出各個開關和它打開的分類，<code>taiwan-topo:style-cats</code> 是一直開著的分類，每個圖層的 <code>metadata["taiwan-topo:cats"]</code> 列出它需要的分類。需要的分類都開著，圖層才顯示，和魯地圖 Mapsforge 主題的選單相同。不做圖層開關的應用程式照樣式原樣畫即可。</p>
+      </section>
+      <section data-kind="app-tiles">
+        <h2 class="h5 mt-4" id="app-tiles">線上圖磚</h2>
+        <p><a href="https://tiles.rudymap.tw/">tiles.rudymap.tw</a> 把魯地圖的 Mapsforge 地圖畫成圖磚。圖磚網址從 <code>https://tiles.rudymap.tw/tilejson</code> 取得：<code>tiles</code> 是 256 px 的圖磚，<code>tiles_2x</code> 是給高解析度螢幕的 512 px 版本，<code>attribution</code> 是出處標示。不讀 tilejson 的程式可以用 <code>https://tiles.rudymap.tw/latest/{z}/{x}/{y}.png</code> (高解析度換成 <code>@2x.png</code>)。</p>
+        <ul>
+          <li>請照<a href="#app-user-agent">User-Agent 那段的格式</a>帶 <code>User-Agent</code>。</li>
+            <li>從 tilejson 取得的圖磚網址，請確認主機是 <code>tiles.rudymap.tw</code> 再用。</li>
+          <li>版本號不要寫死在網址裡。每週更新後，舊版號的圖磚會回 404，請重新讀 tilejson，或改用 <code>latest</code>。</li>
+          <li>只抓縮放層級 7–18 的圖磚，超出範圍會回 400。帶版本號的圖磚可以一直快取，<code>latest</code> 快取一天。</li>
+          <li>tiles.rudymap.tw 不保證速度與可用性，沒有 SLA，也沒有備援入口；保留對大量或異常使用限制存取的權利。要在山上用，請用上面的離線地圖。</li>
+        </ul>
+      </section>
+      <section data-detail data-kinds="app-mapsforge app-pmtiles">
+        <h2 class="h5 mt-4" id="app-download">從分流器下載檔案</h2>
+        <p>
+          檔案的網址是 <code>https://rudymap.tw/v1/&lt;檔名&gt;</code>。分流器不送檔案，只回 302 轉址到一個鏡像站，並留下一筆轉址紀錄。
+        </p>
+        <ul>
+          <li><strong>檢查有沒有新版，請用 <code>HEAD</code>。</strong><code>HEAD</code> 一樣會轉址，跟著轉址就能拿到鏡像站的 <code>Content-Length</code> 等資訊，而且不會留下轉址紀錄。但各站的 <code>Last-Modified</code>、<code>ETag</code> 不能互相比較：同一份檔，有的站記的是上傳時間，ETag 的格式也各站不同，拿上次記下的值跟這次分到的另一站比，會誤以為有新版。要判斷新舊，請比對檔案裡的版本 (向量版是地圖檔 metadata 的 <code>version</code>)，或只拿同一站的值比。</li>
+          <li><strong>下載只 <code>GET</code> 一次。</strong>跟著轉址下載就好，不需要先另外發一個請求確認。</li>
+          <li><strong>續傳直接打轉址後的鏡像站網址，並帶 <code>If-Range</code>。</strong>鏡像站都支援 <code>Range</code>。重新打 rudymap.tw 可能被派到另一個站，兩站的檔案可能暫時不同；同一站也可能在下載途中換成新一週的檔。續傳時帶 <code>If-Range</code>，值用第一次回應的 <code>ETag</code>：檔案沒換會回 206，換過了會回 200 整份檔，這時請從頭寫，不要接上。整份重新下載則可以重新經 rudymap.tw。</li>
+          <li><strong><code>rudymap.tw</code> 連不上時，改用備援入口 <code>rudy.oslab.tw</code>，</strong>路徑不變。</li>
+            <li><strong>先確認空間。</strong>解開 zip 時要同時放 zip 與解出的檔，大約需要檔案兩倍的空間。</li>
+        </ul>
+        <p>同一個檔重複打 rudymap.tw，不但會留下重複的紀錄、讓使用報告只能估算下載次數，每次還可能被派到不同的站。</p>
+        <p>兩個入口都連不上時的退路，見<a href="/deployment">部署架構</a>的「建議下游的退路順序」。</p>
+      </section>
+      <section data-detail data-kinds="app-mapsforge app-pmtiles app-tiles">
+        <h2 class="h5 mt-4" id="app-user-agent">User-Agent：請標示應用程式名稱</h2>
+        <p>
+          我們每季公開<a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>，列出各應用程式的下載量。報告靠 <code>User-Agent</code> 辨識下載來自哪個應用程式。如果只帶著 <code>Dalvik/2.1.0</code>、<code>Dart/3.5</code> 這類函式庫或系統的預設值，我們就認不出是哪個應用程式，出問題時也找不到開發者。
+        </p>
+        <p>向 <code>rudymap.tw</code> 下載時，請在 <code>User-Agent</code> 標頭放上：</p>
+        <pre><code>AppName/版本 (+聯絡網址)</code></pre>
+        <p>例如：</p>
+        <pre><code>MyHikingApp/2.1.0 (+https://example.com/contact)
 TrailMaps/1.4.2 (+https://example.org/)</code></pre>
-      <ul>
-        <li><code>AppName</code>：英數字、不含空白，能讓人認出是哪個應用程式。</li>
-        <li><code>版本</code>：應用程式的版本號。</li>
-        <li><code>聯絡網址</code>：網站或聯絡頁，我們需要時可以找到你。</li>
-        <li>後面可以接原本的系統資訊，例如 <code>wadi/v.7.03.17 Dalvik/2.1.0 (Linux; U; Android 16; ...)</code>。</li>
-      </ul>
-      <h3 class="h6 mt-3">常見的漏網之魚</h3>
-      <ul>
-        <li><strong>下載檔案的請求也要帶。</strong>應用程式裡常有不只一個 HTTP 元件：查詢更新用一個，實際下載大檔又用另一個 (背景下載、續傳用的函式庫)。只設定其中一個的話，真正的下載仍會是函式庫的預設值。請確認每一個會連到 rudymap.tw 的請求都帶同樣的名稱。</li>
-        <li><strong>預設值認不出是哪個應用程式。</strong>iOS 原生的網路元件 (URLSession) 會把執行檔名稱放在 <code>User-Agent</code> 最前面，那常是專案內部代號 (Flutter 專案預設是 <code>Runner</code>)；Dart 的 <code>HttpClient</code> 預設是 <code>Dart/x.y</code>。兩種都請明確設定成應用程式的名稱。</li>
-        <li><strong>不要只送 <code>Mozilla/5.0</code>。</strong>這看起來像瀏覽器，卻沒有任何可辨識的資訊。</li>
-      </ul>
-      <h3 class="h6 mt-3">各平台設定方式</h3>
-      <ul>
-        <li><strong>Android (OkHttp)</strong>：加一個 interceptor，<code>request.newBuilder().header("User-Agent", ua)</code>。</li>
-        <li><strong>Android (HttpURLConnection)</strong>：<code>conn.setRequestProperty("User-Agent", ua)</code>。</li>
-        <li><strong>Android (DownloadManager)</strong>：<code>request.addRequestHeader("User-Agent", ua)</code>。</li>
-        <li><strong>iOS (URLSession)</strong>：<code>configuration.httpAdditionalHeaders = ["User-Agent": ua]</code>；背景下載用的 session 也要設定。</li>
-        <li><strong>Flutter / Dart</strong>：<code>HttpClient()..userAgent = ua</code>，或在 <code>package:http</code> 的請求加上標頭。</li>
-      </ul>
-      <h3 class="h6 mt-3">目前辨識得出的應用程式</h3>
-      <p>報告依下列規則辨識下載來源，先看下載的檔名、再看 <code>User-Agent</code> (例如瀏覽器下載 <code>.exe</code> 算 Garmin)；其餘歸在「未知」或「其他」。</p>
-      <div class="table-responsive">
-        <table class="table table-sm">
-          <thead>
-            <tr>
-              <th>應用程式</th>
-              <th>辨識方式</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>綠野遊蹤</td><td><code>User-Agent</code> 為 <code>Green Tracks</code>；<code>okhttp/</code> 預設值目前也算作綠野遊蹤 (實測幾乎都是它下載檔案時發出的請求)</td></tr>
-            <tr><td>蛙弟</td><td><code>User-Agent</code> 以 <code>wadi/</code> 開頭</td></tr>
-            <tr><td>台灣大地羅盤</td><td><code>User-Agent</code> 以 <code>twdcompass/</code> 開頭</td></tr>
-              <tr><td>Dija 抵家</td><td><code>User-Agent</code> 以 <code>dija/</code> 開頭</td></tr>
-            <tr><td>Locus Map</td><td><code>User-Agent</code> 以 <code>Locus Map</code> 開頭，或下載 Locus 專用檔案 (<code>*_locus*.zip</code>)</td></tr>
-            <tr><td>Cartograph</td><td>下載 Cartograph 專用檔案 (<code>carto_*.cpkg</code>)，或 <code>User-Agent</code> 以 <code>cartograph</code> 開頭</td></tr>
-            <tr><td>Garmin 裝置 / BaseCamp</td><td>下載 Garmin 專用檔案 (<code>*.img.zip</code>、<code>*.gmap.zip</code>、<code>*.exe</code>)</td></tr>
-            <tr><td>網頁瀏覽器</td><td>完整的瀏覽器 <code>User-Agent</code> (只有 <code>Mozilla/5.0</code> 不算)</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p>你的應用程式不在表上、或被歸錯了，請照上面的格式設定 <code>User-Agent</code>，再依<a href="#report">讓使用報告認得你</a>登記。</p>
-
-      <h2 class="h5 mt-4" id="app-mapsforge">Mapsforge 離線地圖</h2>
-      <p>魯地圖原本就是 Mapsforge 地圖，手機應用程式最常用的是這一套。每週發布，以台灣為例：</p>
-      <div class="table-responsive">
-        <table class="table table-sm">
-          <thead>
-            <tr>
-              <th>檔案</th>
-              <th>內容</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td><code>MOI_OSM_Taiwan_TOPO_Rudy.map.zip</code></td><td>地圖 <code>MOI_OSM_Taiwan_TOPO_Rudy.map</code> (10 公尺等高線)，附同名的 <code>.poi</code></td></tr>
-            <tr><td><code>MOI_OSM_Taiwan_TOPO_Lite.map.zip</code></td><td>輕量版地圖 (20 公尺等高線)，檔案較小</td></tr>
-            <tr><td><code>MOI_OSM_Taiwan_TOPO_Rudy_hs_style.zip</code></td><td>主題 (有地形陰影，建議預設)：<code>MOI_OSM.xml</code> 與它的圖示資料夾</td></tr>
-            <tr><td><code>MOI_OSM_Taiwan_TOPO_Rudy_style.zip</code></td><td>同一個主題，沒有地形陰影</td></tr>
-            <tr><td><code>MOI_OSM_Taiwan_TOPO_Lite_style.zip</code></td><td>輕量版地圖用的主題</td></tr>
-            <tr><td><code>hgtmix.zip</code>、<code>hgt90.zip</code></td><td>高程檔，每 1 度一個 <code>.hgt</code>，畫地形陰影用：<code>hgtmix.zip</code> 較精細，配 10 公尺等高線的地圖；<code>hgt90.zip</code> 是 90 公尺，配輕量版</td></tr>
-            <tr><td><code>MOI_OSM_Taiwan_TOPO_Rudy.poi.zip</code></td><td>只有 POI (Mapsforge POI 資料庫)，給只要搜尋地點的應用程式</td></tr>
-            <tr><td><code>MOI_OSM_Taiwan_TOPO_Rudy.zip</code></td><td>三合一包：地圖、主題、高程檔 (<code>hgtmix</code>) 一次下載，裡面分成 <code>map/</code>、<code>mapthemes/</code>、<code>hgt/</code>；地圖和主題一定是同一週的</td></tr>
-              <tr><td><code>MOI_OSM_Taiwan_TOPO_Lite.zip</code></td><td>輕量版三合一包：輕量版地圖、主題 (<code>MOI_OSM_Lite.xml</code>)、<code>hgt90</code>，結構同上</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p>其他地區的檔名與內容，見各地區的下載頁 (<a href="https://rudymap.tw/">魯地圖官網</a>)。</p>
-      <h3 class="h6 mt-3">在應用程式裡顯示</h3>
-      <ol>
-        <li>依<a href="#app-download">下載規則</a>下載地圖、主題，要地形陰影再加高程檔，各自解開。</li>
-        <li>主題要整個資料夾一起放：主題 XML (例如 <code>MOI_OSM.xml</code>，輕量版是 <code>MOI_OSM_Lite.xml</code>) 用相對路徑讀旁邊的圖示資料夾，只留 XML 會畫不出圖示。三合一包的 <code>mapthemes/</code> 已經是這個樣子。</li>
-        <li>高程檔解開後把 <code>.hgt</code> 放在同一個資料夾，交給地圖程式庫的地形陰影設定。有地形陰影的主題裡寫了 <code>&lt;hillshading /&gt;</code>；不給高程檔時應該照常畫、只是沒有陰影，請在你用的程式庫確認一次。</li>
-        <li>Android 或 Java 用 <a href="https://github.com/mapsforge/mapsforge">mapsforge</a>：地圖檔用 <code>MapFile</code> 讀，主題用 <code>ExternalRenderTheme</code> 指到解開的 XML，地形陰影用 <code>HillsRenderConfig</code> 加 <code>MemoryCachingHgtReaderTileSource</code> 指到高程檔資料夾。Flutter 可以用 <a href="https://pub.dev/packages/mapsforge_flutter">mapsforge_flutter</a>。</li>
-        <li>POI 檔是 SQLite 格式的 Mapsforge POI 資料庫，可用 mapsforge 的 POI 程式庫依位置或名稱查詢。</li>
-      </ol>
-      <p>主題 zip 裡的 <code>MOI_OSM.pdf</code>、<code>MOI_OSM.png</code> 是圖例。主題內建的選單 (例如步道、等高線間距) 由應用程式依 XML 的 <code>stylemenu</code> 呈現；不做選單的應用程式照預設畫即可。</p>
-
-      <h2 class="h5 mt-4" id="app-pmtiles">向量版 PMTiles 離線地圖 (測試中)</h2>
-      <div class="alert alert-warning py-2" role="note">向量版還在測試，檔案與樣式的內容可能隨時調整。</div>
-      <p>向量版是 PMTiles 格式，用 MapLibre 畫。目前分流器上只有台灣的向量版檔案，每週發布：</p>
-      <ul>
-        <li>地圖：<code>MOI_OSM_Taiwan_TOPO_Rudy.pmtiles</code>，縮放層級 4–14。</li>
-        <li>高程：<code>taiwan_dem.pmtiles</code>，畫地形陰影用，縮放層級 6–12，可以不用。</li>
-        <li>樣式：<code>rudymap_pmtiles_style.zip</code>，所有地區共用。裡面有 <code>style.json</code> 與紙本風格的 <code>paper.json</code>、圖示 <code>sprite/</code> 與 <code>sprite-paper/</code>、拉丁字形 <code>glyphs/</code>、<code>version.txt</code>。</li>
-      </ul>
-      <p>樣式有兩個資料來源：<code>topo</code> 是地圖，<code>dem</code> 是高程。樣式裡的來源網址、<code>glyphs</code> 和 <code>sprite</code> 都是相對檔名，載入前請依來源 id 換成地圖檔和高程檔的完整網址。沒有高程檔，就拿掉 <code>dem</code> 來源、用到它的圖層，以及指向它的 <code>terrain</code> 設定 (如果有)。填不到來源請當成錯誤，不要沿用樣式裡寫的網址，否則可能畫出別的地區。</p>
-          <p>用 MapLibre Native 離線顯示，需要能讀 <code>pmtiles://</code> 的版本。</p>
-      <ul>
-        <li>依<a href="#app-download">下載規則</a>下載共用的樣式 <code>rudymap_pmtiles_style.zip</code> 和地區的地圖檔、高程檔。</li>
-        <li>解開樣式 zip，網址改成本機檔，例如 <code>pmtiles://file:///…/MOI_OSM_Taiwan_TOPO_Rudy.pmtiles</code>、<code>file:///…/glyphs/{fontstack}/{range}.pbf</code>、<code>file:///…/sprite/sprite</code>。</li>
-        <li>中日韓文字用手機字型畫：Android 要在地圖選項設定 <code>localIdeographFontFamily</code> (Flutter 的 maplibre_gl 0.28.1 起預設已設定)，iOS 預設已開啟。</li>
-        <li>全形標點在 zip 裡沒有字形。MapLibre Native (Android 13.7.1、iOS 7.0.0 實測) 會用手機字型畫；其他 SDK 或版本請用含全形括號的地名確認畫得出來。</li>
-        <li>地圖檔 metadata 的 <code>attribution</code> 是 HTML (含連結)，原生畫面請先轉成純文字，或自行處理連結。</li>
-      </ul>
-      <h3 class="h6 mt-3">版本與圖層開關</h3>
-      <p>地圖檔 metadata 的 <code>version</code>、樣式 metadata 的 <code>taiwan-topo:version</code> 和 <code>version.txt</code> 相同，就是同一週的地圖和樣式。地圖檔 metadata 的 <code>taiwan-topo:dem_version</code> 是同地區高程檔的內容版本，只在高程改變時才變，沒變就不必重新下載高程檔。</p>
-      <p>樣式 metadata 的 <code>taiwan-topo:overlays</code> 列出各個開關和它打開的分類，<code>taiwan-topo:style-cats</code> 是一直開著的分類，每個圖層的 <code>metadata["taiwan-topo:cats"]</code> 列出它需要的分類。需要的分類都開著，圖層才顯示，和魯地圖 Mapsforge 主題的選單相同。不做圖層開關的應用程式照樣式原樣畫即可。</p>
-
-      <h2 class="h5 mt-4" id="app-tiles">線上圖磚</h2>
-      <p><a href="https://tiles.rudymap.tw/">tiles.rudymap.tw</a> 把魯地圖的 Mapsforge 地圖畫成圖磚。圖磚網址從 <code>https://tiles.rudymap.tw/tilejson</code> 取得：<code>tiles</code> 是 256 px 的圖磚，<code>tiles_2x</code> 是給高解析度螢幕的 512 px 版本，<code>attribution</code> 是出處標示。不讀 tilejson 的程式可以用 <code>https://tiles.rudymap.tw/latest/{z}/{x}/{y}.png</code> (高解析度換成 <code>@2x.png</code>)。</p>
-      <ul>
-        <li>請照<a href="#app-user-agent">上面的格式</a>帶 <code>User-Agent</code>。</li>
-          <li>從 tilejson 取得的圖磚網址，請確認主機是 <code>tiles.rudymap.tw</code> 再用。</li>
-        <li>版本號不要寫死在網址裡。每週更新後，舊版號的圖磚會回 404，請重新讀 tilejson，或改用 <code>latest</code>。</li>
-        <li>只抓縮放層級 7–18 的圖磚，超出範圍會回 400。帶版本號的圖磚可以一直快取，<code>latest</code> 快取一天。</li>
-        <li>tiles.rudymap.tw 不保證速度與可用性，沒有 SLA，也沒有備援入口；保留對大量或異常使用限制存取的權利。要在山上用，請用上面的離線地圖。</li>
-      </ul>
+        <ul>
+          <li><code>AppName</code>：英數字、不含空白，能讓人認出是哪個應用程式。</li>
+          <li><code>版本</code>：應用程式的版本號。</li>
+          <li><code>聯絡網址</code>：網站或聯絡頁，我們需要時可以找到你。</li>
+          <li>後面可以接原本的系統資訊，例如 <code>wadi/v.7.03.17 Dalvik/2.1.0 (Linux; U; Android 16; ...)</code>。</li>
+        </ul>
+        <h3 class="h6 mt-3">常見的漏網之魚</h3>
+        <ul>
+          <li><strong>下載檔案的請求也要帶。</strong>應用程式裡常有不只一個 HTTP 元件：查詢更新用一個，實際下載大檔又用另一個 (背景下載、續傳用的函式庫)。只設定其中一個的話，真正的下載仍會是函式庫的預設值。請確認每一個會連到 rudymap.tw 的請求都帶同樣的名稱。</li>
+          <li><strong>預設值認不出是哪個應用程式。</strong>iOS 原生的網路元件 (URLSession) 會把執行檔名稱放在 <code>User-Agent</code> 最前面，那常是專案內部代號 (Flutter 專案預設是 <code>Runner</code>)；Dart 的 <code>HttpClient</code> 預設是 <code>Dart/x.y</code>。兩種都請明確設定成應用程式的名稱。</li>
+          <li><strong>不要只送 <code>Mozilla/5.0</code>。</strong>這看起來像瀏覽器，卻沒有任何可辨識的資訊。</li>
+        </ul>
+        <h3 class="h6 mt-3">各平台設定方式</h3>
+        <ul>
+          <li><strong>Android (OkHttp)</strong>：加一個 interceptor，<code>request.newBuilder().header("User-Agent", ua)</code>。</li>
+          <li><strong>Android (HttpURLConnection)</strong>：<code>conn.setRequestProperty("User-Agent", ua)</code>。</li>
+          <li><strong>Android (DownloadManager)</strong>：<code>request.addRequestHeader("User-Agent", ua)</code>。</li>
+          <li><strong>iOS (URLSession)</strong>：<code>configuration.httpAdditionalHeaders = ["User-Agent": ua]</code>；背景下載用的 session 也要設定。</li>
+          <li><strong>Flutter / Dart</strong>：<code>HttpClient()..userAgent = ua</code>，或在 <code>package:http</code> 的請求加上標頭。</li>
+        </ul>
+        <h3 class="h6 mt-3">目前辨識得出的應用程式</h3>
+        <p>報告依下列規則辨識下載來源，先看下載的檔名、再看 <code>User-Agent</code> (例如瀏覽器下載 <code>.exe</code> 算 Garmin)；其餘歸在「未知」或「其他」。</p>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>應用程式</th>
+                <th>辨識方式</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>綠野遊蹤</td><td><code>User-Agent</code> 為 <code>Green Tracks</code>；<code>okhttp/</code> 預設值目前也算作綠野遊蹤 (實測幾乎都是它下載檔案時發出的請求)</td></tr>
+              <tr><td>蛙弟</td><td><code>User-Agent</code> 以 <code>wadi/</code> 開頭</td></tr>
+              <tr><td>台灣大地羅盤</td><td><code>User-Agent</code> 以 <code>twdcompass/</code> 開頭</td></tr>
+                <tr><td>Dija 抵家</td><td><code>User-Agent</code> 以 <code>dija/</code> 開頭</td></tr>
+              <tr><td>Locus Map</td><td><code>User-Agent</code> 以 <code>Locus Map</code> 開頭，或下載 Locus 專用檔案 (<code>*_locus*.zip</code>)</td></tr>
+              <tr><td>Cartograph</td><td>下載 Cartograph 專用檔案 (<code>carto_*.cpkg</code>)，或 <code>User-Agent</code> 以 <code>cartograph</code> 開頭</td></tr>
+              <tr><td>Garmin 裝置 / BaseCamp</td><td>下載 Garmin 專用檔案 (<code>*.img.zip</code>、<code>*.gmap.zip</code>、<code>*.exe</code>)</td></tr>
+              <tr><td>網頁瀏覽器</td><td>完整的瀏覽器 <code>User-Agent</code> (只有 <code>Mozilla/5.0</code> 不算)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>你的應用程式不在表上、或被歸錯了，請照上面的格式設定 <code>User-Agent</code>，再依<a href="#report">讓使用報告認得你</a>登記。</p>
+      </section>
     </section>
 
-    <section data-for-pane="web app">
+    <section data-for-pane="web app" data-shared>
       <h2 class="h5 mt-4" id="report">讓使用報告認得你</h2>
       <p>我們每季公開<a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>，向架設鏡像站的志工與圖資作者說明魯地圖被怎麼使用，報告裡會列出各應用程式的下載量；出問題時也靠它找到開發者。</p>
       <ul>
-        <li><strong>應用程式</strong>：照<a href="#app-user-agent">上面的格式</a>帶 <code>User-Agent</code>。</li>
+        <li><strong>應用程式</strong>：照<a href="#app-user-agent">User-Agent 那段的格式</a>帶 <code>User-Agent</code>。</li>
         <li><strong>網頁</strong>：目前使用報告只依檔名與 <code>User-Agent</code> 分，瀏覽器的下載都算在「網頁瀏覽器」，還分不出是哪個網站。仍歡迎登記網站的主機名稱，出問題時我們才找得到你。</li>
         <li><strong>登記</strong>：到 <a href="https://github.com/outdoorsafetylab/rudy-balancer/issues">rudy-balancer</a> 開一個 issue，寫上產品名稱、網址 (網站；沒有網站的應用程式，給 Google Play 或 App Store 的頁面)、聯絡方式，以及 <code>User-Agent</code> 的開頭 (應用程式) 或網站的主機名稱 (網頁)。我們會登記到 <a href="https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/downstreams.yaml">downstreams.yaml</a>。登記不是使用的前提，也不影響分流。</li>
       </ul>
@@ -267,28 +275,45 @@ TrailMaps/1.4.2 (+https://example.org/)</code></pre>
     <a href="/app">魯地圖分流器</a> &middot; <a href="/app/privacy">隱私權政策</a>
   </footer>
   <script>
-    // 網頁 / 應用程式: the hash picks the pane (#web, #app, or an anchor inside
-    // one), so a link to either half can be shared. Without JavaScript both show.
+    // Two picks, both kept in the hash so a link can be shared: the half
+    // (#web, #app) and the kind of map (#web-tiles, #app-mapsforge, ...). Once a
+    // kind is picked, its section, the details it needs and the shared sections
+    // show; nothing else does. A link into a detail or a
+    // shared section opens it in the half (and kind) already shown.
+    // Without JavaScript everything shows.
     (() => {
-      const panes = [...document.querySelectorAll("[data-for-pane]")];
-      const buttons = [...document.querySelectorAll("[data-for]")];
-      let current = null;
-      const show = (which) => {
-        current = which;
-        for (const p of panes) p.hidden = !p.dataset.forPane.split(" ").includes(which);
-        for (const b of buttons) {
-          b.classList.toggle("active", b.dataset.for === which);
-          b.setAttribute("aria-pressed", String(b.dataset.for === which));
+      const $$ = (q) => [...document.querySelectorAll(q)];
+      const has = (el, attr, v) => (el.dataset[attr] || "").split(" ").includes(v);
+      let half = null, kind = null;
+      const show = (forced) => {
+        for (const p of $$("[data-for-pane]")) p.hidden = !has(p, "forPane", half);
+        for (const k of $$("[data-kind]")) k.hidden = k.dataset.kind !== kind;
+        for (const d of $$("[data-detail]")) d.hidden = !has(d, "kinds", kind) && d !== forced;
+        for (const s of $$("[data-shared]")) s.hidden = !half || (!kind && s !== forced);
+        for (const b of $$("[data-for]")) {
+          b.classList.toggle("active", b.dataset.for === half);
+          b.setAttribute("aria-pressed", String(b.dataset.for === half));
+        }
+        for (const b of $$("[data-pick]")) {
+          b.classList.toggle("active", b.dataset.pick === kind);
+          b.setAttribute("aria-pressed", String(b.dataset.pick === kind));
         }
       };
       const fromHash = () => {
         const id = decodeURIComponent(location.hash.slice(1));
         const el = id && document.getElementById(id);
         const pane = el && el.closest("[data-for-pane]");
-        // a shared section (copyright, contact) keeps the half already shown
         const halves = pane ? pane.dataset.forPane.split(" ") : [];
-        show(halves.length === 1 ? halves[0] : halves.includes(current) ? current : halves[0] || null);
-        if (el && el !== pane) el.scrollIntoView();
+        const before = half;
+        half = halves.length === 1 ? halves[0] : halves.includes(half) ? half : halves[0] || null;
+        // a link to the half itself (#web, #app, or Back from a kind) has no kind yet
+        if (half !== before || el === pane) kind = null;
+        const section = el && el.closest("[data-kind]");
+        if (section) kind = section.dataset.kind;
+        const extra = el && el.closest("[data-detail], [data-shared]");
+        show(extra);
+        // the target may only now be shown: jump to it after the browser's own
+        if (el && el !== pane) setTimeout(() => el.scrollIntoView(), 0);
       };
       window.addEventListener("hashchange", fromHash);
       fromHash();
