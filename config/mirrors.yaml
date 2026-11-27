@@ -33,6 +33,11 @@ files:
   - taiwan_dem.pmtiles
   - MOI_OSM_Taiwan_TOPO_Lite_style.zip
   - MOI_OSM_Taiwan_TOPO_Rudy.poi.zip
+  - MOI_OSM_Taiwan_TOPO_Rudy_v2.poi.zip
+  - MOI_OSM_Taiwan_TOPO_Rudy.db.zip
+  # Old name of rudymap_pmtiles_style.zip, still linked from the Rudy Map homepage;
+  # drop it once the homepage links the new name.
+  - MOI_OSM_Taiwan_TOPO_Rudy_pmtiles_style.zip
   - MOI_OSM_Taiwan_TOPO_Rudy_style.zip
   - MOI_OSM_twmap_style.zip
   - MOI_OSM_Taiwan_TOPO_Rudy_locus_style.zip
