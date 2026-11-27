@@ -4,6 +4,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -42,6 +43,21 @@ func TestWebrootServesDirectoryIndex(t *testing.T) {
 		h.ServeHTTP(w, httptest.NewRequest("GET", path, nil))
 		if got := w.Body.String(); got != want {
 			t.Errorf("%s: got %q (status %d), want %q", path, got, w.Code, want)
+		}
+	}
+}
+
+// The portal's first line is its doctype: anything before it (a stray
+// </html> once) puts the document in quirks mode and moves <head>, the icon
+// link included, into <body>, where browsers ignore it.
+func TestPortalPagesStartWithDoctype(t *testing.T) {
+	for _, page := range []string{"index.html", "app/privacy/index.html", "deployment/index.html", "developers/index.html"} {
+		b, err := os.ReadFile(filepath.Join("..", "webroot", page))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.HasPrefix(string(b), "<!DOCTYPE html>") {
+			t.Errorf("webroot/%s does not start with <!DOCTYPE html>", page)
 		}
 	}
 }
