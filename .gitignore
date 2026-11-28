@@ -4,3 +4,5 @@
  #/go.sum
 /rudy-balancer
 secret.yaml
+
+__pycache__/

@@ -49,6 +49,13 @@ class Modified(unittest.TestCase):
     def test_missing(self):
         self.assertIsNone(md.modified({}))
 
+    def test_fraction_truncated_not_rounded(self):
+        # as model/source.go: .999999999 must not round up to the next second
+        self.assertEqual(md.modified({"x-amz-meta-mtime": "1795694628.999999999"}), 1795694628)
+
+    def test_zero_mtime_falls_back(self):
+        self.assertEqual(md.modified({"x-amz-meta-mtime": "0", "last-modified": LM}), 1795694628)
+
 
 class Evaluate(unittest.TestCase):
     def test_healthy(self):

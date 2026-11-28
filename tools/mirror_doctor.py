@@ -20,6 +20,11 @@ file the balancer redirects to, the mirror is checked for:
     "Access-Control-Allow-Origin: *", and a preflight answers 2xx with the
     same origin and Range allowed.
 
+Like the health check, each request has 5 seconds in all (redirects
+included) and a file that fails is tried once more 3 seconds later. The
+newest copy is taken among every healthy mirror; the balancer also leaves out
+a mirror over its monthly quota, which /v1/files does not show.
+
 The exit status is 0 when nothing failed. Warnings (no strong ETag, no CORS)
 do not fail the run: a mirror without CORS still serves apps.
 """
@@ -29,6 +34,7 @@ import email.utils
 import http.client
 import json
 import sys
+import time
 import urllib.parse
 
 ENTRIES = ("https://rudymap.tw", "https://rudy.oslab.tw")
@@ -51,8 +57,12 @@ def modified(headers):
     """The source file's modification time in Unix seconds, or None."""
     mtime = headers.get("x-amz-meta-mtime")
     if mtime:
+        # whole seconds, as the health check reads it: float() would round
+        # .999999999 up and make this mirror look a second newer
         try:
-            return int(float(mtime))
+            sec = int(mtime.split(".", 1)[0])
+            if sec > 0:
+                return sec
         except ValueError:
             pass
     lm = headers.get("last-modified")
@@ -116,13 +126,18 @@ def evaluate(ref, head, range_status, cors_head, preflight):
 
 # ---------------------------------------------------------------- network
 
-def request(method, url, headers=None, timeout=10, hops=5):
+def request(method, url, headers=None, timeout=5, hops=5):
     """(status, lower-cased headers, Access-Control-Allow-Headers values), following
-    redirects with the same method. Reads no body beyond what a HEAD returns."""
+    redirects with the same method, all within timeout seconds as the health
+    check's client does. Reads no body beyond what a HEAD returns."""
+    deadline = time.monotonic() + timeout
     for _ in range(hops + 1):
+        left = deadline - time.monotonic()
+        if left <= 0:
+            raise TimeoutError("timed out")
         u = urllib.parse.urlsplit(url)
         conn_cls = http.client.HTTPSConnection if u.scheme == "https" else http.client.HTTPConnection
-        conn = conn_cls(u.netloc, timeout=timeout)
+        conn = conn_cls(u.netloc, timeout=left)
         path = u.path or "/"
         if u.query:
             path += "?" + u.query
@@ -146,13 +161,25 @@ def request(method, url, headers=None, timeout=10, hops=5):
     raise RuntimeError("too many redirects")
 
 
+RETRY_DELAY = 3  # seconds, as healthcheck.retryDelay
+
+
 def check(base, name, ref, timeout):
     url = base.rstrip("/") + "/" + urllib.parse.quote(name)
-    try:
-        status, headers, _ = request("HEAD", url, timeout=timeout)
-        head = (status, headers)
-    except Exception:
+    head = None
+    for attempt in range(2):  # a failed file is tried once more, as the health check does
+        if attempt:
+            time.sleep(RETRY_DELAY)
+        try:
+            status, headers, _ = request("HEAD", url, timeout=timeout)
+            head = (status, headers)
+        except Exception:
+            head = None
+        if head and head[0] == 200:
+            break
+    if head is None:
         return name, evaluate(ref, None, None, None, None)
+    status = head[0]
     if status != 200:
         return name, evaluate(ref, head, None, None, None)
     try:
@@ -195,7 +222,7 @@ def files(timeout):
 def main(argv=None):
     ap = argparse.ArgumentParser(description="檢查魯地圖鏡像站 (只需要 python3)")
     ap.add_argument("base", help="鏡像站網址，含路徑前綴，例如 https://example.org/rudy")
-    ap.add_argument("--timeout", type=float, default=10, help="每個請求的逾時秒數 (預設 10)")
+    ap.add_argument("--timeout", type=float, default=5, help="每個請求的逾時秒數，含轉址 (預設 5，與健康檢查相同)")
     ap.add_argument("--jobs", type=int, default=4, help="同時檢查幾個檔 (預設 4)")
     args = ap.parse_args(argv)
 

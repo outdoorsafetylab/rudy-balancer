@@ -198,9 +198,9 @@ if ($request_method = OPTIONS) {
   | python3 - https://你的站</code></pre>
     <p>站台有路徑前綴就一起寫上，例如 <code>https://你的站/rudy</code>。全部通過時結束碼是 0，可以放進自己的排程。手動檢查單一個檔：</p>
     <pre><code>F=https://你的站/hgtmix.zip
-curl -sI "$F"                          # 200，有 Last-Modified、ETag、Accept-Ranges: bytes
-curl -sI -H 'Range: bytes=0-99' "$F"   # 206
-curl -sI -H 'Origin: null' "$F"        # access-control-allow-origin: *
+curl -sIL "$F"                         # 200，有 Last-Modified、ETag、Accept-Ranges: bytes
+curl -sIL -H 'Range: bytes=0-99' "$F"   # 206
+curl -sIL -H 'Origin: null' "$F"        # access-control-allow-origin: *
 curl -si -X OPTIONS -H 'Origin: null' \
   -H 'Access-Control-Request-Method: GET' \
   -H 'Access-Control-Request-Headers: range' "$F"   # 2xx，allow-headers 含 range</code></pre>
