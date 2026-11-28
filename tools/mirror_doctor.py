@@ -22,8 +22,10 @@ file the balancer redirects to, the mirror is checked for:
 
 Like the health check, each request has 5 seconds in all (redirects
 included) and a file that fails is tried once more 3 seconds later. The
-newest copy is taken among every healthy mirror; the balancer also leaves out
-a mirror over its monthly quota, which /v1/files does not show.
+newest copy is taken among the healthy mirrors (the upstream left out, as
+the balancer does); the balancer also leaves out a mirror over its monthly
+quota, which /v1/files does not show. Within one connection, 5 seconds bounds
+each socket operation rather than the whole request.
 
 The exit status is 0 when nothing failed. Warnings (no strong ETag, no CORS)
 do not fail the run: a mirror without CORS still serves apps.
@@ -46,7 +48,10 @@ GOOD = 1  # model.Source status for a file the health check could fetch
 
 def reference(sources):
     """The newest copy among the healthy mirrors: (modified, size), or None."""
-    good = [s for s in sources if s.get("Status") == GOOD and s.get("LastModified")]
+    # the upstream is where the mirrors sync from, not a mirror: the balancer
+    # leaves it out when it decides which mirror is lagging
+    good = [s for s in sources
+            if s.get("Status") == GOOD and s.get("LastModified") and not s.get("Upstream")]
     if not good:
         return None
     newest = max(good, key=lambda s: s["LastModified"])

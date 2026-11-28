@@ -33,6 +33,13 @@ class Reference(unittest.TestCase):
         ]
         self.assertEqual(md.reference(sources), (30, 3))
 
+    def test_upstream_left_out(self):
+        sources = [
+            {"Status": 1, "LastModified": 10, "Size": 1},
+            {"Status": 1, "LastModified": 30, "Size": 3, "Upstream": True},
+        ]
+        self.assertEqual(md.reference(sources), (10, 1))
+
     def test_none_healthy(self):
         self.assertIsNone(md.reference([{"Status": 2, "LastModified": 5}]))
 
