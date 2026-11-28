@@ -77,7 +77,7 @@ map.addLayer({ id: "rudy", type: "raster", source: "rudy" });</code></pre>
         <ul>
           <li>地圖：<code>MOI_OSM_Taiwan_TOPO_Rudy.pmtiles</code>，縮放層級 4–14。</li>
           <li>高程：<code>taiwan_dem.pmtiles</code>，畫地形陰影用，縮放層級 6–12，可以不用。</li>
-          <li>樣式：<code>rudymap_pmtiles_style.zip</code>，所有地區共用。裡面有 <code>style.json</code> 與紙本風格的 <code>paper.json</code>、圖示 <code>sprite/</code> 與 <code>sprite-paper/</code>、拉丁字形 <code>glyphs/</code>、<code>version.txt</code>。</li>
+          <li>樣式：<code>rudymap_pmtiles_style.zip</code>，所有地區共用。裡面有 <code>style.json</code> 與紙本風格的 <code>paper.json</code>、圖示 <code>sprite/</code> 與 <code>sprite-paper/</code>、拉丁字形 <code>glyphs/</code> (各字型只有 <code>0-255.pbf</code> 一段)、<code>version.txt</code>。</li>
         </ul>
         <p>樣式有兩個資料來源：<code>topo</code> 是地圖，<code>dem</code> 是高程。樣式裡的來源網址和 <code>sprite</code> 都是相對檔名，載入前請依來源 id 換成地圖檔和高程檔的完整網址，<code>sprite</code> 換成你放的位置；<code>glyphs</code> 請拿掉，文字用瀏覽器的字型畫 (見範例)。沒有高程檔，就拿掉 <code>dem</code> 來源、用到它的圖層，以及指向它的 <code>terrain</code> 設定 (如果有)。填不到來源請當成錯誤，不要沿用樣式裡寫的網址，否則可能畫出別的地區。</p>
             <p>網頁用 MapLibre GL JS，下面的範例在 MapLibre GL JS 6.20 與 pmtiles 4.5 上確認過。地圖檔和高程檔請先問分流器一次，之後都直接讀它轉到的那一站。分流器會盡量把同一個網頁用戶端轉到同一個鏡像站，但那一站被排除或用戶端換了網路時會換站，讀到一半換站就可能接到另一份檔；如果每次讀取都再經過分流器，每次都會多一趟轉址。<code>rudymap.tw</code> 連不上時，可以改問備援入口 <code>rudy.oslab.tw</code>。樣式 zip 請解開，放在自己的網站。</p>
@@ -167,7 +167,7 @@ new maplibregl.Map({ container: "map", style,
         <ul>
           <li>地圖：<code>MOI_OSM_Taiwan_TOPO_Rudy.pmtiles</code>，縮放層級 4–14。</li>
           <li>高程：<code>taiwan_dem.pmtiles</code>，畫地形陰影用，縮放層級 6–12，可以不用。</li>
-          <li>樣式：<code>rudymap_pmtiles_style.zip</code>，所有地區共用。裡面有 <code>style.json</code> 與紙本風格的 <code>paper.json</code>、圖示 <code>sprite/</code> 與 <code>sprite-paper/</code>、拉丁字形 <code>glyphs/</code>、<code>version.txt</code>。</li>
+          <li>樣式：<code>rudymap_pmtiles_style.zip</code>，所有地區共用。裡面有 <code>style.json</code> 與紙本風格的 <code>paper.json</code>、圖示 <code>sprite/</code> 與 <code>sprite-paper/</code>、拉丁字形 <code>glyphs/</code> (各字型只有 <code>0-255.pbf</code> 一段)、<code>version.txt</code>。</li>
         </ul>
         <p>樣式有兩個資料來源：<code>topo</code> 是地圖，<code>dem</code> 是高程。樣式裡的來源網址、<code>glyphs</code> 和 <code>sprite</code> 都是相對檔名，載入前請依來源 id 換成地圖檔和高程檔的完整網址。沒有高程檔，就拿掉 <code>dem</code> 來源、用到它的圖層，以及指向它的 <code>terrain</code> 設定 (如果有)。填不到來源請當成錯誤，不要沿用樣式裡寫的網址，否則可能畫出別的地區。</p>
             <p>用 MapLibre Native 離線顯示，需要能讀 <code>pmtiles://</code> 的版本。</p>
@@ -176,6 +176,7 @@ new maplibregl.Map({ container: "map", style,
           <li>解開樣式 zip，網址改成本機檔，例如 <code>pmtiles://file:///…/MOI_OSM_Taiwan_TOPO_Rudy.pmtiles</code>、<code>file:///…/glyphs/{fontstack}/{range}.pbf</code>、<code>file:///…/sprite/sprite</code>。</li>
           <li>中日韓文字用手機字型畫：Android 要在地圖選項設定 <code>localIdeographFontFamily</code> (Flutter 的 maplibre_gl 0.28.1 起預設已設定)，iOS 預設已開啟。</li>
           <li>MapLibre Native (Android 13.7.1、iOS 7.0.0 實測) 讀不到拉丁字形時，有文字的圖磚整張不畫，所以 zip 附了拉丁字形 <code>glyphs/</code>。</li>
+          <li>其他字 (中日韓文字與全形標點以外)，Native 會照 <code>glyphs</code> 的網址去讀 zip 裡沒有的字形段，例如 <code>–</code> (8192-8447)、<code>℃</code> (8448-8703)、帶重音的字母；讀不到時，標籤用到那些字的圖磚整張不畫 (同樣實測)。可以為缺的段補空檔 (那些字不畫，地圖照常)，或自己放完整字形。</li>
           <li>全形標點在 zip 裡沒有字形。MapLibre Native (Android 13.7.1、iOS 7.0.0 實測) 會用手機字型畫；其他 SDK 或版本請用含全形括號的地名確認畫得出來。</li>
           <li>地圖檔 metadata 的 <code>attribution</code> 是 HTML (含連結)，原生畫面請先轉成純文字，或自行處理連結。</li>
         </ul>
