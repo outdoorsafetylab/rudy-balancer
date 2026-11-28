@@ -134,6 +134,36 @@ func TestPagesUseVersionedStylesheet(t *testing.T) {
 	}
 }
 
+// Every page loads the same Bootstrap release, each file with the integrity
+// hash of that release, so a page left on an old one shows up here.
+func TestPagesUseOneBootstrap(t *testing.T) {
+	const (
+		css = `href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-yEPZ7jP9S0QKiUQ0m3jjsO4ProIW7wvR9gXkI7JOGa2XVsw53Yke2bsdkBbjmmiX"`
+		js = `src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-WyOxWvTyr1QaMPfiPJSv76iReVthorl5uWlFtZPyK0IEB0hGzo9y5Bp9mYanr8Bu"`
+	)
+	for _, page := range []string{"index.html", "app/privacy/index.html", "deployment/index.html", "developers/index.html", "faq/index.html"} {
+		b, err := os.ReadFile(filepath.Join("..", "webroot", page))
+		if err != nil {
+			t.Fatal(err)
+		}
+		s := string(b)
+		if !strings.Contains(s, css) {
+			t.Errorf("webroot/%s: not Bootstrap 5.3.9's stylesheet with its integrity", page)
+		}
+		if strings.Contains(s, "bootstrap.bundle") && !strings.Contains(s, js) {
+			t.Errorf("webroot/%s: not Bootstrap 5.3.9's script with its integrity", page)
+		}
+		if n := strings.Count(s, "npm/bootstrap@"); n != 1 && n != 2 {
+			t.Errorf("webroot/%s: Bootstrap loaded %d times", page, n)
+		}
+		if strings.Count(s, "npm/bootstrap@5.3.9/") != strings.Count(s, "npm/bootstrap@") {
+			t.Errorf("webroot/%s: another Bootstrap release besides 5.3.9", page)
+		}
+	}
+}
+
 // Every map-kind button on the developers page has a section to show, under
 // the half it belongs to, with the id the button's link and the page script use.
 func TestDevelopersKindPicks(t *testing.T) {
