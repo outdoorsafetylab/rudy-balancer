@@ -177,3 +177,21 @@ func TestDevelopersKindPicks(t *testing.T) {
 		}
 	}
 }
+
+// The footer reads "© years 魯地圖 · Outdoor Safety Lab · ..." on every page:
+// Rudy Map is the first name after the copyright years.
+func TestFooterOrder(t *testing.T) {
+	for _, page := range []string{"index.html", "app/privacy/index.html", "deployment/index.html", "developers/index.html"} {
+		b, err := os.ReadFile(filepath.Join("..", "webroot", page))
+		if err != nil {
+			t.Fatal(err)
+		}
+		s := string(b)
+		footer := s[strings.Index(s, "<footer"):]
+		footer = footer[:strings.Index(footer, "</footer>")]
+		c, r, o := strings.Index(footer, "&copy;"), strings.Index(footer, ">魯地圖</a>"), strings.Index(footer, ">Outdoor Safety Lab</a>")
+		if c < 0 || r < 0 || o < 0 || !(c < r && r < o) {
+			t.Errorf("webroot/%s footer: want © then 魯地圖 then Outdoor Safety Lab (positions %d, %d, %d)", page, c, r, o)
+		}
+	}
+}
