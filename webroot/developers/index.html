@@ -80,7 +80,7 @@ map.addLayer({ id: "rudy", type: "raster", source: "rudy" });</code></pre>
           <li>樣式：<code>rudymap_pmtiles_style.zip</code>，所有地區共用。裡面有 <code>style.json</code> 與紙本風格的 <code>paper.json</code>、圖示 <code>sprite/</code> 與 <code>sprite-paper/</code>、拉丁字形 <code>glyphs/</code>、<code>version.txt</code>。</li>
         </ul>
         <p>樣式有兩個資料來源：<code>topo</code> 是地圖，<code>dem</code> 是高程。樣式裡的來源網址、<code>glyphs</code> 和 <code>sprite</code> 都是相對檔名，載入前請依來源 id 換成地圖檔和高程檔的完整網址。沒有高程檔，就拿掉 <code>dem</code> 來源、用到它的圖層，以及指向它的 <code>terrain</code> 設定 (如果有)。填不到來源請當成錯誤，不要沿用樣式裡寫的網址，否則可能畫出別的地區。</p>
-            <p>網頁用 MapLibre GL JS，請用 5.11 以上：zip 裡的拉丁字形就夠，其他字 MapLibre 會用瀏覽器的字型畫。地圖檔和高程檔請先問分流器一次，之後都直接讀它轉到的那一站。分流器會盡量把同一個網頁用戶端轉到同一個鏡像站，但那一站被排除或用戶端換了網路時會換站，讀到一半換站就可能接到另一份檔；如果每次讀取都再經過分流器，每次都會多一趟轉址。<code>rudymap.tw</code> 連不上時，可以改問備援入口 <code>rudy.oslab.tw</code>。樣式 zip 請解開，放在自己的網站。</p>
+            <p>網頁用 MapLibre GL JS 5.11 以上。地圖檔和高程檔請先問分流器一次，之後都直接讀它轉到的那一站。分流器會盡量把同一個網頁用戶端轉到同一個鏡像站，但那一站被排除或用戶端換了網路時會換站，讀到一半換站就可能接到另一份檔；如果每次讀取都再經過分流器，每次都會多一趟轉址。<code>rudymap.tw</code> 連不上時，可以改問備援入口 <code>rudy.oslab.tw</code>。樣式 zip 請解開，放在自己的網站。</p>
         <pre><code>const base = "https://example.com/rudymap/";      // 解開樣式 zip 的資料夾
 const mirror = async (file) =&gt; {                   // 分流器挑的鏡像站
   const r = await fetch("https://rudymap.tw/v1/" + file, { method: "HEAD" });
