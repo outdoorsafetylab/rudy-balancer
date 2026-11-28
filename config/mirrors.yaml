@@ -5,6 +5,10 @@ files:
   - hgtmix.zip
   - hgt90.zip
   - legend_V1R3.pdf
+  - legend.html
+  - legend_detail.pdf
+  - legend_compact.pdf
+  - legend_onepage.pdf
   daily:
   - drops/MOI_OSM_Taiwan_TOPO_Rudy.map.zip
   - drops/MOI_OSM_Taiwan_TOPO_Rudy_style.zip
@@ -31,6 +35,42 @@ files:
   - rudymap_pmtiles_style.zip
   - MOI_OSM_Taiwan_TOPO_Rudy.pmtiles
   - taiwan_dem.pmtiles
+  - alps-core_dem.pmtiles
+  - alps-eastern_dem.pmtiles
+  - alps-fareast_dem.pmtiles
+  - alps-western_dem.pmtiles
+  - annapurna_dem.pmtiles
+  - AW3D30_OSM_Alps-Core_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Alps-Eastern_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Alps-Fareast_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Alps-Western_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Annapurna_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Chuo-Alps_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Elbrus_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Fujisan_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Hong-Kong_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Jeju_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Kashmir_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Kita-Alps_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Kumano_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Minami-Alps_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Nikko-Oze_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Shikoku_TOPO_Rudy.pmtiles
+  - AW3D30_OSM_Yakushima_TOPO_Rudy.pmtiles
+  - chuo-alps_dem.pmtiles
+  - elbrus_dem.pmtiles
+  - fujisan_dem.pmtiles
+  - hong-kong_dem.pmtiles
+  - jeju_dem.pmtiles
+  - kashmir_dem.pmtiles
+  - kita-alps_dem.pmtiles
+  - kumano_dem.pmtiles
+  - minami-alps_dem.pmtiles
+  - nikko-oze_dem.pmtiles
+  - OSM_Moscow_TOPO_Rudy.pmtiles
+  - OSM_Saint-Petersburg_TOPO_Rudy.pmtiles
+  - shikoku_dem.pmtiles
+  - yakushima_dem.pmtiles
   - MOI_OSM_Taiwan_TOPO_Lite_style.zip
   - MOI_OSM_Taiwan_TOPO_Rudy.poi.zip
   - MOI_OSM_Taiwan_TOPO_Rudy_v2.poi.zip
