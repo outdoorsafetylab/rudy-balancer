@@ -224,11 +224,55 @@ def files(timeout):
     raise SystemExit("讀不到分流器的檔案清單 (%s)" % last)
 
 
+GUIDE = "https://rudymap.tw/deployment#mirrors"
+LIST_UP_TO = 5  # a warning shared by more files than this shows a count, not the names
+
+
+def report(results, verbose=False):
+    """The lines to print for [(name, problems)]. Failures are listed file by file, as each
+    needs fixing; a warning shared by several files is one line with how many (and which,
+    when few). verbose lists every file and problem, as before."""
+    lines = []
+    failed = warned = 0
+    warnings = {}  # message -> [file names], in order
+    for name, problems in results:
+        levels = {lv for lv, _ in problems}
+        mark = "FAIL" if "FAIL" in levels else "WARN" if levels else "OK  "
+        failed += mark == "FAIL"
+        warned += mark == "WARN"
+        if verbose:
+            lines.append("%s %s" % (mark, name))
+            lines.extend("       %s %s" % (lv, msg) for lv, msg in problems)
+            continue
+        if mark == "FAIL":
+            lines.append("FAIL %s" % name)
+            lines.extend("       %s %s" % (lv, msg) for lv, msg in problems if lv == "FAIL")
+        for lv, msg in problems:
+            if lv == "WARN":
+                warnings.setdefault(msg, []).append(name)
+    if not verbose and warnings:
+        if lines:
+            lines.append("")
+        for msg, names in warnings.items():
+            if len(names) == len(results):
+                which = "全部 %d 個檔" % len(names)
+            elif len(names) <= LIST_UP_TO:
+                which = "、".join(names)
+            else:
+                which = "%d 個檔" % len(names)
+            lines.append("WARN %s：%s" % (which, msg))
+        lines.append("     設定方式見 %s；加 --verbose 看每個檔" % GUIDE)
+    lines.append("")
+    lines.append("%d 個檔：%d 正常、%d 有警告、%d 失敗" % (len(results), len(results) - failed - warned, warned, failed))
+    return lines
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="檢查魯地圖鏡像站 (只需要 python3)")
     ap.add_argument("base", help="鏡像站網址，含路徑前綴，例如 https://example.org/rudy")
     ap.add_argument("--timeout", type=float, default=5, help="每個請求的逾時秒數，含轉址 (預設 5，與健康檢查相同)")
     ap.add_argument("--jobs", type=int, default=4, help="同時檢查幾個檔 (預設 4)")
+    ap.add_argument("--verbose", "-v", action="store_true", help="逐檔列出每個問題 (預設把相同的警告合併成一行)")
     args = ap.parse_args(argv)
 
     listing = files(args.timeout)
@@ -236,18 +280,9 @@ def main(argv=None):
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
         results = list(pool.map(lambda n: check(args.base, n, reference(listing[n]), args.timeout), names))
 
-    failed = warned = 0
-    for name, problems in results:
-        levels = {lv for lv, _ in problems}
-        mark = "FAIL" if "FAIL" in levels else "WARN" if levels else "OK  "
-        failed += mark == "FAIL"
-        warned += mark == "WARN"
-        print("%s %s" % (mark, name))
-        for lv, msg in problems:
-            print("       %s %s" % (lv, msg))
-    print()
-    print("%d 個檔：%d 正常、%d 有警告、%d 失敗" % (len(results), len(results) - failed - warned, warned, failed))
-    return 1 if failed else 0
+    for line in report(results, args.verbose):
+        print(line)
+    return 1 if any(lv == "FAIL" for _, problems in results for lv, _ in problems) else 0
 
 
 if __name__ == "__main__":
