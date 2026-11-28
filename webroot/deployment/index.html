@@ -43,8 +43,8 @@
     </p>
 
     <figure class="arch my-4">
-      <svg viewBox="0 0 640 250" role="img" aria-labelledby="arch-title">
-        <title id="arch-title">下載經入口轉址到鏡像站</title>
+      <svg viewBox="0 0 640 340" role="img" aria-labelledby="arch-title">
+        <title id="arch-title">下載經入口轉址到鏡像站；線上圖磚另由 tiles.rudymap.tw 提供</title>
         <defs>
           <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
             <path d="M0,0 L10,5 L0,10 z" fill="#3a4280" />
@@ -71,17 +71,24 @@
           <text x="540" y="152" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">站 C</text>
           <text x="540" y="182" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">…</text>
         </g>
+        <g class="box">
+          <rect x="200" y="265" width="170" height="60" rx="6" fill="#fff" stroke="#3a4280" stroke-width="1.5" />
+          <text x="285" y="292" text-anchor="middle" font-size="15" fill="#212529">tiles.rudymap.tw</text>
+          <text x="285" y="312" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">線上圖磚 (Cloudflare 快取)</text>
+        </g>
         <g class="flow" fill="none" stroke="#3a4280" stroke-width="1.5">
+          <path d="M70,155 L70,283 Q70,295 82,295 L198,295" marker-end="url(#arrow)" />
           <path d="M130,115 L198,75" marker-end="url(#arrow)" />
           <path d="M130,135 L198,175" marker-end="url(#arrow)" stroke-dasharray="5 4" />
-          <path d="M370,70 L448,90" marker-end="url(#arrow)" />
-          <path d="M370,180 L448,160" marker-end="url(#arrow)" />
+          <path d="M370,70 L448,70" marker-end="url(#arrow)" />
+          <path d="M370,180 L448,180" marker-end="url(#arrow)" />
         </g>
-        <text x="410" y="66" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">302</text>
-        <text x="410" y="200" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">302</text>
+        <text x="409" y="62" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">302</text>
+        <text x="409" y="172" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">302</text>
         <text x="150" y="184" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">連不上時</text>
+        <text x="445" y="300" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">不經分流器與鏡像站</text>
       </svg>
-      <figcaption class="text-muted small">入口只回轉址 (302)，檔案直接從鏡像站送出，不經過分流器。</figcaption>
+      <figcaption class="text-muted small">下載檔案時，入口只回轉址 (302)，檔案直接從鏡像站送出，不經過分流器。線上圖磚另由 tiles.rudymap.tw 提供，見<a href="#tiles">線上圖磚</a>。</figcaption>
     </figure>
 
     <h2 class="h5 mt-4">兩個入口</h2>
@@ -106,6 +113,14 @@
       <li>其餘的請求依權重隨機挑一站。</li>
       <li>挑好後回 302 轉址，檔案由鏡像站直接送出。</li>
     </ol>
+
+    <h2 class="h5 mt-4" id="tiles">線上圖磚 (tiles.rudymap.tw)</h2>
+    <ul>
+      <li>跟檔案下載是兩套：線上圖磚不經過分流器，也不用鏡像站。<code>tiles.rudymap.tw</code> 把每週的魯地圖 Mapsforge 地圖畫成圖磚：縮放層級 14 以下在每週發版時就全部畫好，15 以上在第一次被讀到時才畫；前面由 Cloudflare 快取。</li>
+      <li>每週隨魯地圖更新一版，每版有自己的網址 (例如 <code>/20261126-9d7815ab/{z}/{x}/{y}.png</code>)，內容不會再變，可以一直快取；換週後舊版號的網址會回 404。目前版本由 <code>/tilejson</code> 告訴你 (快取 5 分鐘)；<code>/latest/…</code> 給不讀 tilejson 的軟體用，快取一天。</li>
+      <li>只有一個入口，沒有備援。Cloudflare 故障時看不到；圖磚服務本身故障時，Cloudflare 已經快取的圖磚照常顯示，其他的看不到。</li>
+      <li>要給很多人看、需要不中斷，請自架 CDN 或快取，以 <code>tiles.rudymap.tw</code> 為來源；怎麼接見<a href="/developers#web-tiles">開發者整合</a>。</li>
+    </ul>
 
     <h2 class="h5 mt-4">失效模式</h2>
     <div class="table-responsive">
@@ -145,7 +160,7 @@
           </tr>
           <tr>
             <td>線上圖磚 <code>tiles.rudymap.tw</code></td>
-            <td>沒有備援入口，停的期間線上圖磚看不到。</td>
+            <td>沒有備援入口。Cloudflare 故障時看不到；圖磚服務本身故障時，Cloudflare 已快取的圖磚照常，其他的看不到。</td>
             <td>要給很多人看、需要不中斷的網站或服務，請自架 CDN 或快取，以 tiles.rudymap.tw 為來源，停的期間快取裡已有的圖磚照常顯示；在山上用的應用程式請改用離線地圖。</td>
           </tr>
         </tbody>
