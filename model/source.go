@@ -11,6 +11,9 @@ import (
 type Source struct {
 	Site             *Site     `json:"-" firestore:"-"`
 	SiteName         string    `json:"Site" firestore:"-"`
+	// Upstream is copied from the site: /v1/files carries it so a reader
+	// (tools/mirror_doctor.py) can leave the upstream out, as the balancer does.
+	Upstream         bool      `json:",omitempty" firestore:"-"`
 	File             string    `json:"-" firestore:"-"`
 	URL              string    `json:",omitempty" firestore:"-"`
 	LastCheck        time.Time `json:"-"`

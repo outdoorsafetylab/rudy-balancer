@@ -90,6 +90,7 @@ func load() (*Mirror, error) {
 		for filename := range files {
 			source := &model.Source{
 				Site:     site,
+				Upstream: site.Upstream,
 				SiteName: site.Name,
 				URL:      site.GetRedirectURL(filename),
 				File:     filename,
@@ -110,6 +111,12 @@ func load() (*Mirror, error) {
 					return nil, fmt.Errorf("undefined file: %s > %s > %s: %s", app.Name, v.Name, a.Name, a.File)
 				}
 				for _, site := range meta.Sites {
+					// The portal shows an artifact's mirrors and dates it by the
+					// newest of them; the upstream is not a mirror, and its newer
+					// copy is not what a download gets.
+					if site.Upstream {
+						continue
+					}
 					a.Sources = append(a.Sources, sources[site.GetRedirectURL(a.File)])
 				}
 			}
