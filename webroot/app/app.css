@@ -83,3 +83,8 @@
     align-items: center;
     gap: .5rem;
 }
+
+/* A source's tooltip is a few lines (file date, response time, last check). */
+.tooltip-inner {
+    white-space: pre-line;
+}
