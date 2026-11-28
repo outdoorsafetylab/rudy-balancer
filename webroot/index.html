@@ -324,7 +324,7 @@
           return [this.selectedVariant];
         },
         badgeClasses(source) {
-          if (source.Site.Hidden) {
+          if (source.Site.Hidden || source.Site.Upstream) {
             return 'd-none';
           }
           switch (source.Status) {

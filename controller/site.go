@@ -29,16 +29,27 @@ func (c *SiteController) List(w http.ResponseWriter, r *http.Request) {
 			src.Site = nil
 		}
 	}
-	res := make([]*site, len(sites))
-	for i, s := range sites {
-		res[i] = &site{
+	res := listSites(sites)
+	writeJSON(w, r, &res)
+}
+
+// listSites is what /v1/sites answers. An upstream is left out: this list is
+// what an app falls back to when both entry points are down, and it must only
+// name mirrors.
+func listSites(sites []*model.Site) []*site {
+	res := make([]*site, 0, len(sites))
+	for _, s := range sites {
+		if s.Upstream {
+			continue
+		}
+		res = append(res, &site{
 			Name:           s.Name,
 			Hidden:         s.Hidden,
 			Host:           s.Host,
 			Prefix:         s.Prefix,
 			RedirectScheme: s.RedirectScheme,
 			Sources:        s.Sources,
-		}
+		})
 	}
-	writeJSON(w, r, &res)
+	return res
 }

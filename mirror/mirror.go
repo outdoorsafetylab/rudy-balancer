@@ -77,9 +77,14 @@ func load() (*Mirror, error) {
 		if site.Firestore == "" {
 			site.Firestore = site.Name
 		}
-		// A site with no weight gets no downloads, so it is hidden as well:
-		// the portal leaves it out and its status is no longer published.
-		if site.Weight <= 0 {
+		// An upstream is never redirected to, whatever weight it is given, but
+		// stays visible so its status is published.
+		if site.Upstream {
+			site.Weight = 0
+			site.Hidden = false
+		} else if site.Weight <= 0 {
+			// A site with no weight gets no downloads, so it is hidden as well:
+			// the portal leaves it out and its status is no longer published.
 			site.Hidden = true
 		}
 		for filename := range files {
