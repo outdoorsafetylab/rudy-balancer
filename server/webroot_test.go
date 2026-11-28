@@ -144,7 +144,7 @@ func TestDevelopersKindPicks(t *testing.T) {
 	s := string(b)
 	want := map[string][]string{
 		"web": {"web-tiles", "web-pmtiles"},
-		"app": {"app-mapsforge", "app-pmtiles", "app-tiles"},
+		"app": {"app-tiles", "app-mapsforge", "app-pmtiles"},
 	}
 	for half, kinds := range want {
 		start := strings.Index(s, `<section data-for-pane="`+half+`" id="`+half+`">`)
@@ -165,6 +165,15 @@ func TestDevelopersKindPicks(t *testing.T) {
 		}
 		if n := strings.Count(pane, "data-pick="); n != len(kinds) {
 			t.Errorf("%s pane: %d kind buttons, want %d", half, n, len(kinds))
+		}
+		// online tiles first: the easiest to integrate
+		last := -1
+		for _, k := range kinds {
+			i := strings.Index(pane, `data-pick="`+k+`"`)
+			if i < last {
+				t.Errorf("%s pane: %s button out of order, want %v", half, k, kinds)
+			}
+			last = i
 		}
 	}
 }

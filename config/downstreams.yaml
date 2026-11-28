@@ -6,7 +6,7 @@
 # 登記方式：到魯地圖 GitHub (https://github.com/alpha-rudy/taiwan-topo/issues) 開一個 issue，寫上產品名稱、
 # 網址 (網站；沒有網站的應用程式，給 Google Play 或 App Store 的頁面)、聯絡方式，
 # 以及 User-Agent 的開頭或網站的主機名稱，我們會在 downstreams 底下加一筆。
-# 熟悉格式的話，也可以直接開 pull request。
+# 熟悉格式的話，也可以直接在本 repo (rudy-balancer) 開 pull request。
 #
 #   id           小寫英數字，可用單一的 - 連接（不可開頭、結尾或連續），在這份檔案裡不重複。報告用它當代號。
 #   name         產品名稱。
