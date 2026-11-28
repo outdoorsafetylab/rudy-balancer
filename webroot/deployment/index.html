@@ -93,7 +93,7 @@
 
     <h2 class="h5 mt-4">鏡像站</h2>
     <ul>
-      <li>鏡像站由志工架設，分散在不同的主機與網路業者。名單與各站權重在 <a href="https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/mirrors.yaml">mirrors.yaml</a>，目前狀態在<a href="https://rudymap.statuspage.io/">狀態頁</a>。</li>
+      <li>鏡像站由志工架設，分散在不同的主機與網路業者。名單與各站權重在 <a href="https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/mirrors.yaml">mirrors.yaml</a>，目前狀態在<a href="https://rudymap.statuspage.io/">狀態頁</a>。想架站的話見<a href="#mirrors">架設鏡像站</a>。</li>
       <li>每週發版後，各站分別同步新檔，有先有後。</li>
     </ul>
 
@@ -158,6 +158,47 @@
       <li>先前存下的鏡像站清單：平常下載成功時順便從兩個入口之一 (HTTPS) 讀一次 <a href="/v1/sites"><code>/v1/sites</code></a> 存起來，把它當成可以直接連的主機清單；兩個入口都連不上時，從中挑一站，用那一站每個檔的完整網址 (<code>Sources[].URL</code>，含各站的路徑前綴) 直接下載，不要只拿主機名稱接檔名。這樣做下載照常，只是那段期間沒有分流，也不會算進使用報告。</li>
     </ol>
     <p>轉址到鏡像站之後的失敗不必換入口：兩個入口轉到的是同一批鏡像站。下載與續傳的細節見<a href="/developers#app-download">開發者整合</a>。</p>
+
+    <h2 class="h5 mt-4" id="mirrors">架設鏡像站</h2>
+    <p>歡迎架設鏡像站，一起分擔下載。</p>
+    <h3 class="h6 mt-3">怎麼加入</h3>
+    <ol>
+      <li>到<a href="https://github.com/alpha-rudy/taiwan-topo/issues">魯地圖 GitHub</a> 開一個 issue，寫上站台網址、聯絡方式、想同步哪些檔 (只有台灣，或全部地區)，以及流量有沒有限制。</li>
+      <li>由魯地圖作者決定是否加入，以及從哪裡同步檔案。</li>
+      <li>確定後我們把站台加進分流器的設定 (<a href="https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/mirrors.yaml">mirrors.yaml</a>)，通過下面的檢查後開始分到下載。</li>
+    </ol>
+    <h3 class="h6 mt-3">要放的檔</h3>
+    <p>路徑與分流器上的檔名相同，例如 <code>https://rudymap.tw/v1/hgtmix.zip</code> 對應 <code>https://你的站/hgtmix.zip</code>。大多數檔在根目錄，每日版在 <code>drops/</code>。分流器分流的檔列在 mirrors.yaml 的 <code>files</code>；其他地區的檔名見 taiwan-topo 的 <code>tools/mirror-configs/</code>。站台可以有路徑前綴，例如 <code>https://你的站/rudy/hgtmix.zip</code>。</p>
+    <h3 class="h6 mt-3">伺服器要求</h3>
+    <ul>
+      <li>HTTPS，支援 <code>HEAD</code> 與 <code>Range</code> (回 206)，並回強 <code>ETag</code>。</li>
+      <li><code>Last-Modified</code> 是來源檔的修改時間。用物件儲存 (S3 等) 時，<code>Last-Modified</code> 會變成上傳時間，請用會寫入 <code>x-amz-meta-mtime</code> 的工具 (例如 rclone) 同步。分流器靠它判斷哪一站還在同步舊版。</li>
+      <li>允許網頁讀取：<code>HEAD</code>、<code>GET</code> 回 <code>Access-Control-Allow-Origin: *</code>；預檢 (<code>OPTIONS</code>) 回 2xx，允許 <code>Range</code> 與 <code>If-Range</code>，並公開 <code>Content-Length</code>、<code>Content-Range</code>、<code>Accept-Ranges</code>、<code>ETag</code>。網頁經分流器轉址後送出的 <code>Origin</code> 是 <code>null</code>，所以只能用 <code>*</code>。沒開的站照樣分到應用程式的下載，只是分不到網頁的。</li>
+    </ul>
+    <p>nginx 的設定範例 (kcwu 提供)，加在 <code>server { ... }</code> 裡：</p>
+    <pre><code>add_header Access-Control-Allow-Origin "*" always;
+add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;
+add_header Access-Control-Allow-Headers "Range, If-Range, If-None-Match, If-Modified-Since" always;
+add_header Access-Control-Expose-Headers "Content-Length, Content-Range, Accept-Ranges, ETag" always;
+add_header Access-Control-Max-Age 86400 always;
+if ($request_method = OPTIONS) {
+    return 204;
+}</code></pre>
+    <p>某個 <code>location</code> 裡有自己的 <code>add_header</code> 時，不會繼承 <code>server</code> 層的這幾行，要在那個 <code>location</code> 裡再寫一次。</p>
+    <h3 class="h6 mt-3">分流器怎麼看你的站</h3>
+    <ul>
+      <li>每 30 分鐘對每個檔發一次 <code>HEAD</code>，5 秒內沒回應或不是 200 就算這個檔測不到，這個檔先不分到你的站。</li>
+      <li>某個檔的修改時間比其他站舊 (發版後還在同步)，這個檔也先不分到你的站，追上後自動恢復。</li>
+      <li>各站目前的狀態在<a href="https://rudymap.statuspage.io/">狀態頁</a>；全部的檔都測得到是正常，部分測不到是部分故障。</li>
+    </ul>
+    <h3 class="h6 mt-3">自我檢查</h3>
+    <pre><code>F=https://你的站/hgtmix.zip
+curl -sI "$F"                          # 200，有 Last-Modified、ETag、Accept-Ranges: bytes
+curl -sI -H 'Range: bytes=0-99' "$F"   # 206
+curl -sI -H 'Origin: null' "$F"        # access-control-allow-origin: *
+curl -si -X OPTIONS -H 'Origin: null' \
+  -H 'Access-Control-Request-Method: GET' \
+  -H 'Access-Control-Request-Headers: range' "$F"   # 2xx，allow-headers 含 range</code></pre>
 
     <h2 class="h5 mt-4">狀態與報告</h2>
     <ul>
