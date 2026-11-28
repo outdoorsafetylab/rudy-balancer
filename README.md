@@ -20,7 +20,7 @@
 ## 運作方式
 
 - 站台設定檔: [mirrors.yaml](https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/mirrors.yaml)
-- 下游登記檔: [downstreams.yaml](https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/downstreams.yaml)：使用魯地圖檔案或圖磚的 app 與網站。到本 repo 開 issue 說明產品與 User-Agent 或網站網域，由我們登記 (也可以直接開 pull request)，格式說明在檔案開頭。登記不影響分流。
+- 下游登記檔: [downstreams.yaml](https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/downstreams.yaml)：使用魯地圖檔案或圖磚的應用程式與網站。到[魯地圖 GitHub](https://github.com/alpha-rudy/taiwan-topo/issues) 開 issue 說明產品與 User-Agent 或網站網域，由我們登記 (也可以直接在本 repo 開 pull request)，格式說明在檔案開頭。登記不影響分流。
 
 ### 魯地圖說明網頁
 
