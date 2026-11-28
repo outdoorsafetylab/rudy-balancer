@@ -61,6 +61,14 @@ files:
   - Taiwan_moi_zh_camp.gmap.zip
   - Taiwan_moi_zh_camp3D.gmap.zip
 sites:
+# Where the mirrors sync from: Rudy's build writes each release to this R2
+# copy. Upstream: checked every run and shown on the status page, so a release
+# stuck before reaching the mirrors is visible, but never redirected to.
+- name: Cloudflare R2 來源
+  host: data.rudymap.tw
+  prefix: /share-mapdata
+  redirectscheme: https
+  upstream: true
 - name: kcwu
   statuspage: KC Wu
   firestore: KC Wu

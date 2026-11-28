@@ -77,14 +77,20 @@ func load() (*Mirror, error) {
 		if site.Firestore == "" {
 			site.Firestore = site.Name
 		}
-		// A site with no weight gets no downloads, so it is hidden as well:
-		// the portal leaves it out and its status is no longer published.
-		if site.Weight <= 0 {
+		// An upstream is never redirected to, whatever weight it is given, but
+		// stays visible so its status is published.
+		if site.Upstream {
+			site.Weight = 0
+			site.Hidden = false
+		} else if site.Weight <= 0 {
+			// A site with no weight gets no downloads, so it is hidden as well:
+			// the portal leaves it out and its status is no longer published.
 			site.Hidden = true
 		}
 		for filename := range files {
 			source := &model.Source{
 				Site:     site,
+				Upstream: site.Upstream,
 				SiteName: site.Name,
 				URL:      site.GetRedirectURL(filename),
 				File:     filename,
@@ -105,6 +111,12 @@ func load() (*Mirror, error) {
 					return nil, fmt.Errorf("undefined file: %s > %s > %s: %s", app.Name, v.Name, a.Name, a.File)
 				}
 				for _, site := range meta.Sites {
+					// The portal shows an artifact's mirrors and dates it by the
+					// newest of them; the upstream is not a mirror, and its newer
+					// copy is not what a download gets.
+					if site.Upstream {
+						continue
+					}
 					a.Sources = append(a.Sources, sources[site.GetRedirectURL(a.File)])
 				}
 			}

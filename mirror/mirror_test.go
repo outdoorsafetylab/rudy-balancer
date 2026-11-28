@@ -104,3 +104,77 @@ sites:
 		}
 	}
 }
+
+// An upstream is never redirected to, whatever weight it is given, but stays
+// visible so the health check publishes its status.
+func TestUpstreamSite(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "mirrors.yaml")
+	yaml := "files:\n  weekly:\n  - a.map.zip\nsites:\n" +
+		"- name: up\n  host: up.example.org\n  weight: 2\n" +
+		"- name: RudyR2\n  host: data.example.org\n  prefix: /share\n  redirectscheme: https\n  weight: 5\n  upstream: true\n"
+	if err := os.WriteFile(file, []byte(yaml), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	os.Setenv("MIRRORS_FILE", file)
+	defer os.Unsetenv("MIRRORS_FILE")
+	if err := config.Init("docker"); err != nil {
+		t.Fatal(err)
+	}
+	sites, err := Sites()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range sites {
+		if s.Name != "RudyR2" {
+			continue
+		}
+		if !s.Upstream || s.Weight != 0 || s.Hidden {
+			t.Errorf("RudyR2: upstream %v weight %d hidden %v; want upstream, weight 0, not hidden", s.Upstream, s.Weight, s.Hidden)
+		}
+		if len(s.Sources) != 1 || s.Sources[0].URL != "https://data.example.org/share/a.map.zip" {
+			t.Errorf("RudyR2 sources: %+v", s.Sources)
+		}
+		return
+	}
+	t.Fatal("no RudyR2 site")
+}
+
+// The upstream is not among an app's artifact sources (the portal dates an
+// artifact by its newest source), and every source says whether it is upstream.
+func TestUpstreamNotAnArtifactSource(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "mirrors.yaml")
+	yaml := "files:\n  weekly:\n  - a.map.zip\nsites:\n" +
+		"- name: up\n  host: up.example.org\n  redirectscheme: https\n  weight: 2\n" +
+		"- name: R2\n  host: data.example.org\n  redirectscheme: https\n  upstream: true\n" +
+		"apps:\n- id: x\n  name: X\n  variants:\n  - id: v\n    name: V\n    artifacts:\n" +
+		"    - id: map\n      name: Map\n      file: a.map.zip\n"
+	if err := os.WriteFile(file, []byte(yaml), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	os.Setenv("MIRRORS_FILE", file)
+	defer os.Unsetenv("MIRRORS_FILE")
+	if err := config.Init("docker"); err != nil {
+		t.Fatal(err)
+	}
+	m, err := Get()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := m.Apps[0].Variants[0].Artifacts[0]
+	if len(a.Sources) != 1 || a.Sources[0].SiteName != "up" {
+		names := []string{}
+		for _, s := range a.Sources {
+			names = append(names, s.SiteName)
+		}
+		t.Errorf("artifact sources %v, want [up]", names)
+	}
+	for _, s := range m.Sites {
+		for _, src := range s.Sources {
+			if src.Upstream != s.Upstream {
+				t.Errorf("%s: source upstream %v, site %v", s.Name, src.Upstream, s.Upstream)
+			}
+		}
+	}
+}

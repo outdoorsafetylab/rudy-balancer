@@ -10,11 +10,15 @@ import (
 // this UTC month (cloudfront.Meter) while the site stays in rotation; 0 means
 // no cap.
 type Site struct {
-	Name           string
-	StatusPage     string    `json:"-" firestore:"-"`
-	Firestore      string    `json:"-" firestore:"-"`
-	MonthlyQuota   int64     `json:"-" firestore:"-"`
-	Hidden         bool      `json:",omitempty"`
+	Name         string
+	StatusPage   string `json:"-" firestore:"-"`
+	Firestore    string `json:"-" firestore:"-"`
+	MonthlyQuota int64  `json:"-" firestore:"-"`
+	Hidden       bool   `json:",omitempty"`
+	// Upstream marks where the mirrors sync from (Rudy Map's R2 copy): it is
+	// health-checked and its status published, so a release stuck upstream
+	// shows there, but no download is ever redirected to it.
+	Upstream       bool      `json:",omitempty"`
 	RedirectScheme string    `json:"-"`
 	Host           string    `json:"-"`
 	Prefix         string    `json:"-"`

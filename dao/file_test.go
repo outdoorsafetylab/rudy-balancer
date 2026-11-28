@@ -187,3 +187,38 @@ func TestRestoreSourceKeepsCORS(t *testing.T) {
 		t.Errorf("JSON %s has no \"CORS\":true", b)
 	}
 }
+
+// An upstream (weight 0 by mirror.load) holding a newer copy is neither picked
+// nor makes the mirrors look lagging: it is not a mirror.
+func TestPickSourcesSkipsUpstream(t *testing.T) {
+	if err := config.Init("docker"); err != nil {
+		t.Fatal(err)
+	}
+	if err := log.Init(); err != nil {
+		t.Fatal(err)
+	}
+	mk := func(name string, weight int, upstream bool) *model.Site {
+		site := &model.Site{Name: name, Weight: weight, Upstream: upstream}
+		site.Sources = []*model.Source{{Site: site, SiteName: name, File: "f.zip", URL: "https://" + name + "/f.zip"}}
+		return site
+	}
+	sites := []*model.Site{mk("kcwu", 4, false), mk("RudyR2", 0, true)}
+	now := time.Now()
+	fs := &fileSites{
+		File:     "f.zip",
+		Sites:    map[string]int64{"kcwu": 10, "RudyR2": 10},
+		Modified: map[string]time.Time{"kcwu": now.Add(-time.Hour), "RudyR2": now},
+		CORS:     map[string]bool{"kcwu": true, "RudyR2": true},
+	}
+	for _, corsOnly := range []bool{false, true} {
+		got := pickSources(sites, fs, "f.zip", corsOnly, nil)
+		for _, src := range got {
+			if src.SiteName != "kcwu" {
+				t.Errorf("corsOnly %v: picked %s", corsOnly, src.SiteName)
+			}
+		}
+		if len(got) != 4 {
+			t.Errorf("corsOnly %v: %d sources, want kcwu x4 (not dropped as lagging behind the upstream)", corsOnly, len(got))
+		}
+	}
+}
