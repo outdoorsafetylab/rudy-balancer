@@ -6,6 +6,12 @@
 .icon-link {
     display: inline-flex;
     align-items: center;
+    /* Bootstrap 5.3 styles .icon-link too (a gap, a half-faded underline set
+       lower); these links keep the look they had: arrow spaced by its margin,
+       an underline like any other link's. */
+    gap: 0;
+    text-decoration-color: currentColor;
+    text-underline-offset: auto;
 }
 
 .icon-link>.bi {
