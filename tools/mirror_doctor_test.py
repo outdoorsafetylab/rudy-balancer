@@ -108,5 +108,33 @@ class Evaluate(unittest.TestCase):
         self.assertEqual(md.evaluate(REF, head(), 206, CORS, ok), [])
 
 
+class Report(unittest.TestCase):
+    CORS = ("WARN", "沒開 CORS")
+
+    def test_shared_warning_is_one_line(self):
+        results = [("a.zip", [self.CORS]), ("b.zip", [self.CORS]), ("c.zip", [self.CORS])]
+        lines = md.report(results)
+        warn = [l for l in lines if l.startswith("WARN")]
+        self.assertEqual(warn, ["WARN 全部 3 個檔：沒開 CORS"])
+        self.assertEqual(lines[-1], "3 個檔：0 正常、3 有警告、0 失敗")
+
+    def test_failures_listed_by_file_and_warning_counted(self):
+        results = [("ok.zip", []), ("gone.pmtiles", [("FAIL", "HEAD 回 404")])] + \
+                  [("f%d.zip" % i, [self.CORS]) for i in range(6)]
+        lines = md.report(results)
+        self.assertEqual(lines[:2], ["FAIL gone.pmtiles", "       FAIL HEAD 回 404"])
+        self.assertIn("WARN 6 個檔：沒開 CORS", lines)
+        self.assertEqual(lines[-1], "8 個檔：1 正常、6 有警告、1 失敗")
+
+    def test_few_files_are_named(self):
+        results = [("a.zip", [self.CORS]), ("b.zip", [])]
+        self.assertIn("WARN a.zip：沒開 CORS", md.report(results))
+
+    def test_verbose_lists_every_file(self):
+        results = [("a.zip", [self.CORS]), ("b.zip", [])]
+        lines = md.report(results, verbose=True)
+        self.assertEqual(lines[:3], ["WARN a.zip", "       WARN 沒開 CORS", "OK   b.zip"])
+
+
 if __name__ == "__main__":
     unittest.main()

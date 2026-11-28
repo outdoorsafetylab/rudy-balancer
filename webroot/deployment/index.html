@@ -31,6 +31,7 @@
           <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
             <li class="nav-item"><a class="nav-link active" aria-current="page" href="/deployment">部署架構</a></li>
             <li class="nav-item"><a class="nav-link" href="/developers">開發者整合</a></li>
+            <li class="nav-item"><a class="nav-link" href="/faq">常見問題</a></li>
           </ul>
         </div>
       </div>
@@ -208,7 +209,7 @@ if ($request_method = OPTIONS) {
       <li>各站目前的狀態在<a href="https://rudymap.statuspage.io/">狀態頁</a>；全部的檔都測得到是正常，部分測不到是部分故障。</li>
     </ul>
     <h3 class="h6 mt-3">自我檢查</h3>
-    <p>用 <a href="https://github.com/outdoorsafetylab/rudy-balancer/blob/master/tools/mirror_doctor.py">mirror_doctor.py</a> 照健康檢查的方式檢查你的站：它從分流器取得要分流的檔案清單，逐一檢查有沒有這個檔、大小與修改時間是否跟上其他站、ETag、Range 與網頁讀取，最後列出每個檔的結果。只需要 <code>python3</code>，不用另外安裝套件。</p>
+    <p>用 <a href="https://github.com/outdoorsafetylab/rudy-balancer/blob/master/tools/mirror_doctor.py">mirror_doctor.py</a> 照健康檢查的方式檢查你的站：它從分流器取得要分流的檔案清單，逐一檢查有沒有這個檔、大小與修改時間是否跟上其他站、ETag、Range 與網頁讀取，最後列出失敗的檔，相同的警告合併成一行 (加 <code>--verbose</code> 看每個檔)。只需要 <code>python3</code>，不用另外安裝套件。</p>
     <pre><code>curl -s https://raw.githubusercontent.com/outdoorsafetylab/rudy-balancer/master/tools/mirror_doctor.py \
   | python3 - https://你的站</code></pre>
     <p>站台有路徑前綴就一起寫上，例如 <code>https://你的站/rudy</code>。全部通過時結束碼是 0，可以放進自己的排程。手動檢查單一個檔：</p>

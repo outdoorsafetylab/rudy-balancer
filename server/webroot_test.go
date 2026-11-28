@@ -51,7 +51,7 @@ func TestWebrootServesDirectoryIndex(t *testing.T) {
 // </html> once) puts the document in quirks mode and moves <head>, the icon
 // link included, into <body>, where browsers ignore it.
 func TestPortalPagesStartWithDoctype(t *testing.T) {
-	for _, page := range []string{"index.html", "app/privacy/index.html", "deployment/index.html", "developers/index.html"} {
+	for _, page := range []string{"index.html", "app/privacy/index.html", "deployment/index.html", "developers/index.html", "faq/index.html"} {
 		b, err := os.ReadFile(filepath.Join("..", "webroot", page))
 		if err != nil {
 			t.Fatal(err)
@@ -123,7 +123,7 @@ func TestDeploymentDiagramSelfStyled(t *testing.T) {
 // Cache-Control was set left browsers holding the old app.css for weeks, and a
 // new URL is the only way past that cached copy.
 func TestPagesUseVersionedStylesheet(t *testing.T) {
-	for _, page := range []string{"index.html", "app/privacy/index.html", "deployment/index.html", "developers/index.html"} {
+	for _, page := range []string{"index.html", "app/privacy/index.html", "deployment/index.html", "developers/index.html", "faq/index.html"} {
 		b, err := os.ReadFile(filepath.Join("..", "webroot", page))
 		if err != nil {
 			t.Fatal(err)
@@ -181,7 +181,7 @@ func TestDevelopersKindPicks(t *testing.T) {
 // The footer reads "© years 魯地圖 · Outdoor Safety Lab · ..." on every page:
 // Rudy Map is the first name after the copyright years.
 func TestFooterOrder(t *testing.T) {
-	for _, page := range []string{"index.html", "app/privacy/index.html", "deployment/index.html", "developers/index.html"} {
+	for _, page := range []string{"index.html", "app/privacy/index.html", "deployment/index.html", "developers/index.html", "faq/index.html"} {
 		b, err := os.ReadFile(filepath.Join("..", "webroot", page))
 		if err != nil {
 			t.Fatal(err)

@@ -220,6 +220,8 @@ func TestDocumentationPages(t *testing.T) {
 		"/deployment/": "<title>部署架構 - 魯地圖分流器</title>",
 		"/developers":  "<title>開發者整合 - 魯地圖分流器</title>",
 		"/developers/": "<title>開發者整合 - 魯地圖分流器</title>",
+		"/faq":         "<title>常見問題 - 魯地圖分流器</title>",
+		"/faq/":        "<title>常見問題 - 魯地圖分流器</title>",
 	} {
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, httptest.NewRequest("GET", path, nil))

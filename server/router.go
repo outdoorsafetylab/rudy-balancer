@@ -26,7 +26,7 @@ func newRouter() (*mux.Router, error) {
 	r.PathPrefix("/app").Handler(webroot)
 	// The balancer's own documentation pages. Everything else at the root is
 	// Rudy Map's site, proxied from the mirrors (the NotFoundHandler below).
-	for _, page := range []string{"/deployment", "/developers"} {
+	for _, page := range []string{"/deployment", "/developers", "/faq"} {
 		r.Path(page).Handler(webroot)
 		r.Path(page + "/").Handler(webroot)
 	}
