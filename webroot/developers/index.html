@@ -93,12 +93,12 @@ maplibregl.addProtocol("pmtiles", new pmtiles.Protocol({ metadata: true }).tile)
 const style = await (await fetch(base + "style.json", { cache: "no-cache" })).json();
 style.sources.topo.url = "pmtiles://" + map;
 style.sources.dem.url = "pmtiles://" + dem;
-style.glyphs = base + "glyphs/{fontstack}/{range}.pbf";
+delete style.glyphs;                               // 文字用瀏覽器的字型畫
 style.sprite = base + "sprite/sprite";
 const header = await new pmtiles.PMTiles(map).getHeader();   // 地圖檔記著地區的範圍
 new maplibregl.Map({ container: "map", style,
   bounds: [[header.minLon, header.minLat], [header.maxLon, header.maxLat]] });</code></pre>
-        <p>樣式 zip 放在自己的網站，每週要跟著地圖檔一起更新。檔名固定、內容每週會換，要避免瀏覽器用到上週的快取：<code>style.json</code> 照範例用 <code>fetch(url, { cache: "no-cache" })</code> 讀；sprite 和字形是 MapLibre 自己讀的，請讓你的網站對這些檔回 <code>Cache-Control: no-cache</code>，或在 <code>style.sprite</code>、<code>style.glyphs</code> 的網址加上跟著版本變的參數 (例如 <code>?v=</code> 加上 <code>version.txt</code> 的內容)。</p>
+        <p>樣式 zip 放在自己的網站，每週要跟著地圖檔一起更新。檔名固定、內容每週會換，要避免瀏覽器用到上週的快取：<code>style.json</code> 照範例用 <code>fetch(url, { cache: "no-cache" })</code> 讀；sprite 是 MapLibre 自己讀的，請讓你的網站對它回 <code>Cache-Control: no-cache</code>，或在 <code>style.sprite</code> 的網址加上跟著版本變的參數 (例如 <code>?v=</code> 加上 <code>version.txt</code> 的內容)。</p>
         <p>地圖開著時，如果讀取開始失敗 (那一站壞了或被排除)，請重新問一次分流器，用它轉到的新網址重建地圖檔和高程檔的來源。</p>
         <p>要把地圖檔也放在自己的網站，伺服器要支援 HTTP Range 請求，網頁在別的網域時要開 CORS。</p>
         <h3 class="h6 mt-3">版本與圖層開關</h3>
