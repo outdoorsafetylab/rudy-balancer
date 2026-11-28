@@ -185,7 +185,7 @@ if ($request_method = OPTIONS) {
     return 204;
 }</code></pre>
     <p>某個 <code>location</code> 裡有自己的 <code>add_header</code> 時，不會繼承 <code>server</code> 層的這幾行，要在那個 <code>location</code> 裡再寫一次。</p>
-    <h3 class="h6 mt-3">分流器怎麼看你的站</h3>
+    <h3 class="h6 mt-3">分流器怎麼對鏡像站做健康檢查</h3>
     <ul>
       <li>每 30 分鐘對每個檔發一次 <code>HEAD</code>，5 秒內沒回應或不是 200 就算這個檔測不到，這個檔先不分到你的站。</li>
       <li>某個檔的修改時間比其他站舊 (發版後還在同步)，這個檔也先不分到你的站，追上後自動恢復。</li>
