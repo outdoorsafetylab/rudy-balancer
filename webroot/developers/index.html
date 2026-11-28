@@ -175,6 +175,7 @@ new maplibregl.Map({ container: "map", style,
           <li>依<a href="#app-download">下載規則</a>下載共用的樣式 <code>rudymap_pmtiles_style.zip</code> 和地區的地圖檔、高程檔。</li>
           <li>解開樣式 zip，網址改成本機檔，例如 <code>pmtiles://file:///…/MOI_OSM_Taiwan_TOPO_Rudy.pmtiles</code>、<code>file:///…/glyphs/{fontstack}/{range}.pbf</code>、<code>file:///…/sprite/sprite</code>。</li>
           <li>中日韓文字用手機字型畫：Android 要在地圖選項設定 <code>localIdeographFontFamily</code> (Flutter 的 maplibre_gl 0.28.1 起預設已設定)，iOS 預設已開啟。</li>
+          <li>MapLibre Native (Android 13.7.1、iOS 7.0.0 實測) 讀不到拉丁字形時，有文字的圖磚整張不畫，所以 zip 附了拉丁字形 <code>glyphs/</code>。</li>
           <li>全形標點在 zip 裡沒有字形。MapLibre Native (Android 13.7.1、iOS 7.0.0 實測) 會用手機字型畫；其他 SDK 或版本請用含全形括號的地名確認畫得出來。</li>
           <li>地圖檔 metadata 的 <code>attribution</code> 是 HTML (含連結)，原生畫面請先轉成純文字，或自行處理連結。</li>
         </ul>
