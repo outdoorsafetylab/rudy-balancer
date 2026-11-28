@@ -52,8 +52,8 @@
         </defs>
         <g class="box">
           <rect x="10" y="95" width="120" height="60" rx="6" fill="#fff" stroke="#3a4280" stroke-width="1.5" />
-          <text x="70" y="122" text-anchor="middle" font-size="15" fill="#212529">應用程式、網頁</text>
-          <text x="70" y="142" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">下載的人</text>
+          <text x="70" y="122" text-anchor="middle" font-size="15" fill="#212529">下載地圖的人</text>
+          <text x="70" y="142" class="sub" text-anchor="middle" font-size="12" fill="#6c757d">用應用程式或網頁</text>
         </g>
         <g class="box entry">
           <rect x="200" y="40" width="170" height="60" rx="6" fill="#eef0fa" stroke="#3a4280" stroke-width="1.5" />
@@ -167,8 +167,19 @@
     </ul>
   </main>
   <footer class="container text-muted small text-center my-4">
-    <a href="/app">魯地圖分流器</a> &middot; <a href="/app/privacy">隱私權政策</a>
+    <a href="https://rudymap.tw/">魯地圖</a> &middot;
+    &copy; 2022&ndash;<span id="year">2026</span> <a href="https://outdoorsafetylab.org/">Outdoor Safety Lab</a> &middot;
+    <a href="/app/privacy">隱私權政策</a> &middot;
+    <a href="https://github.com/outdoorsafetylab/rudy-balancer">GitHub</a><span id="version"></span>
   </footer>
+  <script>
+    // Same footer as the portal: this year, and the deployed version from /v1/version.
+    document.getElementById("year").textContent = new Date().getFullYear();
+    fetch("/v1/version").then((r) => r.json()).then((v) => {
+      const version = v.tag || v.commit;
+      if (version) document.getElementById("version").textContent = " \u00b7 (" + version + ")";
+    }).catch(() => {});
+  </script>
 </body>
 
 </html>

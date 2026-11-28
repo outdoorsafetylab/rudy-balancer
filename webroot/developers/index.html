@@ -63,7 +63,7 @@ map.addLayer({ id: "rudy", type: "raster", source: "rudy" });</code></pre>
         <p>帶版本號的圖磚網址內容不會再變，回應是 <code>Cache-Control: public, max-age=31536000, immutable</code>，可以一直快取。tilejson 快取 5 分鐘，<code>latest</code> 網址快取一天；請沿用回應的快取時間，不要拉長。</p>
         <h3 class="h6 mt-3">使用規則</h3>
         <ul>
-          <li>網頁本身不用設定 <code>User-Agent</code>。自己架的快取伺服器或後端程式來抓圖磚時，請帶上名稱、版本和聯絡網址，例如 <code>MySite/1.0 (+https://example.com/)</code>，出問題時我們才找得到你。</li>
+          <li>網頁本身不用設定 <code>User-Agent</code>。自己架的快取伺服器或後端程式來抓圖磚時，請帶上名稱、版本和聯絡網址，例如 <code>MySite/1.0 (+https://example.com/)</code>，魯地圖或圖磚服務有重大變更或故障時，我們才通知得到你。</li>
           <li>版本號不要寫死在網址裡。每週更新後，舊版號的圖磚會回 404，請重新讀 tilejson，或改用 <code>latest</code>。</li>
           <li>只抓縮放層級 7–18 的圖磚，超出範圍會回 400。</li>
           <li>目前不限制來源網站，但保留對大量或異常使用限制存取的權利。</li>
@@ -72,7 +72,7 @@ map.addLayer({ id: "rudy", type: "raster", source: "rudy" });</code></pre>
       <section data-kind="web-pmtiles">
         <h2 class="h5 mt-4" id="web-pmtiles">向量版 PMTiles (測試中)</h2>
         <div class="alert alert-warning py-2" role="note">向量版還在測試，檔案與樣式的內容可能隨時調整。</div>
-        <p>向量版是 PMTiles 格式，用 MapLibre 畫。目前分流器上只有台灣的向量版檔案，每週發布：</p>
+        <p>向量版是 PMTiles 格式，用 MapLibre 畫。每個地區有自己的地圖檔，多數地區另有高程檔，樣式所有地區共用一份；每週發布。以台灣為例：</p>
         <ul>
           <li>地圖：<code>MOI_OSM_Taiwan_TOPO_Rudy.pmtiles</code>，縮放層級 4–14。</li>
           <li>高程：<code>taiwan_dem.pmtiles</code>，畫地形陰影用，縮放層級 6–12，可以不用。</li>
@@ -109,10 +109,21 @@ new maplibregl.Map({ container: "map", style, center: [header.centerLon, header.
     <section data-for-pane="app" id="app">
       <div class="for-pick kind-pick my-3" role="group" aria-label="圖資">
         <span>圖資：</span>
+        <a class="btn btn-outline-secondary btn-sm" href="#app-tiles" data-pick="app-tiles">線上圖磚</a>
         <a class="btn btn-outline-secondary btn-sm" href="#app-mapsforge" data-pick="app-mapsforge">Mapsforge 離線地圖</a>
         <a class="btn btn-outline-secondary btn-sm" href="#app-pmtiles" data-pick="app-pmtiles">向量版 PMTiles 離線地圖 (測試中)</a>
-        <a class="btn btn-outline-secondary btn-sm" href="#app-tiles" data-pick="app-tiles">線上圖磚</a>
       </div>
+      <section data-kind="app-tiles">
+        <h2 class="h5 mt-4" id="app-tiles">線上圖磚</h2>
+        <p><a href="https://tiles.rudymap.tw/">tiles.rudymap.tw</a> 把魯地圖的 Mapsforge 地圖畫成圖磚。圖磚網址從 <code>https://tiles.rudymap.tw/tilejson</code> 取得：<code>tiles</code> 是 256 px 的圖磚，<code>tiles_2x</code> 是給高解析度螢幕的 512 px 版本，<code>attribution</code> 是出處標示。不讀 tilejson 的程式可以用 <code>https://tiles.rudymap.tw/latest/{z}/{x}/{y}.png</code> (高解析度換成 <code>@2x.png</code>)。</p>
+        <ul>
+          <li>請照<a href="#app-user-agent">User-Agent 那段的格式</a>帶 <code>User-Agent</code>。</li>
+            <li>從 tilejson 取得的圖磚網址，請確認主機是 <code>tiles.rudymap.tw</code> 再用。</li>
+          <li>版本號不要寫死在網址裡。每週更新後，舊版號的圖磚會回 404，請重新讀 tilejson，或改用 <code>latest</code>。</li>
+          <li>只抓縮放層級 7–18 的圖磚，超出範圍會回 400。帶版本號的圖磚可以一直快取，<code>latest</code> 快取一天。</li>
+          <li>tiles.rudymap.tw 不保證速度與可用性，沒有 SLA，也沒有備援入口；保留對大量或異常使用限制存取的權利。要在山上用，請用上面的離線地圖。</li>
+        </ul>
+      </section>
       <section data-kind="app-mapsforge">
         <h2 class="h5 mt-4" id="app-mapsforge">Mapsforge 離線地圖</h2>
         <p>魯地圖原本就是 Mapsforge 地圖，手機應用程式最常用的是這一套。每週發布，以台灣為例：</p>
@@ -151,7 +162,7 @@ new maplibregl.Map({ container: "map", style, center: [header.centerLon, header.
       <section data-kind="app-pmtiles">
         <h2 class="h5 mt-4" id="app-pmtiles">向量版 PMTiles 離線地圖 (測試中)</h2>
         <div class="alert alert-warning py-2" role="note">向量版還在測試，檔案與樣式的內容可能隨時調整。</div>
-        <p>向量版是 PMTiles 格式，用 MapLibre 畫。目前分流器上只有台灣的向量版檔案，每週發布：</p>
+        <p>向量版是 PMTiles 格式，用 MapLibre 畫。每個地區有自己的地圖檔，多數地區另有高程檔，樣式所有地區共用一份；每週發布。以台灣為例：</p>
         <ul>
           <li>地圖：<code>MOI_OSM_Taiwan_TOPO_Rudy.pmtiles</code>，縮放層級 4–14。</li>
           <li>高程：<code>taiwan_dem.pmtiles</code>，畫地形陰影用，縮放層級 6–12，可以不用。</li>
@@ -169,17 +180,6 @@ new maplibregl.Map({ container: "map", style, center: [header.centerLon, header.
         <h3 class="h6 mt-3">版本與圖層開關</h3>
         <p>地圖檔 metadata 的 <code>version</code>、樣式 metadata 的 <code>taiwan-topo:version</code> 和 <code>version.txt</code> 相同，就是同一週的地圖和樣式。地圖檔 metadata 的 <code>taiwan-topo:dem_version</code> 是同地區高程檔的內容版本，只在高程改變時才變，沒變就不必重新下載高程檔。</p>
         <p>樣式 metadata 的 <code>taiwan-topo:overlays</code> 列出各個開關和它打開的分類，<code>taiwan-topo:style-cats</code> 是一直開著的分類，每個圖層的 <code>metadata["taiwan-topo:cats"]</code> 列出它需要的分類。需要的分類都開著，圖層才顯示，和魯地圖 Mapsforge 主題的選單相同。不做圖層開關的應用程式照樣式原樣畫即可。</p>
-      </section>
-      <section data-kind="app-tiles">
-        <h2 class="h5 mt-4" id="app-tiles">線上圖磚</h2>
-        <p><a href="https://tiles.rudymap.tw/">tiles.rudymap.tw</a> 把魯地圖的 Mapsforge 地圖畫成圖磚。圖磚網址從 <code>https://tiles.rudymap.tw/tilejson</code> 取得：<code>tiles</code> 是 256 px 的圖磚，<code>tiles_2x</code> 是給高解析度螢幕的 512 px 版本，<code>attribution</code> 是出處標示。不讀 tilejson 的程式可以用 <code>https://tiles.rudymap.tw/latest/{z}/{x}/{y}.png</code> (高解析度換成 <code>@2x.png</code>)。</p>
-        <ul>
-          <li>請照<a href="#app-user-agent">User-Agent 那段的格式</a>帶 <code>User-Agent</code>。</li>
-            <li>從 tilejson 取得的圖磚網址，請確認主機是 <code>tiles.rudymap.tw</code> 再用。</li>
-          <li>版本號不要寫死在網址裡。每週更新後，舊版號的圖磚會回 404，請重新讀 tilejson，或改用 <code>latest</code>。</li>
-          <li>只抓縮放層級 7–18 的圖磚，超出範圍會回 400。帶版本號的圖磚可以一直快取，<code>latest</code> 快取一天。</li>
-          <li>tiles.rudymap.tw 不保證速度與可用性，沒有 SLA，也沒有備援入口；保留對大量或異常使用限制存取的權利。要在山上用，請用上面的離線地圖。</li>
-        </ul>
       </section>
       <section data-detail data-kinds="app-mapsforge app-pmtiles">
         <h2 class="h5 mt-4" id="app-download">從分流器下載檔案</h2>
@@ -199,7 +199,7 @@ new maplibregl.Map({ container: "map", style, center: [header.centerLon, header.
       <section data-detail data-kinds="app-mapsforge app-pmtiles app-tiles">
         <h2 class="h5 mt-4" id="app-user-agent">User-Agent：請標示應用程式名稱</h2>
         <p>
-          我們每季公開<a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>，列出各應用程式的下載量。報告靠 <code>User-Agent</code> 辨識下載來自哪個應用程式。如果只帶著 <code>Dalvik/2.1.0</code>、<code>Dart/3.5</code> 這類函式庫或系統的預設值，我們就認不出是哪個應用程式，出問題時也找不到開發者。
+          我們每季公開<a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>，列出各應用程式的下載量。報告靠 <code>User-Agent</code> 辨識下載來自哪個應用程式。如果只帶著 <code>Dalvik/2.1.0</code>、<code>Dart/3.5</code> 這類函式庫或系統的預設值，我們就認不出是哪個應用程式，有重大變更或故障時也無從通知。
         </p>
         <p>向 <code>rudymap.tw</code> 下載時，請在 <code>User-Agent</code> 標頭放上：</p>
         <pre><code>AppName/版本 (+聯絡網址)</code></pre>
@@ -209,7 +209,7 @@ TrailMaps/1.4.2 (+https://example.org/)</code></pre>
         <ul>
           <li><code>AppName</code>：英數字、不含空白，能讓人認出是哪個應用程式。</li>
           <li><code>版本</code>：應用程式的版本號。</li>
-          <li><code>聯絡網址</code>：網站或聯絡頁，我們需要時可以找到你。</li>
+          <li><code>聯絡網址</code>：網站或聯絡頁，有重大變更或故障時，我們可以通知你。</li>
           <li>後面可以接原本的系統資訊，例如 <code>wadi/v.7.03.17 Dalvik/2.1.0 (Linux; U; Android 16; ...)</code>。</li>
         </ul>
         <h3 class="h6 mt-3">常見的漏網之魚</h3>
@@ -254,11 +254,11 @@ TrailMaps/1.4.2 (+https://example.org/)</code></pre>
 
     <section data-for-pane="web app" data-shared>
       <h2 class="h5 mt-4" id="report">讓使用報告認得你</h2>
-      <p>我們每季公開<a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>，向架設鏡像站的志工與圖資作者說明魯地圖被怎麼使用，報告裡會列出各應用程式的下載量；出問題時也靠它找到開發者。</p>
+      <p>我們每季公開<a href="https://outdoorsafetylab.org/rudymap/reports">使用報告</a>，向架設鏡像站的志工與圖資作者說明魯地圖被怎麼使用，報告裡會列出各應用程式的下載量；魯地圖有重大變更或故障時，也靠它通知各網站和應用程式的開發者。</p>
       <ul>
         <li><strong>應用程式</strong>：照<a href="#app-user-agent">User-Agent 那段的格式</a>帶 <code>User-Agent</code>。</li>
-        <li><strong>網頁</strong>：目前使用報告只依檔名與 <code>User-Agent</code> 分，瀏覽器的下載都算在「網頁瀏覽器」，還分不出是哪個網站。仍歡迎登記網站的主機名稱，出問題時我們才找得到你。</li>
-        <li><strong>登記</strong>：到 <a href="https://github.com/outdoorsafetylab/rudy-balancer/issues">rudy-balancer</a> 開一個 issue，寫上產品名稱、網址 (網站；沒有網站的應用程式，給 Google Play 或 App Store 的頁面)、聯絡方式，以及 <code>User-Agent</code> 的開頭 (應用程式) 或網站的主機名稱 (網頁)。我們會登記到 <a href="https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/downstreams.yaml">downstreams.yaml</a>。登記不是使用的前提，也不影響分流。</li>
+        <li><strong>網頁</strong>：目前使用報告只依檔名與 <code>User-Agent</code> 分，瀏覽器的下載都算在「網頁瀏覽器」，還分不出是哪個網站。仍歡迎登記網站的主機名稱，有重大變更或故障時，我們才通知得到你。</li>
+        <li><strong>登記</strong>：到<a href="https://github.com/alpha-rudy/taiwan-topo/issues">魯地圖 GitHub</a> 開一個 issue，寫上產品名稱、網址 (網站；沒有網站的應用程式，給 Google Play 或 App Store 的頁面)、聯絡方式，以及 <code>User-Agent</code> 的開頭 (應用程式) 或網站的主機名稱 (網頁)。我們會登記到 <a href="https://github.com/outdoorsafetylab/rudy-balancer/blob/master/config/downstreams.yaml">downstreams.yaml</a>。登記不是使用的前提，也不影響分流。</li>
       </ul>
       <h2 class="h5 mt-4" id="copyright">版權與出處</h2>
       <p>魯地圖的授權與散佈方式，請見<a href="https://rudymap.tw/">魯地圖官網</a>的「地圖版權與散佈說明」。地圖資料 © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>；台灣的等高線與高程來自內政部。</p>
@@ -272,8 +272,19 @@ TrailMaps/1.4.2 (+https://example.org/)</code></pre>
     </section>
   </main>
   <footer class="container text-muted small text-center my-4">
-    <a href="/app">魯地圖分流器</a> &middot; <a href="/app/privacy">隱私權政策</a>
+    <a href="https://rudymap.tw/">魯地圖</a> &middot;
+    &copy; 2022&ndash;<span id="year">2026</span> <a href="https://outdoorsafetylab.org/">Outdoor Safety Lab</a> &middot;
+    <a href="/app/privacy">隱私權政策</a> &middot;
+    <a href="https://github.com/outdoorsafetylab/rudy-balancer">GitHub</a><span id="version"></span>
   </footer>
+  <script>
+    // Same footer as the portal: this year, and the deployed version from /v1/version.
+    document.getElementById("year").textContent = new Date().getFullYear();
+    fetch("/v1/version").then((r) => r.json()).then((v) => {
+      const version = v.tag || v.commit;
+      if (version) document.getElementById("version").textContent = " \u00b7 (" + version + ")";
+    }).catch(() => {});
+  </script>
   <script>
     // Two picks, both kept in the hash so a link can be shared: the half
     // (#web, #app) and the kind of map (#web-tiles, #app-mapsforge, ...). Once a
