@@ -4,6 +4,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -161,6 +162,34 @@ func TestPagesUseOneBootstrap(t *testing.T) {
 		}
 		if strings.Count(s, "npm/bootstrap@5.3.9/") != strings.Count(s, "npm/bootstrap@") {
 			t.Errorf("webroot/%s: another Bootstrap release besides 5.3.9", page)
+		}
+	}
+}
+
+// The portal page runs on Vue 3, pinned with its integrity hash, and nothing of
+// the Vue 2 page is left: vue-cookies, a Popper of its own (Bootstrap's bundle
+// carries one), or an element with both v-if and v-for, which Vue 3 reads the
+// other way round (v-if first, before the loop variable exists).
+func TestPortalUsesVue3(t *testing.T) {
+	b, err := os.ReadFile(filepath.Join("..", "webroot", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(b)
+	const vue = `src="https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.global.prod.js"
+    integrity="sha384-K2FjvpG1y48yCE+7CBPhnKc16ShPmT3dlNwvoA3dhjV18+L5ugI0P8PWPvdjm/Fa"
+    crossorigin="anonymous"></script>`
+	if !strings.Contains(s, vue) {
+		t.Error("not Vue 3.5.45 with its integrity")
+	}
+	for _, gone := range []string{"npm/vue@2", "vue-cookies", "@popperjs/core", "new Vue(", "$cookies"} {
+		if strings.Contains(s, gone) {
+			t.Errorf("still has %q", gone)
+		}
+	}
+	for _, tag := range regexp.MustCompile(`<[a-z][^>]*>`).FindAllString(s, -1) {
+		if strings.Contains(tag, " v-if=") && strings.Contains(tag, " v-for=") {
+			t.Errorf("v-if and v-for on one element: %s", tag)
 		}
 	}
 }

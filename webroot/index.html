@@ -9,11 +9,10 @@
   <title>魯地圖分流器</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-yEPZ7jP9S0QKiUQ0m3jjsO4ProIW7wvR9gXkI7JOGa2XVsw53Yke2bsdkBbjmmiX" crossorigin="anonymous">
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-WyOxWvTyr1QaMPfiPJSv76iReVthorl5uWlFtZPyK0IEB0hGzo9y5Bp9mYanr8Bu"
     crossorigin="anonymous"></script>
-  <link href="/app/app.css?v=3" rel="stylesheet">
+  <link href="/app/app.css?v=4" rel="stylesheet">
 </head>
 
 <body class="bg-light">
@@ -43,8 +42,10 @@
                   {{selectedApp.Name}}
                 </a>
                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                  <li v-if="app.Variants" v-for="app in apps"><a class="dropdown-item" href="#"
-                      @click.prevent="select(app, null)">{{app.Name}}</a></li>
+                  <template v-for="app in apps" :key="app.ID">
+                    <li v-if="app.Variants"><a class="dropdown-item" href="#"
+                        @click.prevent="select(app, null)">{{app.Name}}</a></li>
+                  </template>
                 </ul>
               </li>
               <li v-if="selectedApp && selectedApp.Variants.length > 1" class="nav-item dropdown">
@@ -167,64 +168,76 @@
       </symbol>
     </svg>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vue-cookies@1.7.4/vue-cookies.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.global.prod.js"
+    integrity="sha384-K2FjvpG1y48yCE+7CBPhnKc16ShPmT3dlNwvoA3dhjV18+L5ugI0P8PWPvdjm/Fa"
+    crossorigin="anonymous"></script>
   <script>
-    new Vue({
-      el: '#app',
-      data: {
-        prefix: '/app',
-        apps: [],
-        appAlertDismissed: false,
-        selectedApp: null,
-        selectedVariant: null,
-        version: null,
-        year: new Date().getFullYear(),
+    // The alert's dismissal, kept a day in the cookie the page has always used ("state", JSON).
+    const STATE_COOKIE = 'state';
+    const readState = () => {
+      const pair = document.cookie.split('; ').find((c) => c.startsWith(STATE_COOKIE + '='));
+      if (!pair) return null;
+      try {
+        return JSON.parse(decodeURIComponent(pair.slice(STATE_COOKIE.length + 1)));
+      } catch {
+        return null;
+      }
+    };
+    const writeState = (state) => {
+      document.cookie = `${STATE_COOKIE}=${encodeURIComponent(JSON.stringify(state))}; max-age=86400; path=/; SameSite=Lax`;
+    };
+    const getJSON = async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    };
+
+    const app = Vue.createApp({
+      data() {
+        return {
+          prefix: '/app',
+          apps: [],
+          appAlertDismissed: false,
+          selectedApp: null,
+          selectedVariant: null,
+          version: null,
+          year: new Date().getFullYear(),
+        };
+      },
+      watch: {
+        appAlertDismissed() { this.saveCookies(); },
       },
       mounted() {
         this.loadCookies();
         this.getVersion();
         this.getApps();
         addEventListener('popstate', this.loadLocation);
-        this.$watch('appAlertDismissed', this.saveCookies)
+        // one listener for every tooltip, those the list draws later included
+        new bootstrap.Tooltip(document.getElementById('app'), { selector: '[data-bs-toggle="tooltip"]' });
       },
       methods: {
         loadCookies() {
-          let state = this.$cookies.get('state');
-          if (!state) return;
-          this.appAlertDismissed = state.appAlertDismissed;
+          const state = readState();
+          if (state) this.appAlertDismissed = state.appAlertDismissed;
         },
         saveCookies() {
-          let state = { appAlertDismissed: this.appAlertDismissed };
-          this.$cookies.set('state', state);
+          writeState({ appAlertDismissed: this.appAlertDismissed });
         },
-        getVersion() {
-          var self = this;
-          var xhr = new XMLHttpRequest();
-          xhr.open("GET", "/v1/version");
-          xhr.onload = function () {
-            if (xhr.status != 200) {
-              alert(xhr.responseText);
-              return;
-            }
-            var json = JSON.parse(xhr.responseText);
-            self.version = json.tag ? json.tag : json.commit;
-          };
-          xhr.send();
+        async getVersion() {
+          try {
+            const json = await getJSON('/v1/version');
+            this.version = json.tag || json.commit;
+          } catch (e) {
+            alert(e.message);
+          }
         },
-        getApps() {
-          var self = this;
-          var xhr = new XMLHttpRequest();
-          xhr.open("GET", "/v1/apps");
-          xhr.onload = function () {
-            if (xhr.status != 200) {
-              alert(xhr.responseText);
-              return;
-            }
-            self.apps = self.populateApps(JSON.parse(xhr.responseText));
-            self.loadLocation();
-          };
-          xhr.send();
+        async getApps() {
+          try {
+            this.apps = this.populateApps(await getJSON('/v1/apps'));
+            this.loadLocation();
+          } catch (e) {
+            alert(e.message);
+          }
         },
         populateApps(apps) {
           for (let i = 0; i < apps.length; i++) {
@@ -290,7 +303,7 @@
             }
           }
           if (app && variantID) {
-            for (var i = 0; i < app.Variants.length; i++) {
+            for (let i = 0; i < app.Variants.length; i++) {
               if (variantID == app.Variants[i].ID) {
                 variant = app.Variants[i];
                 break;
@@ -301,6 +314,8 @@
         },
         select(app, variant, push = true) {
           if (app == this.selectedApp && variant == this.selectedVariant) return;
+          // the link just clicked goes with the view it was in: its tooltip goes first
+          for (const el of document.querySelectorAll('[data-bs-toggle="tooltip"]')) bootstrap.Tooltip.getInstance(el)?.hide();
           this.selectedApp = app;
           this.selectedVariant = variant;
           window.scrollTo(0, 0);
@@ -336,10 +351,10 @@
           }
         },
         sourceTooltip(source) {
-          var tooltip;
+          let tooltip;
           switch (source.Status) {
             case 1: {
-              tooltip = '檔案日期: ' + new Date(source.LastModified * 1000).toLocaleDateString() + '\n回應時間: ' + Math.round(source.Latency / 1000000) + '亳秒';
+              tooltip = '檔案日期: ' + new Date(source.LastModified * 1000).toLocaleDateString() + '\n回應時間: ' + Math.round(source.Latency / 1000000) + '毫秒';
               break;
             }
             case 2: {
@@ -352,7 +367,7 @@
             }
           }
           if (source.LastCheck > 0) {
-            var lastCheck = new Date().getTime() / 1000 - source.LastCheck;
+            const lastCheck = new Date().getTime() / 1000 - source.LastCheck;
             tooltip = tooltip + '\n檢查時間: ' + this.readableElapsedTime(lastCheck) + '前'
           }
           return tooltip;
@@ -384,11 +399,10 @@
           }
         },
       }
-    })
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-      return new bootstrap.Tooltip(tooltipTriggerEl)
-    })
+    });
+    // as Vue 2 did: the spaces between elements in the page stay (the date and size of a file)
+    app.config.compilerOptions.whitespace = 'preserve';
+    app.mount('#app');
   </script>
 
 </html>
